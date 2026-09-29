@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1er Seguimiento Ene-Jun - PTA 2026</title>
+  <link rel="stylesheet" href="/Segumiento/style.css">
+</head>
+<body>
+
+<div class="container">
+  <!-- Banner / Encabezado -->
+  <div class="header-banner">
+    <img src="/img/cgzs.png" alt="CGZS" class="header-logo header-logo-left">
+    <img src="/img/Elfuturo.png" alt="El Futuro es Hoy" class="header-logo header-logo-right">
+    <h1>Coordinación General de la Zona Sur</h1>
+    <h2>Primer SEGUIMIENTO ENE-JUN (PTA 2026)</h2>
+  </div>
+
+  <form id="formSeguimiento">
+    <!-- Sección de Unidad Responsable -->
+    <div class="ur-simple-container">
+      <div class="form-group">
+        <label for="unidadResponsable">Unidad Responsable:</label>
+        <input type="text" id="unidadResponsable" class="input-readonly" readonly value="COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES">
+      </div>
+      <a href="unidad_responsable.html" class="btn-ur-redirect">
+        👤 Ver Datos de Unidad
+      </a>
+    </div>
+
+    <div class="section-title">
+      <span>Seguimiento de Primer Semestre (Enero - Junio 2026)</span>
+    </div>
+
+    <!-- Tabla de Seguimiento -->
+    <div class="table-responsive">
+      <table class="prog-table">
+        <thead>
+          <tr>
+            <th rowspan="2" class="th-align col-proyecto">Proyecto Estratégico</th>
+            <th rowspan="2" class="th-align col-linea">Línea de Acción</th>
+            <th rowspan="2" class="th-align col-accion-est">Acción Estratégica</th>
+            <th rowspan="2" class="th-align col-recursos">Recursos Requeridos</th>
+            <th rowspan="2" class="th-align col-unidad">Unidad de Medida</th>
+            <th rowspan="2" class="th-align col-var">Var.</th>
+            <th colspan="6" class="th-cal">PRIMER SEMESTRE (2026)</th>
+            <th colspan="2" class="th-cal header-seguimiento">Seguimiento</th>
+          </tr>
+          <tr>
+            <th class="sub-th">Enero</th>
+            <th class="sub-th">Febrero</th>
+            <th class="sub-th">Marzo</th>
+            <th class="sub-th">Abril</th>
+            <th class="sub-th">Mayo</th>
+            <th class="sub-th">Junio</th>
+            <th class="th-cal sub-th-sem">Abs</th>
+            <th class="th-cal sub-th-sem">%</th>
+          </tr>
+        </thead>
+        <tbody id="bodySeguimiento">
+          <!-- Carga dinámicamente con texto plano -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Barra de Acciones -->
+    <div class="actions-bar">
+      <a href="/Programacion/programacion.html" class="btn btn-secondary"> Volver a Programación</a>
+      <button type="submit" class="btn btn-submit"> Guardar 1er Seguimiento</button>
+    </div>
+  </form>
+</div>
+
+<script src="/Segumiento/app.js"></script>
+</body>
+</html>

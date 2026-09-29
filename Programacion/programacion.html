@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Programación y Calendarización - Plan de Trabajo Anual 2026</title>
+  <link rel="stylesheet" href="/Programacion/style.css">
+</head>
+<body>
+
+<div class="container">
+  <div class="header-banner">
+    <img src="/img/cgzs.png" alt="CGZS" class="header-logo header-logo-left">
+    <img src="/img/Elfuturo.png" alt="El Futuro es Hoy" class="header-logo header-logo-right">
+    <h1>Coordinación General de la Zona Sur</h1>
+    <h2>PLAN DE TRABAJO ANUAL 2026 - PROGRAMACIÓN Y CALENDARIZACIÓN</h2>
+  </div>
+
+  <form id="formProgramacion">
+    
+    <div class="section-title">
+      <span>1. Unidad Responsable</span>
+    </div>
+
+    <div class="ur-simple-container">
+      <div class="form-group">
+        <label for="unidadResponsable">Nombre de la Unidad Responsable:</label>
+        <input type="text" id="unidadResponsable" name="unidadResponsable" class="input-readonly" value="COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES" readonly>
+      </div>
+      
+      <a href="../UnidadResponsable/unidadResponsable.html" class="btn-ur-redirect">
+      Unidad Responsable
+      </a>
+    </div>
+
+    <div class="section-title">
+      <span>2. Alineación y Programación de Acciones Estratégicas</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="prog-table" id="tablaProgramacion">
+        <thead>
+          <tr>
+            <th colspan="6" class="th-align">Alineación con Proyectos Institucionales</th>
+            <th colspan="6" class="th-cal">Primer Semestre (Ene - Jun)</th>
+            <th colspan="2" class="th-cal header-seguimiento">Seguimiento</th>
+            <th colspan="6" class="th-cal header-sem2">Segundo Semestre (Jul - Dic)</th>
+            <th colspan="2" class="th-cal header-seguimiento">Seguimiento</th>
+            <th colspan="2" class="th-cal header-totales">Total Anual</th>
+            <th rowspan="2" class="th-align col-accion">Acción</th>
+          </tr>
+          <tr>
+            <th class="th-align col-proyecto">Proyecto Estratégico</th>
+            <th class="th-align col-linea">Líneas de Acción</th>
+            <th class="th-align col-accion-est">Acciones Estratégicas</th>
+            <th class="th-align col-recursos">Recursos</th>
+            <th class="th-align col-unidad">Unidad de Medida</th>
+            <th class="th-align col-var">Variables</th>
+            
+            <!-- ENE - JUN -->
+            <th class="th-cal sub-th">ENERO</th>
+            <th class="th-cal sub-th">FEBRERO</th>
+            <th class="th-cal sub-th">MARZO</th>
+            <th class="th-cal sub-th">ABRIL</th>
+            <th class="th-cal sub-th">MAYO</th>
+            <th class="th-cal sub-th">JUNIO</th>
+            
+            <!-- SEGUIMIENTO 1ER SEMESTRE -->
+            <th class="th-cal sub-th-sem">Abs</th>
+            <th class="th-cal sub-th-sem">%</th>
+            
+            <!-- JUL - DIC -->
+            <th class="th-cal sub-th">JULIO</th>
+            <th class="th-cal sub-th">AGOSTO</th>
+            <th class="th-cal sub-th">SEPTIEMBRE</th>
+            <th class="th-cal sub-th">OCTUBRE</th>
+            <th class="th-cal sub-th">NOVIEMBRE</th>
+            <th class="th-cal sub-th">DICIEMBRE</th>
+
+            <!-- SEGUIMIENTO 2DO SEMESTRE -->
+            <th class="th-cal sub-th-sem">Abs</th>
+            <th class="th-cal sub-th-sem">%</th>
+
+            <!-- TOTAL ANUAL -->
+            <th class="th-cal sub-th-tot">Abs</th>
+            <th class="th-cal sub-th-tot">%</th>
+          </tr>
+        </thead>
+        <tbody id="bodyProgramacion">
+          <!-- Filas inyectadas por JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions-bar">
+      <button type="button" class="btn btn-add" id="btnAgregarAccion"> Agregar Nueva Acción </button>
+      <button type="submit" class="btn btn-submit" id="btnGuardarProgramacion"> Guardar Programación </button>
+    </div>
+  </form>
+</div>
+
+<!-- MODAL CONFIRMAR GUARDAR -->
+<div class="modal-overlay" id="modalConfirmarGuardar">
+  <div class="modal-content modal-confirm-content">
+    <div class="modal-header modal-confirm-header">
+      <h3 id="modalConfirmTitulo">Confirmación</h3>
+      <button type="button" class="btn-close-modal" id="btnCerrarConfirmX">✕</button>
+    </div>
+    <div class="modal-body modal-confirm-body">
+      <div class="confirm-icon" id="modalConfirmIcon">⚠️</div>
+      <p class="confirm-text" id="modalConfirmTexto">¿Estás seguro que desea guardar?</p>
+    </div>
+    <div class="modal-footer modal-confirm-footer" id="modalConfirmFooterPregunta">
+      <button type="button" class="btn btn-cancelar" id="btnConfirmarNo">No</button>
+      <button type="button" class="btn btn-confirmar" id="btnConfirmarSi">Sí</button>
+    </div>
+  </div>
+</div>
+
+<script src="/Programacion/app.js"></script>
+</body>
+</html>

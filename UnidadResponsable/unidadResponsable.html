@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unidad Responsable</title>
+  <link rel="stylesheet" href="/UnidadResponsable/style.css">
+</head>
+<body>
+
+<div class="container container-ur">
+  <div class="header-banner header-banner-ur">
+    <img src="/img/cgzs.png" alt="CGZS" class="header-logo header-logo-left">
+    <img src="/img/Elfuturo.png" alt="El Futuro es Hoy" class="header-logo header-logo-right">
+    <h1>PLAN DE TRABAJO 2026</h1>
+  </div>
+
+  <form id="formUnidadResponsable" class="form-ur" novalidate>
+    <div class="section-title">
+      <span>Datos Generales y de Contacto</span>
+    </div>
+
+    <!-- Mensaje de Alerta / Validación Error -->
+    <div id="alertBox" class="alert-box" style="display: none;"></div>
+
+    <div class="ur-grid">
+      <div class="form-group full-width">
+        <label for="urNombreUnidad">Nombre de la Unidad Responsable <span class="req">*</span></label>
+        <input type="text" id="urNombreUnidad" name="urNombreUnidad" value="COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES" disabled required>
+      </div>
+
+      <div class="form-group">
+        <label for="urTipo">Tipo de Unidad Responsable <span class="req">*</span></label>
+        <select id="urTipo" name="urTipo" disabled required>
+          <option value="ACADÉMICA" selected>ACADÉMICA</option>
+          <option value="ADMINISTRATIVA">ADMINISTRATIVA</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="urNombreResp">Nombre del Responsable <span class="req">*</span></label>
+        <input type="text" id="urNombreResp" name="urNombreResp" value="Irma Berenice Vega Ferrusca" disabled required>
+      </div>
+
+      <div class="form-group">
+        <label for="urCargo">Cargo del Responsable <span class="req">*</span></label>
+        <input type="text" id="urCargo" name="urCargo" value="COORDINADOR" disabled required>
+      </div>
+
+      <div class="form-group">
+        <label for="urTel">Celular <span class="req">*</span></label>
+        <input type="tel" id="urTel" name="urTel" value="7449092310" disabled required>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="urCorreoInst">Correo Electrónico Institucional <span class="req">*</span></label>
+        <input type="email" id="urCorreoInst" name="urCorreoInst" value="oeducativa_zs@uagro.mx" disabled required>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="urCorreoPers">Correo Electrónico Personal <span class="req">*</span></label>
+        <input type="email" id="urCorreoPers" name="urCorreoPers" value="13968@uagro.mx" disabled required>
+      </div>
+    </div>
+
+    <div class="actions-bar-ur">
+      <a href="../Programacion/programacion.html" class="btn btn-secondary">← Volver a Programación</a>
+      
+      <!-- Botón dinámico (intercambia entre Editar y Guardar) -->
+      <button type="button" id="btnAccionUR" class="btn btn-edit">Editar mi Unidad</button>
+    </div>
+  </form>
+</div>
+
+<!-- MODAL CONFIRMAR GUARDAR -->
+<div class="modal-overlay" id="modalConfirmarGuardar">
+  <div class="modal-content modal-confirm-content">
+    <div class="modal-header modal-confirm-header">
+      <h3 id="modalConfirmTitulo">Confirmación</h3>
+      <button type="button" class="btn-close-modal" id="btnCerrarConfirmX">✕</button>
+    </div>
+    <div class="modal-body modal-confirm-body">
+      <div class="confirm-icon" id="modalConfirmIcon">⚠️</div>
+      <p class="confirm-text" id="modalConfirmTexto">¿Estás seguro que desea guardar?</p>
+    </div>
+    <div class="modal-footer modal-confirm-footer" id="modalConfirmFooterPregunta">
+      <button type="button" class="btn btn-cancelar" id="btnConfirmarNo">No</button>
+      <button type="button" class="btn btn-confirmar" id="btnConfirmarSi">Sí</button>
+    </div>
+  </div>
+</div>
+
+<script src="/UnidadResponsable/app.js"></script>
+</body>
+</html>
