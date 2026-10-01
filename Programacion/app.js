@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnConfirmarSi.addEventListener('click', () => {
       guardarProgramacion();
       cerrarModalConfirmacion();
-      window.location.href = '/Segumiento/seguimiento.html';
+      window.location.href = '/Seguimiento/seguimiento.html';
     });
   }
 
@@ -87,7 +87,7 @@ function abrirModalConfirmacion() {
 
   if (titulo) titulo.innerText = 'Confirmación';
   if (icono) icono.innerText = '⚠️';
-  if (texto) texto.innerText = '¿Estás seguro que desea guardar?';
+  if (texto) texto.innerText = '¿Confirmar programación?';
 
   if (modal) modal.style.display = 'flex';
 }
@@ -159,22 +159,62 @@ function guardarProgramacion() {
 
 // OPCIONES Y DATOS BASE
 const proyectosOptions = [
-  "1. Responsabilidad Social y Ambiental",
-  "2. Impulsar la digitalización de la gestión administrativa de la CGZS",
-  "3. Redimensionar la gestión Institucional",
-  "4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias"
+  "Responsabilidad Social y Ambiental",
+  "Impulsar la digitalización de la gestión administrativa de la CGZS",
+  "Redimensionar la gestión Institucional",
+  "Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias"
 ];
 
 const lineasAccionOptions = [
   "1. Responsabilidad Social y Ambiental",
+
   "1.1.1. Sensibilización y Formación en Responsabilidad Social. Implementar programas de sensibilización y formación dirigidos a la comunidad UAGro sobre la importancia de la responsabilidad social y ambiental. Se realizarán actividades de capacitación, charlas y campañas de concientización.",
+
   "1.2.1. Desarrollo de Proyectos y Programas Socioambientales. Fomentar la creación y desarrollo de proyectos y programas de responsabilidad social y ambiental que aborden problemáticas relevantes para la sociedad. Se impulsará la participación de estudiantes, docentes y personal administrativo en la concepción e implementación de estas iniciativas.",
+
+  "1.3.1. Promoción de la Participación Activa. Estimular la participación activa de la comunidad UAGro en proyectos y programas de responsabilidad social y ambiental. Se crearán espacios y plataformas para que los miembros de la comunidad puedan involucrarse y contribuir con sus ideas y esfuerzos.",
+
+  "1.4.1. Implementación de Prácticas Sustentables en la Gestión Universitaria. Promover la implementación de prácticas sustentables en la gestión universitaria en aspectos como la gestión de residuos, el uso eficiente de recursos y la movilidad sustentable, entre otros. Se establecerán políticas y acciones concretas para reducir el impacto ambiental de la universidad.",
+
+  "1.5.1. Formación de Profesionales Comprometidos. Introducir la responsabilidad social y ambiental como un eje transversal en la formación de profesionales en la UAGro. Se incorporarán contenidos curriculares relacionados con estas temáticas y se promoverá la participación en actividades extracurriculares relacionadas con la responsabilidad social.",
+
+  "1.6.1. Evaluación y Mejora Continua. Establecer mecanismos  de evaluación periódica para medir el avance y los resultados de los proyectos y programas de responsabilidad social y ambiental. Se utilizarán indicadores de desempeño para retroalimentar y mejorar continuamente las acciones implementadas.",
+
+  "1.7.1. Alianzas Estratégicas. Establecer alianzas con organizaciones y entidades del sector público y privado que compartan los mismos valores y objetivos en materia de responsabilidad social y ambiental. Se buscarán sinergias para fortalecer la capacidad de la UAGro en este ámbito y ampliar el impacto de las acciones.",
+  "2. Impulsar la digitalización de la gestión  administrativa  de la CGZS",
+  "2.1.1. Fortalecimiento de la Infraestructura Tecnológica. Mejorar y actualizar la infraestructura tecnológica de la universidad, incluyendo redes de alta velocidad, sistemas de almacenamiento y seguridad informática, para garantizar una base sólida para la digitalización integral.",
+  "2.2.1. Capacitación en Competencias Digitales. Brindar capacitación y formación en competencias digitales al personal administrativo, para que estén preparados para utilizar eficazmente las herramientas digitales en sus labores educativas y administrativas.",
+
+  "2.3.1. Digitalización de Procesos Administrativos. Optimizar los procesos administrativos mediante la digitalización de trámites, gestión de recursos humanos y finanzas, entre otros, para mejorar la eficiencia y reducir tiempos y costos.",
+
+  "2.4.1. Evaluación y Seguimiento de la Transformación Digital. Establecer un sistema de evaluación y seguimiento periódico para medir el avance y el impacto de la transformación digital, los procesos administrativos y la satisfacción de los usuarios.",
+
+  "3. Redimensionar la gestión Institucional",
+
+  "3.1.1. Optimización de Procesos Administrativos. Realizar una revisión exhaustiva de los procesos administrativos y de gestión en la CGZS para identificar áreas de mejora y oportunidades de optimización. Implementar cambios y actualizaciones para asegurar la eficiencia, eficacia y efectividad en el uso de los recursos.",
+
+  "3.2.1. Establecimiento de Políticas Transparentes. Desarrollar y difundir políticas y procedimientos claros y transparentes para la toma de decisiones en la gestión de los medios necesarios para el funcionamiento óptimo de la Universidad. Esto incluirá la definición de criterios de asignación de recursos y el establecimiento de mecanismos de rendición de cuentas.",
+
+  "3.3.1 Implementación de Sistemas de Control y Seguimiento. Establecer sistemas y herramientas de control y seguimiento para asegurar la transparencia en el uso de los recursos en la CGZS. Esto incluirá la implementación de tecnologías de información que permitan el monitoreo de los gastos y la gestión financiera.",
+
+  "3.4.1.  Promoción de la Ética y la Integridad.  Fomentar una cultura de ética y responsabilidad en la gestión de los recursos de la universidad. Implementar programas de formación y capacitación en ética administrativa y promover cultura de la rendición de cuentas en todos los niveles de la institución.",
+
+  "3.5.1. Capacitación en Administración Eficiente. Desarrollar programas de capacitación y formación en administración y gestión eficiente, eficaz y efectiva para el personal de la CGZS. Esto incluirá cursos y talleres sobre buenas prácticas en la administración de recursos, manejo de presupuestos, planificación estratégica, entre otros.",
+
+  "3.6.1. Identidad Institucional. Fomentar la identidad institucional en todos los trabajadores de las coordinaciones y áreas de la CGZS, con la finalidad que todo el personal de la CGZS conozca y se identifique con la Visión, Misión y Principios Institucionales, así como con el Código de Ética.",
+
+  "3.6.2. Promover el trabajo colaborativo, integral, sistemático y planeativo de toda la CGZS. A través de la participación para elaborar los Planes de Trabajo y Programas Operativos Anuales, se fomentará el trabajo colaborativo entre las diferentes áreas de una coordinación y entre coordinaciones.",
+
   "4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias",
-  "4.1. Promover la oferta educativa del Nivel Superior de la UAGro en escuelas del NMS y otros subsistemas educativos.",
-  "4.2. Difundir y acompañar a la comunidad educativa en procesos de vinculación y formación integral.",
-  "4.3. Fortalecer la atención y orientación a estudiantes para mejorar su permanencia y desarrollo académico.",
-  "4.4. Acompañar la coordinación de actividades de extensión y vinculación institucional.",
-  "4.4.1. Dar seguimiento a la ejecución de acciones de extensión vinculadas con la formación integral del estudiante."
+
+  "4.1.1. Catálogo de Servicios Actualizado. Desarrollar y difundir a través del Catálogo en todas las Unidades Académicas de las regiones de Costa Chica, Costa Grande y Acapulco los servicios que ofrece la Coordinación de Extensión.",
+
+  "4.2.1. Formación de extensionistas. Implementar programas de capacitación para la formación de extensionistas en cada Unidad Académica de la Zona Sur con la finalidad de difundir y promover el arte, la cultura, la poesía, la oratoria, así como el deporte, que contribuyan a la formación integral de los estudiantes.",
+
+  "4.3.1. Expresiones diversas en eventos de importancia regional. Representar a la Universidad a través de estudiantes de EMS y Superior con participaciones artísticas, culturales, deportivas, científicas y tecnológicas, etc., en eventos de importancia regional.",
+
+  "4.4.1. Conformar consejos de vinculación en las unidades académicas (Coordinadores de PE y de CA) con la CGZS y que estos promuevan: 1.- La revisión de las LGAC que desarrollan los CA, con la finalidad de incorporar líneas de investigación tendientes a la transmisión del conocimiento al Sector Productivo y de servicio, 2.- Revisión de Planes y programas de los PE que incorporen competencias y unidades de aprendizaje relacionadas con el sector productivo y de servicios, 3.- Revisión de la pertinencia del PE.",
+
 ];
 
 const unidadesMedidaOptions = [

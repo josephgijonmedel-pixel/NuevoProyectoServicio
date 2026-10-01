@@ -5,12 +5,71 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Cargar las filas guardadas desde Programación
   cargarProgramacionParaSeguimiento();
 
-  // 3. Listener para guardar el seguimiento
+  // 3. Evento para guardar el formulario con confirmación
   const formSeg = document.getElementById('formSeguimiento');
+  const modalConfirmar = document.getElementById('modalConfirmarGuardar');
+  const btnConfirmarSi = document.getElementById('btnConfirmarSi');
+  const btnConfirmarNo = document.getElementById('btnConfirmarNo');
+  const btnCerrarConfirmX = document.getElementById('btnCerrarConfirmX');
+
   if (formSeg) {
-    formSeg.addEventListener('submit', guardarSeguimiento);
+    formSeg.addEventListener('submit', (e) => {
+      e.preventDefault();
+      abrirModalConfirmacion();
+    });
   }
+
+  if (btnConfirmarNo) {
+    btnConfirmarNo.addEventListener('click', cerrarModalConfirmacion);
+  }
+
+  if (btnCerrarConfirmX) {
+    btnCerrarConfirmX.addEventListener('click', cerrarModalConfirmacion);
+  }
+
+  if (btnConfirmarSi) {
+    btnConfirmarSi.addEventListener('click', () => {
+      guardarSeguimiento();
+      cerrarModalConfirmacion();
+      window.location.href = '/Segundo%20seguimiento/segundoSeguimiento.html';
+    });
+  }
+
+  // Cerrar al hacer clic en el fondo fuera del modal
+  if (modalConfirmar) {
+    modalConfirmar.addEventListener('click', (e) => {
+      if (e.target === modalConfirmar) {
+        cerrarModalConfirmacion();
+      }
+    });
+  }
+
+  // Cerrar modal con tecla Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      cerrarModalConfirmacion();
+    }
+  });
 });
+
+// FUNCIONES DEL MODAL DE CONFIRMACIÓN
+function abrirModalConfirmacion() {
+  const modal = document.getElementById('modalConfirmarGuardar');
+  const titulo = document.getElementById('modalConfirmTitulo');
+  const icono = document.getElementById('modalConfirmIcon');
+  const texto = document.getElementById('modalConfirmTexto');
+
+  if (titulo) titulo.innerText = 'Confirmación';
+  if (icono) icono.innerText = '⚠️';
+  if (texto) texto.innerText = '¿Estás seguro que desea guardar?';
+
+  if (modal) modal.style.display = 'flex';
+}
+
+function cerrarModalConfirmacion() {
+  const modal = document.getElementById('modalConfirmarGuardar');
+  if (modal) modal.style.display = 'none';
+}
 
 function cargarUnidadResponsable() {
   const datosLocales = localStorage.getItem('unidadResponsableData');
@@ -193,9 +252,7 @@ function calcularTotalesSeguimiento(id) {
   }
 }
 
-function guardarSeguimiento(e) {
-  e.preventDefault();
-
+function guardarSeguimiento() {
   const filasP = document.querySelectorAll('#bodySeguimiento tr.var-row-p');
   const seguimientoResultados = [];
 
@@ -213,5 +270,4 @@ function guardarSeguimiento(e) {
   });
 
   localStorage.setItem('seguimientoEneJunData', JSON.stringify(seguimientoResultados));
-  alert('¡El 1er Seguimiento (Ene-Jun) ha sido guardado exitosamente!');
 }
