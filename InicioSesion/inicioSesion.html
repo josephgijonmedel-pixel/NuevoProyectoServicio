@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio de Sesión</title>
+  <link rel="stylesheet" href="/InicioSesion/style.css">
+</head>
+<body>
+
+<div class="container container-login">
+  <!-- Banner Institucional -->
+  <div class="header-banner header-banner-login">
+    <img src="/img/cgzs.png" alt="CGZS" class="header-logo header-logo-left">
+    <img src="/img/Elfuturo.png" alt="El Futuro es Hoy" class="header-logo header-logo-right">
+    <h1>Coordinación General de la Zona Sur</h1>
+  </div>
+
+  <form id="formLogin" class="form-login" novalidate>
+    <div class="section-title">
+      <span>Inicio de sesión</span>
+    </div>
+
+    <!-- Mensaje de Alerta / Validación Error -->
+    <div id="loginAlertBox" class="alert-box" style="display: none;"></div>
+
+    <div class="form-group">
+      <label for="loginEmail">Correo Electrónico <span class="req">*</span></label>
+      <input type="email" id="loginEmail" name="loginEmail" placeholder="correo@uagro.mx" required>
+    </div>
+
+    <div class="form-group">
+      <label for="loginPassword">Contraseña <span class="req">*</span></label>
+      <input type="password" id="loginPassword" name="loginPassword" placeholder="••••••••" required>
+      <a href="#" class="forgot-password-link">¿Olvidó su contraseña?</a>
+    </div>
+
+    <div class="actions-bar-login">
+      <button type="button" class="btn btn-submit" onclick="miUnidad()">Iniciar Sesión</button>
+    </div>
+  </form>
+</div>
+
+<script src="/InicioSesion/app.js"></script>
+</body>
+</html>

@@ -1,12 +1,13 @@
+/* Aquí arriba están los colores que se usan en toda la página, para no repetirlos */
 :root {
-  --hdr-grey-dark: #7f7f7f;
+  --hdr-blue-dark: #1b2a63;
   --hdr-grey-medium: #7b7b7b;
   --hdr-grey-light: #a5a5a5;
   --cal-blue: #9cc2e5;
   --cal-blue-light: #cce0f5;
   --cal-sem-bg: #d9e1f2;
   --cal-tot-bg: #b4c6e7;
-  --cal-p-bg: #8ea9db; /* Azul énfasis 1, claro 40% */
+  --cal-p-bg: #8ea9db; 
   --bg-row-alt: #f2f2f2;
   --border-color: #d0d0d0;
   --btn-primary: #1b365d;
@@ -25,6 +26,7 @@ body {
   color: #333;
 }
 
+/* La caja blanca que envuelve toda la página */
 .container {
   max-width: 100%;
   margin: 0 auto;
@@ -34,6 +36,7 @@ body {
   overflow: hidden;
 }
 
+/* El banner de arriba, con los logos y los títulos */
 .header-banner {
   position: relative;
   min-height: 150px;
@@ -41,13 +44,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--hdr-grey-light);
-  color: #000;
+  background-color: var(--hdr-blue-dark);
+  color: #fffefe;
   padding: 20px;
   text-align: center;
-  border-bottom: 3px solid var(--hdr-grey-dark);
+  border-bottom: 3px solid var(--hdr-blue-dark);
 }
 
+/* Los dos logos: se ponen flotando encima del banner, uno a cada lado */
 .header-logo {
   position: absolute;
   top: 50%;
@@ -75,8 +79,136 @@ form {
   padding: 20px;
 }
 
+/* Botón de tres líneas (hamburguesa): queda fijo justo entre el banner y la caja de Unidad Responsable */
+.sidebar-toggle-btn {
+  position: sticky;
+  top: 10px;
+  z-index: 1200;
+  width: 66px;
+  height: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background-color: var(--btn-primary);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  margin: 14px 0 14px 20px;
+}
+
+.sidebar-toggle-btn .bar {
+  width: 22px;
+  height: 2.5px;
+  background-color: #ffffff;
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Las tres líneas se acomodan como una "X" cuando el menú está abierto */
+body.sidebar-open .sidebar-toggle-btn .bar:nth-child(1) {
+  transform: translateY(7.5px) rotate(45deg);
+}
+
+body.sidebar-open .sidebar-toggle-btn .bar:nth-child(2) {
+  opacity: 0;
+}
+
+body.sidebar-open .sidebar-toggle-btn .bar:nth-child(3) {
+  transform: translateY(-7.5px) rotate(-45deg);
+}
+
+/* Fondo oscuro detrás del menú lateral mientras está abierto */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1050;
+}
+
+body.sidebar-open .sidebar-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Panel lateral de navegación: empieza justo debajo del banner y se despliega hacia la derecha */
+.sidebar-menu {
+  position: fixed;
+  top: 150px;
+  left: 0;
+  width: 250px;
+  height: calc(100vh - 150px);
+  background: linear-gradient(160deg, #122a4d 0%, #0f5c66 100%);
+  transform: translateX(-100%);
+  transition: transform 0.35s ease;
+  z-index: 1100;
+  overflow-y: auto;
+  padding-top: 24px;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+body.sidebar-open .sidebar-menu {
+  transform: translateX(0);
+}
+
+/* Con el menú abierto, el botón queda detrás del panel (ya no se ve encima) */
+body.sidebar-open .sidebar-toggle-btn {
+  z-index: 1090;
+}
+
+/* Nombre de la Unidad Responsable, en letras más grandes arriba de "Inicio" */
+.sidebar-unit-name {
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 0 20px 18px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  text-transform: uppercase;
+}
+
+.sidebar-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  color: #e6edf5;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-left: 4px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-link svg {
+  flex-shrink: 0;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-link.sidebar-link-active {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-left-color: var(--ur-yellow);
+  color: #ffffff;
+}
+
+/* Los títulos grises que separan cada sección de la página */
 .section-title {
-  background-color: var(--hdr-grey-dark);
+  background-color: var(--hdr-grey-light);
   color: #ffffff;
   padding: 10px 15px;
   font-size: 1.1rem;
@@ -87,6 +219,7 @@ form {
   text-transform: uppercase;
 }
 
+/* La caja donde se muestra el nombre de la Unidad Responsable */
 .ur-simple-container {
   display: flex;
   gap: 15px;
@@ -145,7 +278,7 @@ form {
   background-color: #f7ca38;
 }
 
-/* ESTRUCTURA Y TABLA DE PROGRAMACIÓN */
+/* La tabla grande de Programación: esta parte hace que se pueda deslizar hacia los lados */
 .table-responsive {
   width: 100%;
   overflow-x: auto;
@@ -170,7 +303,7 @@ table.prog-table th, table.prog-table td {
 }
 
 table.prog-table th.th-align {
-  background-color: var(--hdr-grey-dark);
+  background-color: var(--hdr-blue-dark);
   color: #ffffff;
   text-align: center;
 }
@@ -203,7 +336,7 @@ table.prog-table th.th-cal {
   font-weight: bold;
 }
 
-/* ANCHOS DE COLUMNAS */
+/* Qué tan ancha es cada columna de la tabla */
 .col-proyecto { width: 230px; }
 .col-linea { width: 270px; }
 .col-accion-est { width: 290px; }
@@ -212,11 +345,12 @@ table.prog-table th.th-cal {
 .col-var { width: 40px; }
 .col-accion { width: 50px; }
 
+/* Color de fondo de la fila de "Programado" */
 .var-row-p {
   background-color: #ffffff;
 }
 
-/* Espacio visual entre cada acción (par de filas P/R) */
+/* Deja un pequeño espacio en blanco entre una acción y la siguiente */
 .row-spacer td {
   border-left: none;
   border-right: none;
@@ -225,7 +359,7 @@ table.prog-table th.th-cal {
   height: 12px;
 }
 
-/* Celdas de la variable P: Azul énfasis 1, claro 40% */
+/* Color azul de las celdas de la fila "Programado" */
 .var-row-p td:not([rowspan]) {
   background-color: var(--cal-p-bg, #8ea9db) !important;
 }
@@ -243,8 +377,9 @@ table.prog-table th.th-cal {
   outline: none;
 }
 
-.var-row-r { 
-  background-color: var(--bg-row-alt); 
+/* Color de fondo gris de la fila de "Realizado" */
+.var-row-r {
+  background-color: var(--bg-row-alt);
 }
 
 .var-row-r .cal-input:not(.input-readonly) {
@@ -311,7 +446,7 @@ select.table-control {
   text-align: left;
 }
 
-/* CELDAS CALCULADAS */
+/* Colores del semáforo: verde si va bien, amarillo si va a medias, rojo si va mal */
 .pct-good { background-color: #d4edda !important; color: #155724; font-weight: bold; }
 .pct-warn { background-color: #fff3cd !important; color: #856404; font-weight: bold; }
 .pct-bad  { background-color: #f8d7da !important; color: #721c24; font-weight: bold; }
@@ -320,6 +455,7 @@ select.table-control {
 .cell-bg-totp { background-color: #dcecfb; font-weight: bold; }
 .cell-bg-r    { background-color: #e9ecef; font-weight: bold; }
 
+/* La franja de abajo con los botones de Agregar y Guardar */
 .actions-bar {
   display: flex;
   justify-content: space-between;
@@ -348,7 +484,7 @@ select.table-control {
   cursor: pointer;
 }
 
-/* MODAL VENTANA FLOTANTE */
+/* La ventana emergente que pregunta "¿seguro que quieres guardar?" */
 .modal-overlay {
   display: none;
   position: fixed;

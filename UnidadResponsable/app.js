@@ -107,6 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Guardar también en localStorage para persistencia al recargar
     localStorage.setItem('unidadResponsableData', JSON.stringify(unidadResponsableData));
 
+    const sidebarUnidadNombre = document.getElementById('sidebarUnidadNombre');
+    if (sidebarUnidadNombre && unidadResponsableData.nombreUnidad) {
+      sidebarUnidadNombre.textContent = unidadResponsableData.nombreUnidad;
+    }
+
     // Bloquear campos
     campos.forEach(campo => {
       campo.setAttribute('disabled', 'disabled');
@@ -136,6 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
     inputTel.value = unidadResponsableData.tel;
     inputCorreoInst.value = unidadResponsableData.correoInst;
     inputCorreoPers.value = unidadResponsableData.correoPers;
+
+    const sidebarUnidadNombre = document.getElementById('sidebarUnidadNombre');
+    if (sidebarUnidadNombre && unidadResponsableData.nombreUnidad) {
+      sidebarUnidadNombre.textContent = unidadResponsableData.nombreUnidad;
+    }
   }
 
   function validarCampos() {
@@ -179,3 +189,46 @@ function cerrarModalConfirmacion() {
   const modal = document.getElementById('modalConfirmarGuardar');
   if (modal) modal.style.display = 'none';
 }
+
+// Abre y cierra el menú lateral de navegación (botón de tres líneas)
+document.addEventListener('DOMContentLoaded', () => {
+  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+  function cerrarSidebar() {
+    document.body.classList.remove('sidebar-open');
+    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function abrirSidebar() {
+    document.body.classList.add('sidebar-open');
+    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  if (sidebarToggleBtn) {
+    sidebarToggleBtn.addEventListener('click', () => {
+      if (document.body.classList.contains('sidebar-open')) {
+        cerrarSidebar();
+      } else {
+        abrirSidebar();
+      }
+    });
+  }
+
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', cerrarSidebar);
+  }
+
+  // Si ya estás en esa página, el enlace activo no debe recargarla
+  const sidebarActiveLink = document.querySelector('.sidebar-link.sidebar-link-active');
+  if (sidebarActiveLink) {
+    sidebarActiveLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      cerrarSidebar();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarSidebar();
+  });
+});

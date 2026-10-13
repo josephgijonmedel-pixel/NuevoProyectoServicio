@@ -1,3 +1,4 @@
+// Esto se ejecuta apenas se abre la página
 document.addEventListener('DOMContentLoaded', () => {
   // 1. Cargar el dato de Unidad Responsable guardado en localStorage
   const datosLocales = localStorage.getItem('unidadResponsableData');
@@ -5,8 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const dataUR = JSON.parse(datosLocales);
       const inputUR = document.getElementById('unidadResponsable');
+      const sidebarUnidadNombre = document.getElementById('sidebarUnidadNombre');
       if (inputUR && dataUR.nombreUnidad) {
         inputUR.value = dataUR.nombreUnidad;
+      }
+      if (sidebarUnidadNombre && dataUR.nombreUnidad) {
+        sidebarUnidadNombre.textContent = dataUR.nombreUnidad;
       }
     } catch (e) {
       console.error('Error al leer datos locales de UR:', e);
@@ -78,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// FUNCIONES DEL MODAL DE CONFIRMACIÓN
+// Estas dos funciones solo muestran y ocultan la ventana de confirmación
 function abrirModalConfirmacion() {
   const modal = document.getElementById('modalConfirmarGuardar');
   const titulo = document.getElementById('modalConfirmTitulo');
@@ -97,6 +102,7 @@ function cerrarModalConfirmacion() {
   if (modal) modal.style.display = 'none';
 }
 
+// Busca lo que ya se había guardado antes; si no hay nada guardado, usa el dato de ejemplo
 function cargarProgramacionGuardada() {
   const payloadGuardado = localStorage.getItem('programacionCompletaData');
   if (payloadGuardado) {
@@ -112,6 +118,7 @@ function cargarProgramacionGuardada() {
   return datosIniciales;
 }
 
+// Junta todo lo que se escribió en la tabla (cada acción con sus meses) y lo guarda
 function guardarProgramacion() {
   const filas = Array.from(document.querySelectorAll('#bodyProgramacion tr.var-row-p'));
 
@@ -157,7 +164,7 @@ function guardarProgramacion() {
   return payload;
 }
 
-// OPCIONES Y DATOS BASE
+// Listas de opciones para los menús desplegables del formulario
 const proyectosOptions = [
   "Responsabilidad Social y Ambiental",
   "Impulsar la digitalización de la gestión administrativa de la CGZS",
@@ -226,8 +233,7 @@ const unidadesMedidaOptions = [
   "Utensilios", "Visitas", "Otros"
 ];
 
-// Acciones tomadas de la hoja "PROGRAMACIÓN 2026" del documento
-// FORMATO PARA PRUEBA SERVICIO SOCIAL (Sin celdas ocultas), columnas A-Z (hasta Total Anual)
+// Acción de ejemplo que aparece solo si todavía no se ha guardado nada
 const datosIniciales = [
   {
     proyecto: "4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias",
@@ -242,7 +248,7 @@ const datosIniciales = [
 
 let contadorFilas = 0;
 
-// FUNCIONES AUXILIARES DE VALIDACIÓN
+// Evita que se escriban letras: solo deja pasar números
 function soloEnteros(event) {
   const charCode = event.which ? event.which : event.keyCode;
   if (charCode < 48 || charCode > 57) {
@@ -252,6 +258,7 @@ function soloEnteros(event) {
   return true;
 }
 
+// Evita que se pegue (copiar/pegar) algo que no sea un número
 function validarPegadoEnteros(event) {
   const clipboardData = event.clipboardData || window.clipboardData;
   const pastedData = clipboardData.getData('Text');
@@ -261,11 +268,12 @@ function validarPegadoEnteros(event) {
   }
 }
 
+// Arma las opciones de un menú desplegable a partir de una lista
 function crearOpcionesSelect(lista, valorSeleccionado) {
   return lista.map(item => `<option value="${item}" ${item === valorSeleccionado ? 'selected' : ''}>${item}</option>`).join('');
 }
 
-// CONSTRUCCIÓN DINÁMICA DE FILAS
+// Crea una acción nueva en la tabla: una fila de Programado y una de Realizado
 function agregarFilaAccion(data = null) {
   contadorFilas++;
   const id = contadorFilas;
@@ -415,7 +423,7 @@ function agregarFilaAccion(data = null) {
   calcularTotales(id);
 }
 
-// CÁLCULOS EN TIEMPO REAL
+// Suma los meses y calcula los porcentajes cada vez que se escribe un número
 function calcularTotales(id) {
   const pInputs = Array.from(document.querySelectorAll(`.input-p-${id}`));
   const rInputs = Array.from(document.querySelectorAll(`.input-r-${id}`));
@@ -434,7 +442,7 @@ function calcularTotales(id) {
   const inputPctPSem2 = document.getElementById(`pct-p-sem2-${id}`);
   const inputPctRSem2 = document.getElementById(`pct-r-sem2-${id}`);
 
-  // Abs siempre refleja la suma de los seis meses del semestre.
+  // El Abs es simplemente la suma de los 6 meses de ese semestre
   if (inputAbsP) inputAbsP.value = subP1;
   if (inputAbsR) inputAbsR.value = subR1;
   if (inputAbsPSem2) inputAbsPSem2.value = subP2;
@@ -443,27 +451,25 @@ function calcularTotales(id) {
   let valAbsP = subP1;
   let valAbsR = subR1;
 
-  // Seguimiento Semestre 1
-  // % de P = Abs P * 100 / Abs P (siempre 100 si hay datos capturados)
+  // Porcentajes del primer semestre: el de Programado siempre sale en 100%
+  // (si ya se capturó algo), y el de Realizado es lo que de verdad se cumplió
   let pctPSem = valAbsP > 0 ? ((valAbsP / valAbsP) * 100).toFixed(1) : 0;
-  // % de R (bloqueado) = Abs R * 100 / Abs P (porcentaje real de cumplimiento)
   let pctRSem = valAbsP > 0 ? ((valAbsR / valAbsP) * 100).toFixed(1) : 0;
   aplicarPorcentaje(inputPctPSem, pctPSem, 'cell-bg-subp');
   aplicarPorcentaje(inputPctRSem, pctRSem, 'cell-bg-r');
 
-  // Seguimiento Semestre 2
+  // Lo mismo, pero para el segundo semestre
   let pctPSem2 = subP2 > 0 ? ((subP2 / subP2) * 100).toFixed(1) : 0;
   let pctRSem2 = subP2 > 0 ? ((subR2 / subP2) * 100).toFixed(1) : 0;
   aplicarPorcentaje(inputPctPSem2, pctPSem2, 'cell-bg-subp');
   aplicarPorcentaje(inputPctRSem2, pctRSem2, 'cell-bg-r');
 
-  // Totales Anuales
+  // Totales de todo el año (sumando los 12 meses)
   let totalP = pInputs.reduce((sum, inp) => sum + (parseInt(inp.value, 10) || 0), 0);
   let totalR = rInputs.reduce((sum, inp) => sum + (parseInt(inp.value, 10) || 0), 0);
 
-  // % de P = Total P * 100 / Total P (siempre 100 si hay datos capturados)
+  // Mismo cálculo de porcentaje, pero para el año completo
   let pctPAnual = totalP > 0 ? ((totalP / totalP) * 100).toFixed(1) : 0;
-  // % de R (bloqueado) = Total R * 100 / Total P (porcentaje real de cumplimiento)
   let pctRAnual = totalP > 0 ? ((totalR / totalP) * 100).toFixed(1) : 0;
 
   const cellTotalP = document.getElementById(`total-p-${id}`);
@@ -477,8 +483,8 @@ function calcularTotales(id) {
   aplicarPorcentaje(inputPctRAnual, pctRAnual, 'cell-bg-r');
 }
 
-// Escribe el valor de % calculado (Abs R * 100 / Abs P) en un input bloqueado
-// y aplica el color de semáforo (bueno/regular/malo) a la celda que lo contiene
+// Pone el porcentaje ya calculado en su casilla y le pone color
+// (verde, amarillo o rojo) según qué tan bien va esa acción
 function aplicarPorcentaje(input, pct, claseBase) {
   if (!input) return;
   input.value = `${pct}%`;
@@ -494,7 +500,7 @@ function aplicarPorcentaje(input, pct, claseBase) {
   }
 }
 
-// ELIMINAR FILA
+// Borra una acción completa de la tabla (su fila de arriba, la de abajo y el espacio)
 function eliminarFila(id) {
   const filaP = document.getElementById(`fila-${id}-p`);
   const filaR = document.getElementById(`fila-${id}-r`);
@@ -511,3 +517,46 @@ function eliminarFila(id) {
   if (filaP) filaP.remove();
   if (filaR) filaR.remove();
 }
+
+// Abre y cierra el menú lateral de navegación (botón de tres líneas)
+document.addEventListener('DOMContentLoaded', () => {
+  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+  function cerrarSidebar() {
+    document.body.classList.remove('sidebar-open');
+    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function abrirSidebar() {
+    document.body.classList.add('sidebar-open');
+    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  if (sidebarToggleBtn) {
+    sidebarToggleBtn.addEventListener('click', () => {
+      if (document.body.classList.contains('sidebar-open')) {
+        cerrarSidebar();
+      } else {
+        abrirSidebar();
+      }
+    });
+  }
+
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', cerrarSidebar);
+  }
+
+  // Si ya estás en esa página, el enlace activo no debe recargarla
+  const sidebarActiveLink = document.querySelector('.sidebar-link.sidebar-link-active');
+  if (sidebarActiveLink) {
+    sidebarActiveLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      cerrarSidebar();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarSidebar();
+  });
+});

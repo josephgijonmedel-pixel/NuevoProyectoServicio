@@ -1,6 +1,6 @@
 :root {
-  --hdr-grey-dark: #7f7f7f;
-  --hdr-grey-light: #a5a5a5;
+  --hdr-blue-dark: #1b2a63;
+  --hdr-gray-light: #a5a5a5;
   --cal-blue: #9cc2e5;
   --cal-blue-light: #cce0f5;
   --cal-sem-bg: #d9e1f2;
@@ -38,11 +38,11 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--hdr-grey-light);
-  color: #000;
+  background-color: #1b2a63;
+  color: #fefefe;
   padding: 20px;
   text-align: center;
-  border-bottom: 3px solid var(--hdr-grey-dark);
+  border-bottom: 3px solid var(--hdr-blue-dark);
 }
 
 .header-logo {
@@ -72,8 +72,135 @@ form {
   padding: 20px;
 }
 
+/* Botón de tres líneas (hamburguesa): queda fijo justo entre el banner y la caja de Unidad Responsable */
+.sidebar-toggle-btn {
+  position: sticky;
+  top: 10px;
+  z-index: 1200;
+  width: 66px;
+  height: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background-color: var(--btn-primary);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  margin: 14px 0 14px 20px;
+}
+
+.sidebar-toggle-btn .bar {
+  width: 22px;
+  height: 2.5px;
+  background-color: #ffffff;
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Las tres líneas se acomodan como una "X" cuando el menú está abierto */
+body.sidebar-open .sidebar-toggle-btn .bar:nth-child(1) {
+  transform: translateY(7.5px) rotate(45deg);
+}
+
+body.sidebar-open .sidebar-toggle-btn .bar:nth-child(2) {
+  opacity: 0;
+}
+
+body.sidebar-open .sidebar-toggle-btn .bar:nth-child(3) {
+  transform: translateY(-7.5px) rotate(-45deg);
+}
+
+/* Fondo oscuro detrás del menú lateral mientras está abierto */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1050;
+}
+
+body.sidebar-open .sidebar-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Panel lateral de navegación: empieza justo debajo del banner y se despliega hacia la derecha */
+.sidebar-menu {
+  position: fixed;
+  top: 150px;
+  left: 0;
+  width: 250px;
+  height: calc(100vh - 150px);
+  background: linear-gradient(160deg, #122a4d 0%, #0f5c66 100%);
+  transform: translateX(-100%);
+  transition: transform 0.35s ease;
+  z-index: 1100;
+  overflow-y: auto;
+  padding-top: 24px;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+body.sidebar-open .sidebar-menu {
+  transform: translateX(0);
+}
+
+/* Con el menú abierto, el botón queda detrás del panel (ya no se ve encima) */
+body.sidebar-open .sidebar-toggle-btn {
+  z-index: 1090;
+}
+
+/* Nombre de la Unidad Responsable, en letras más grandes arriba de "Inicio" */
+.sidebar-unit-name {
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 0 20px 18px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  text-transform: uppercase;
+}
+
+.sidebar-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  color: #e6edf5;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-left: 4px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-link svg {
+  flex-shrink: 0;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-link.sidebar-link-active {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-left-color: var(--ur-yellow);
+  color: #ffffff;
+}
+
 .section-title {
-  background-color: var(--hdr-grey-dark);
+  background-color: var(--hdr-gray-light);
   color: #ffffff;
   padding: 10px 15px;
   font-size: 1.1rem;
@@ -162,7 +289,7 @@ table.prog-table th, table.prog-table td {
 }
 
 table.prog-table th.th-align {
-  background-color: var(--hdr-grey-dark);
+  background-color: #1b2a63;
   color: #ffffff;
 }
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2do Seguimiento Jul-Dic - PTA 2026</title>
+  <title>Segundo Seguimiento Jul-Dic</title>
   <link rel="stylesheet" href="/Segundo seguimiento/style.css">
 </head>
 <body>
@@ -14,23 +14,62 @@
     <img src="/img/cgzs.png" alt="CGZS" class="header-logo header-logo-left">
     <img src="/img/Elfuturo.png" alt="El Futuro es Hoy" class="header-logo header-logo-right">
     <h1>Coordinación General de la Zona Sur</h1>
-    <h2>Seguimiento de Segundo Semestre (Julio - Diciembre 2026)</h2>
+    <h2>Seguimiento de Segundo Semestre</h2>
   </div>
+
+  <!-- Botón de tres líneas que abre/cierra el menú lateral de navegación -->
+  <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="sidebarMenu">
+    <span class="bar"></span>
+    <span class="bar"></span>
+    <span class="bar"></span>
+  </button>
+
+  <!-- Fondo oscuro detrás del menú lateral mientras está abierto -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Menú lateral de navegación -->
+  <nav class="sidebar-menu" id="sidebarMenu">
+    <div class="sidebar-unit-name" id="sidebarUnidadNombre">COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES</div>
+    <ul class="sidebar-menu-list">
+      <li>
+        <a href="/Programacion/programacion.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+          <span>Inicio</span>
+        </a>
+      </li>
+      <li>
+        <a href="/Seguimiento/seguimiento.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8.5 13.5l2 2 4-4.5"/></svg>
+          <span>Primer seguimiento</span>
+        </a>
+      </li>
+      <li>
+        <a href="/Segundo%20seguimiento/segundoSeguimiento.html" class="sidebar-link sidebar-link-active">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M3 20h18"/></svg>
+          <span>Segundo seguimiento</span>
+        </a>
+      </li>
+      <li>
+        <a href="/UnidadResponsable/unidadResponsable.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M2.5 21h19"/><path d="M9 21v-5h6v5"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg>
+          <span>Mi unidad</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
 
   <form id="formSeguimiento2">
     <!-- Sección de Unidad Responsable -->
     <div class="ur-simple-container">
       <div class="form-group">
-        <label for="unidadResponsable">Unidad Responsable:</label>
+        <label for="unidadResponsable">Nombre de laUnidad Responsable:</label>
         <input type="text" id="unidadResponsable" class="input-readonly" readonly value="COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES">
       </div>
-      <a href="/UnidadResponsable/unidadResponsable.html" class="btn-ur-redirect">
-        👤 Ver Datos de Unidad
-      </a>
+     
     </div>
 
     <div class="section-title">
-      <span>SEGUIMIENTO DEL SEGUNDO SEMESTRE JUL-DIC (PTA 2026)</span>
+      <span>SEGUIMIENTO DEL SEGUNDO SEMESTRE</span>
     </div>
 
     <!-- Tabla de Seguimiento -->
