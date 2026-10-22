@@ -46,7 +46,7 @@ CREATE TABLE `acciones_estrategicas` (
   CONSTRAINT `lineas_accion_lineas_accion_id_acciones_estrategicas` FOREIGN KEY (`lineas_accion_id`) REFERENCES `lineas_accion` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `planes_trabajo_plan_id_acciones_estrategicas` FOREIGN KEY (`plan_id`) REFERENCES `planes_trabajo` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `unidades_medida_unidad_medida_id_acciones:estragtegicas` FOREIGN KEY (`unidad_medida_id`) REFERENCES `unidades_medida` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -88,7 +88,7 @@ CREATE TABLE `bitacora` (
   PRIMARY KEY (`id`),
   KEY `usuarios_usuario_id_bitacora` (`usuario_id`),
   CONSTRAINT `usuarios_usuario_id_bitacora` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -103,7 +103,7 @@ CREATE TABLE `cargos` (
   `nombre` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nombre` (`nombre`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -170,7 +170,7 @@ CREATE TABLE `lineas_accion` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_linea_objetivo_clave` (`objetivo_id`,`clave`),
   CONSTRAINT `objetivos_especificos_objetivo_id_lineas_accion` FOREIGN KEY (`objetivo_id`) REFERENCES `objetivos_especificos` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -190,7 +190,7 @@ CREATE TABLE `metas_mensuales` (
   UNIQUE KEY `uq_metas_accion_mes` (`accion_id`,`mes`),
   CONSTRAINT `fk_metas_accion` FOREIGN KEY (`accion_id`) REFERENCES `acciones_estrategicas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `chk_metas_mes` CHECK (`mes` between 1 and 12)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=205 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -208,7 +208,7 @@ CREATE TABLE `objetivos_especificos` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_objetivo_proyecto_clave` (`proyecto_id`,`clave`),
   CONSTRAINT `proyectos_institucionales_objetivos_especificos` FOREIGN KEY (`proyecto_id`) REFERENCES `proyectos_institucionales` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -229,6 +229,8 @@ CREATE TABLE `planes_trabajo` (
   `fecha_envio` datetime DEFAULT NULL,
   `revisado_por` int(10) unsigned DEFAULT NULL,
   `fecha_revision` datetime DEFAULT NULL,
+  `estado_final` enum('BORRADOR','ENVIADO','CON OBSERVACIONES','APROBADO') NOT NULL DEFAULT 'BORRADOR',
+  `fecha_envio_final` datetime DEFAULT NULL,
   `creacion_fecha` timestamp NOT NULL DEFAULT current_timestamp(),
   `modificacion_fecha` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
@@ -236,7 +238,7 @@ CREATE TABLE `planes_trabajo` (
   KEY `usuarios_revisado_por_planes_trabajo` (`revisado_por`),
   CONSTRAINT `unidades_responsables_unidad_responsable_planes_trabajo` FOREIGN KEY (`unidad_responsable_id`) REFERENCES `unidades_responsables` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `usuarios_revisado_por_planes_trabajo` FOREIGN KEY (`revisado_por`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -252,7 +254,7 @@ CREATE TABLE `proyectos_institucionales` (
   `nombre` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `clave` (`clave`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -278,7 +280,7 @@ CREATE TABLE `seguimientos` (
   CONSTRAINT `planes_trabajo_plan_id_seguimiento` FOREIGN KEY (`plan_id`) REFERENCES `planes_trabajo` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `usuarios_plan_id_seguimiento` FOREIGN KEY (`revisado_por`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `chk_seguimiento_periodo` CHECK (`periodo` in (1,2))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -317,7 +319,7 @@ CREATE TABLE `tipo_unidad` (
   `nombre` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nombre` (`nombre`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -332,7 +334,7 @@ CREATE TABLE `unidades_medida` (
   `nombre` varchar(80) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nombre` (`nombre`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -359,7 +361,7 @@ CREATE TABLE `unidades_responsables` (
   KEY `tipo_unidad_tipo_unidad_id_unidades_responsables` (`tipo_unidad_id`),
   CONSTRAINT `cargos_cargos_id_unidades_responsables` FOREIGN KEY (`cargo_id`) REFERENCES `cargos` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `tipo_unidad_tipo_unidad_id_unidades_responsables` FOREIGN KEY (`tipo_unidad_id`) REFERENCES `tipo_unidad` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -386,7 +388,7 @@ CREATE TABLE `usuarios` (
   UNIQUE KEY `uq_usuario_unidad` (`unidade_responsable_id`),
   CONSTRAINT `unidades_responsables_unidade_responsables_id_usuarios` FOREIGN KEY (`unidade_responsable_id`) REFERENCES `unidades_responsables` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `chk_usuario_ur_con_unidad` CHECK (`tipo_usuario` <> 'UR' or `unidade_responsable_id` is not null)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

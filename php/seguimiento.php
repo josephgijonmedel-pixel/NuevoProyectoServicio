@@ -5,13 +5,15 @@
 //
 // periodo 1 = enero a junio, periodo 2 = julio a diciembre.
 // Aquí solo se captura lo REALIZADO; lo programado viene de Programación y es de solo lectura.
-// El registro en `seguimientos` (con su estado) se crea la primera vez que se guarda.
+// El registro en `seguimientos` se crea la primera vez que se guarda.
+//
+// Los seguimientos no se envían a Planeación: Planeación los consulta en "Ver áreas".
+// Se pueden editar mientras el plan no esté marcado como enviado (estado_final = BORRADOR).
 
 require "sesion.php";
 $unidadId = requerirUnidad();
 require "conexion.php";
 
-const ESTADOS_EDITABLES = ['BORRADOR', 'CON OBSERVACIONES'];
 $anio = (int) date('Y');
 
 $periodo = (int) ($_GET['periodo'] ?? 0);
@@ -31,6 +33,9 @@ try {
         if (!$plan) {
             responderJson(["error" => "Primero guarda tu Programación."], 409);
         }
+        if (!seguimientoEditable($plan)) {
+            responderJson(["error" => motivoBloqueo($plan)], 409);
+        }
         $planId = (int) $plan['id'];
 
         $datos = json_decode(file_get_contents("php://input"), true);
@@ -41,10 +46,6 @@ try {
         $esNuevo = !$seguimiento;
         if ($esNuevo) {
             $seguimiento = crearSeguimiento($conexion, $planId, $periodo);
-        }
-        if (!in_array($seguimiento['estado'], ESTADOS_EDITABLES, true)) {
-            mysqli_rollback($conexion);
-            responderJson(["error" => "Este seguimiento ya fue enviado a Planeación y no se puede modificar."], 409);
         }
 
         guardarRealizado($conexion, $acciones, $primerMes);
@@ -79,8 +80,10 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
         "periodo" => $periodo,
         "hayPlan" => (bool) $plan,
         "seguimiento" => [
-            "estado" => $seguimiento['estado'] ?? 'BORRADOR',
-            "editable" => !$seguimiento || in_array($seguimiento['estado'], ESTADOS_EDITABLES, true),
+            "editable" => $plan ? seguimientoEditable($plan) : false,
+            "guardado" => (bool) $seguimiento,
+            "estado_programacion" => $plan['estado'] ?? null,
+            "estado_final" => $plan['estado_final'] ?? null,
         ],
         "acciones" => $plan ? obtenerAcciones($conexion, (int) $plan['id'], $primerMes) : [],
     ];
@@ -100,7 +103,7 @@ function obtenerPlan($conexion, $unidadId, $anio)
 {
     $consulta = mysqli_prepare(
         $conexion,
-        "SELECT id, estado FROM planes_trabajo WHERE unidad_responsable_id = ? AND anio = ?"
+        "SELECT id, estado, estado_final FROM planes_trabajo WHERE unidad_responsable_id = ? AND anio = ?"
     );
     mysqli_stmt_bind_param($consulta, "ii", $unidadId, $anio);
     mysqli_stmt_execute($consulta);
@@ -254,4 +257,17 @@ function guardarRealizado($conexion, $acciones, $primerMes)
         }
     }
     mysqli_stmt_close($guardarMes);
+}
+
+// ¿Se puede capturar lo realizado? Mientras el PTA final no se haya enviado
+// (no hace falta enviar antes la Programación)
+function seguimientoEditable($plan)
+{
+    return $plan['estado_final'] === 'BORRADOR';
+}
+
+// Explicación de por qué no se puede capturar
+function motivoBloqueo($plan)
+{
+    return "Tu PTA final ya se envió a Planeación; ya no se puede modificar.";
 }

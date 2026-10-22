@@ -547,3 +547,10 @@ input[type=number] {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.caja-aviso.aviso-exito {
+  background-color: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+

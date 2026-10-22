@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Áreas - Supervisión de Planes de Trabajo</title>
-  <link rel="stylesheet" href="../Areas/style.css">
+  <link rel="stylesheet" href="../Areas/style.css?v=20261022m">
 </head>
 <body>
 
@@ -72,7 +72,7 @@
 
   <form id="formAreas" onsubmit="return false;">
     <div class="titulo-seccion">
-      <span>Planes de Trabajo de las Áreas (<span id="anioPlanes">2026</span>)</span>
+      <span>Planes de Trabajo de las Áreas (<span id="anioPlanes"></span>)</span>
     </div>
 
     <!-- Avisos: errores al cargar o falta de permisos -->
@@ -81,20 +81,20 @@
     <!-- Resumen: cuántas áreas hay en cada estado -->
     <div class="resumen-cards">
       <div class="resumen-card">
-        <span class="resumen-numero" id="totalAreas">2</span>
+        <span class="resumen-numero" id="totalAreas">–</span>
         <span class="resumen-texto">Áreas registradas</span>
       </div>
+      <div class="resumen-card tarjeta-pendiente">
+        <span class="resumen-numero" id="totalSinEnviar">–</span>
+        <span class="resumen-texto">Programación sin enviar</span>
+      </div>
       <div class="resumen-card tarjeta-enviado">
-        <span class="resumen-numero" id="totalEnviados">1</span>
-        <span class="resumen-texto">Planes enviados por revisar</span>
+        <span class="resumen-numero" id="totalProgramacion">–</span>
+        <span class="resumen-texto">Programación enviada</span>
       </div>
-      <div class="resumen-card tarjeta-observaciones">
-        <span class="resumen-numero" id="totalObservaciones">0</span>
-        <span class="resumen-texto">Con observaciones</span>
-      </div>
-      <div class="resumen-card tarjeta-aprobado">
-        <span class="resumen-numero" id="totalAprobados">0</span>
-        <span class="resumen-texto">Aprobados</span>
+      <div class="resumen-card tarjeta-final">
+        <span class="resumen-numero" id="totalFinal">–</span>
+        <span class="resumen-texto">PTA final enviado</span>
       </div>
     </div>
 
@@ -113,14 +113,12 @@
         </select>
       </div>
       <div class="grupo-campo">
-        <label for="filtroEstado">Estado del plan:</label>
+        <label for="filtroEstado">Estado de la programación:</label>
         <select id="filtroEstado">
           <option value="">Todos</option>
           <option value="SIN PLAN">Sin plan</option>
           <option value="BORRADOR">Borrador</option>
           <option value="ENVIADO">Enviado</option>
-          <option value="CON OBSERVACIONES">Con observaciones</option>
-          <option value="APROBADO">Aprobado</option>
         </select>
       </div>
     </div>
@@ -133,32 +131,13 @@
             <th class="col-area">Área (Unidad Responsable)</th>
             <th>Tipo</th>
             <th>Responsable</th>
-            <th class="col-estado">Plan de Trabajo</th>
-            <th class="col-estado">Primer Seguimiento</th>
-            <th class="col-estado">Segundo Seguimiento</th>
+            <th class="col-estado">Programación</th>
+            <th class="col-estado">PTA final</th>
             <th class="col-ver">Ver</th>
           </tr>
         </thead>
         <tbody id="cuerpoAreas">
-          <!-- Filas de EJEMPLO para ver el diseño; el JavaScript las reemplazará con los datos reales -->
-          <tr>
-            <td class="celda-texto">COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES</td>
-            <td>ACADÉMICA</td>
-            <td class="celda-texto">Irma Berenice Vega Ferrusca</td>
-            <td><span class="estado estado-enviado">ENVIADO</span></td>
-            <td><span class="estado estado-borrador">BORRADOR</span></td>
-            <td><span class="estado estado-sin-plan">SIN CAPTURAR</span></td>
-            <td><a href="../Areas/detalleArea.html?id=1" class="boton-ver">Ver</a></td>
-          </tr>
-          <tr>
-            <td class="celda-texto">COORDINACIÓN DE EXTENSIÓN (EJEMPLO)</td>
-            <td>ADMINISTRATIVA</td>
-            <td class="celda-texto">Nombre del responsable</td>
-            <td><span class="estado estado-sin-plan">SIN PLAN</span></td>
-            <td><span class="estado estado-sin-plan">SIN CAPTURAR</span></td>
-            <td><span class="estado estado-sin-plan">SIN CAPTURAR</span></td>
-            <td><a href="../Areas/detalleArea.html?id=2" class="boton-ver">Ver</a></td>
-          </tr>
+          <!-- Las filas las agrega el JavaScript con los datos reales -->
         </tbody>
       </table>
     </div>
@@ -168,6 +147,6 @@
   </form>
 </div>
 
-<script src="../Areas/app.js"></script>
+<script src="../Areas/app.js?v=20261022m"></script>
 </body>
 </html>

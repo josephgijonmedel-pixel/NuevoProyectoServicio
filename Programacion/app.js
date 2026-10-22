@@ -8,6 +8,10 @@ let catalogos = { proyectos: [], lineas: [], unidades: [] };
 
 let contadorFilas = 0;
 
+// Columnas de texto libre que van después del Total Anual.
+// Cada nombre es igual a su columna en la tabla acciones_estrategicas.
+const CAMPOS_COMPLEMENTARIOS = ['beneficiados', 'responsables', 'participantes', 'observaciones_generales'];
+
 // Esto se ejecuta apenas se abre la página
 document.addEventListener('DOMContentLoaded', () => {
   const btnAgregar = document.getElementById('btnAgregarAccion');
@@ -27,12 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnGuardarProg.addEventListener('click', (e) => {
     e.preventDefault();
-    if (validarFilas()) abrirModalConfirmacion();
+    if (validarFilas()) abrirModalConfirmacion('¿Confirmar programación?');
   });
 
   formProg.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (validarFilas()) abrirModalConfirmacion();
+    if (validarFilas()) abrirModalConfirmacion('¿Confirmar programación?');
   });
 
   if (btnConfirmarNo) btnConfirmarNo.addEventListener('click', cerrarModalConfirmacion);
@@ -59,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Estas dos funciones solo muestran y ocultan la ventana de confirmación
-function abrirModalConfirmacion() {
+function abrirModalConfirmacion(mensaje) {
   const modal = document.getElementById('ventanaConfirmar');
   const titulo = document.getElementById('ventanaTitulo');
   const icono = document.getElementById('ventanaIcono');
@@ -67,7 +71,7 @@ function abrirModalConfirmacion() {
 
   if (titulo) titulo.innerText = 'Confirmación';
   if (icono) icono.innerText = '⚠️';
-  if (texto) texto.innerText = '¿Confirmar programación?';
+  if (texto) texto.innerText = mensaje;
 
   if (modal) modal.style.display = 'flex';
 }
@@ -150,7 +154,10 @@ function recolectarAcciones() {
       descripcion: trP.querySelector('textarea[name^="accionEstrategica_"]').value.trim(),
       con_recursos: trP.querySelector('select[name^="recursos_"]').value === '1',
       unidad_medida_id: trP.querySelector('select[name^="unidadMedida_"]').value,
-      p: Array.from(document.querySelectorAll(`.input-p-${id}`)).map(input => parseInt(input.value, 10) || 0)
+      p: Array.from(document.querySelectorAll(`.input-p-${id}`)).map(input => parseInt(input.value, 10) || 0),
+      // beneficiados, responsables, participantes, observaciones_generales
+      ...Object.fromEntries(CAMPOS_COMPLEMENTARIOS.map(campo =>
+        [campo, trP.querySelector(`textarea[name="${campo}_${id}"]`).value.trim()]))
     };
   });
 }
@@ -166,7 +173,7 @@ function mostrarNombreUnidad(nombre) {
   if (menuNombreUnidad) menuNombreUnidad.textContent = nombre;
 }
 
-// Habilita los botones, o bloquea la tabla si el plan ya se envió a Planeación
+// Habilita los botones, o bloquea la tabla si el PTA final ya se envió a Planeación
 function mostrarEstadoPlan(plan) {
   const btnAgregar = document.getElementById('btnAgregarAccion');
   const btnGuardarProg = document.getElementById('btnGuardarProgramacion');
@@ -177,12 +184,8 @@ function mostrarEstadoPlan(plan) {
     document.querySelectorAll('#cuerpoProgramacion .boton-quitar').forEach(boton => { boton.style.display = 'none'; });
     btnAgregar.style.display = 'none';
     btnGuardarProg.style.display = 'none';
-    mostrarMensaje(`El plan está en estado "${plan.estado}" y ya no se puede modificar.`, 'info');
+    mostrarMensaje('Tu PTA final se envió a Planeación. ¡Plan de Trabajo concluido!', 'exito');
     return;
-  }
-
-  if (plan && plan.estado === 'CON OBSERVACIONES' && plan.observaciones) {
-    mostrarMensaje('Planeación dejó observaciones: ' + plan.observaciones, 'info');
   }
 
   btnAgregar.disabled = false;
@@ -194,13 +197,20 @@ function mostrarMensaje(texto, tipo, errores) {
   const cajaAvisos = document.getElementById('cajaAvisos');
   if (!cajaAvisos) return;
 
-  let contenido = (tipo === 'error' ? '⚠️ ' : 'ℹ️ ') + texto;
+  const estilos = {
+    error: ['⚠️ ', 'caja-aviso'],
+    info: ['ℹ️ ', 'caja-aviso aviso-info'],
+    exito: ['✔ ', 'caja-aviso aviso-exito']
+  };
+  const [icono, clase] = estilos[tipo] || estilos.info;
+
+  let contenido = icono + texto;
   if (errores) {
     errores.forEach(e => { contenido += '\n• ' + e.mensaje; });
   }
 
   cajaAvisos.innerText = contenido;
-  cajaAvisos.className = tipo === 'error' ? 'caja-aviso' : 'caja-aviso aviso-info';
+  cajaAvisos.className = clase;
   cajaAvisos.style.display = 'block';
   cajaAvisos.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -253,7 +263,8 @@ function marcarErroresDelServidor(errores) {
   const selectores = {
     linea_id: 'select[name^="lineaAccion_"]',
     descripcion: 'textarea[name^="accionEstrategica_"]',
-    unidad_medida_id: 'select[name^="unidadMedida_"]'
+    unidad_medida_id: 'select[name^="unidadMedida_"]',
+    ...Object.fromEntries(CAMPOS_COMPLEMENTARIOS.map(campo => [campo, `textarea[name^="${campo}_"]`]))
   };
 
   errores.forEach(({ fila, campo }) => {
@@ -315,32 +326,26 @@ function crearOpciones(lista, obtenerTexto, idSeleccionado, textoVacio) {
   }).join('');
 }
 
-// Opciones de líneas de acción: siempre las 22, agrupadas por proyecto
-function opcionesLineas(lineaSeleccionada) {
-  const grupos = catalogos.proyectos.map(proyecto => {
-    const lineas = catalogos.lineas.filter(l => Number(l.proyecto_id) === Number(proyecto.id));
-    if (lineas.length === 0) return '';
-    const opciones = lineas.map(l => {
-      const seleccionado = Number(l.id) === Number(lineaSeleccionada) ? 'selected' : '';
-      return `<option value="${l.id}" ${seleccionado}>${escaparHtml(textoLinea(l))}</option>`;
-    }).join('');
-    return `<optgroup label="${escaparHtml(`${proyecto.clave}. ${proyecto.nombre}`)}">${opciones}</optgroup>`;
-  }).join('');
-
-  return '<option value="">Seleccione una línea de acción</option>' + grupos;
+// Opciones de líneas de acción: solo las del proyecto elegido
+function opcionesLineas(proyectoId, lineaSeleccionada) {
+  if (!proyectoId) {
+    return '<option value="">Seleccione primero un proyecto</option>';
+  }
+  const lineas = catalogos.lineas.filter(l => Number(l.proyecto_id) === Number(proyectoId));
+  return crearOpciones(lineas, textoLinea, lineaSeleccionada, 'Seleccione una línea de acción');
 }
 
-// Al elegir una línea de acción, el proyecto de la fila se ajusta al proyecto de esa línea
-function cambiarLinea(id) {
-  const lineaId = document.querySelector(`select[name="lineaAccion_${id}"]`).value;
-  const linea = catalogos.lineas.find(l => Number(l.id) === Number(lineaId));
-  if (linea) {
-    document.querySelector(`select[name="proyecto_${id}"]`).value = linea.proyecto_id;
-  }
+// Al cambiar el proyecto de una fila, su lista de líneas de acción se actualiza
+function cambiarProyecto(id) {
+  const proyectoId = document.querySelector(`select[name="proyecto_${id}"]`).value;
+  const selectLinea = document.querySelector(`select[name="lineaAccion_${id}"]`);
+  selectLinea.innerHTML = opcionesLineas(proyectoId, null);
+  selectLinea.classList.remove('campo-error');
 }
 
 // Crea una acción en la tabla: una fila de Programado y una de Realizado.
-// data viene del servidor: {id, proyecto_id, linea_id, descripcion, con_recursos, unidad_medida_id, p[12], r[12]}
+// data viene del servidor: {id, proyecto_id, linea_id, descripcion, con_recursos, unidad_medida_id,
+//                           beneficiados, responsables, participantes, observaciones_generales, p[12], r[12]}
 function agregarFilaAccion(data = null) {
   contadorFilas++;
   const id = contadorFilas;
@@ -365,13 +370,13 @@ function agregarFilaAccion(data = null) {
 
   trP.innerHTML = `
     <td rowspan="2">
-      <select class="campo-tabla" name="proyecto_${id}">
+      <select class="campo-tabla" name="proyecto_${id}" onchange="cambiarProyecto(${id})">
         ${crearOpciones(catalogos.proyectos, p => `${p.clave}. ${p.nombre}`, data ? data.proyecto_id : null, 'Seleccione un proyecto')}
       </select>
     </td>
     <td rowspan="2">
-      <select class="campo-tabla" name="lineaAccion_${id}" onchange="cambiarLinea(${id})">
-        ${opcionesLineas(data ? data.linea_id : null)}
+      <select class="campo-tabla" name="lineaAccion_${id}">
+        ${opcionesLineas(data ? data.proyecto_id : null, data ? data.linea_id : null)}
       </select>
     </td>
     <td rowspan="2">
@@ -428,6 +433,13 @@ function agregarFilaAccion(data = null) {
       <input type="text" class="campo-mes campo-bloqueado" id="pct-p-anual-${id}" name="pct_p_anual_${id}" value="0%" readonly>
     </td>
 
+    <!-- Datos complementarios de la acción (texto libre); ocupan las dos filas, como las primeras columnas -->
+    ${CAMPOS_COMPLEMENTARIOS.map(campo => `
+      <td rowspan="2" class="celda-complementaria">
+        <textarea class="campo-tabla campo-complementario" name="${campo}_${id}" maxlength="2000">${escaparHtml(data ? data[campo] : '')}</textarea>
+      </td>
+    `).join('')}
+
     <td rowspan="2">
       <button type="button" class="boton-quitar" onclick="eliminarFila(${id})">✕</button>
     </td>
@@ -482,7 +494,7 @@ function agregarFilaAccion(data = null) {
   if (!esPrimeraAccion) {
     const trEspaciador = document.createElement('tr');
     trEspaciador.className = 'fila-separador';
-    trEspaciador.innerHTML = `<td colspan="25"></td>`;
+    trEspaciador.innerHTML = `<td colspan="29"></td>`;
     tbody.appendChild(trEspaciador);
   }
 
@@ -562,7 +574,7 @@ function aplicarPorcentaje(input, pct, claseBase) {
   td.className = claseBase;
   if (pct >= 100) {
     td.classList.add('pct-bueno');
-  } else if (pct >= 50) {
+  } else if (pct >= 40) {
     td.classList.add('pct-regular');
   } else {
     td.classList.add('pct-bajo');
@@ -635,4 +647,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarMenu();
   });
+});
+
+// Muestra la opción "Ver áreas" del menú solo a la cuenta de Planeación
+document.addEventListener('DOMContentLoaded', async () => {
+  const opcion = document.getElementById('menuVerAreas');
+  if (!opcion) return;
+  try {
+    const respuesta = await fetch('../php/usuario.php');
+    if (respuesta.ok && (await respuesta.json()).esPlaneacion) opcion.hidden = false;
+  } catch (e) { /* si falla, la opción simplemente queda oculta */ }
 });

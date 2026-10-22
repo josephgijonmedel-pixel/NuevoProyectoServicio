@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (formSeg2) {
     formSeg2.addEventListener('submit', (e) => {
       e.preventDefault();
-      abrirModalConfirmacion();
+      abrirModalConfirmacion('¿Estás seguro que desea guardar?');
     });
   }
 
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // FUNCIONES DEL MODAL DE CONFIRMACIÓN
-function abrirModalConfirmacion() {
+function abrirModalConfirmacion(mensaje) {
   const modal = document.getElementById('ventanaConfirmar');
   const titulo = document.getElementById('ventanaTitulo');
   const icono = document.getElementById('ventanaIcono');
@@ -61,7 +61,7 @@ function abrirModalConfirmacion() {
 
   if (titulo) titulo.innerText = 'Confirmación';
   if (icono) icono.innerText = '⚠️';
-  if (texto) texto.innerText = '¿Estás seguro que desea guardar?';
+  if (texto) texto.innerText = mensaje;
 
   if (modal) modal.style.display = 'flex';
 }
@@ -176,7 +176,9 @@ function mostrarEstadoSeguimiento(seguimiento) {
       input.classList.add('campo-bloqueado');
     });
     btnGuardar.style.display = 'none';
-    mostrarMensaje(`El seguimiento está en estado "${seguimiento.estado}" y ya no se puede modificar.`, 'info');
+
+    // Solo se bloquea cuando el PTA final ya se envió
+    mostrarMensaje('Tu PTA final ya se envió a Planeación. Ya no se puede modificar.', 'exito');
     return;
   }
 
@@ -341,22 +343,23 @@ function calcularTotalesSeguimiento2(id) {
 
   if (cellAbsP) cellAbsP.innerText = subP;
   if (cellAbsR) cellAbsR.innerText = subR;
-  if (cellPctP) cellPctP.innerText = `${pctP}%`;
+  if (cellPctP) {
+    cellPctP.innerText = `${pctP}%`;
+    cellPctP.className = 'celda-subtotal ' + clasePorcentaje(pctP);
+  }
 
   if (cellPctR) {
     cellPctR.innerText = `${pctR}%`;
-    cellPctR.className = '';
-
-    if (pctR >= 80) {
-      cellPctR.classList.add('pct-bueno');
-    } else if (pctR >= 60) {
-      cellPctR.classList.add('pct-regular');
-    } else if (pctR > 40) {
-      cellPctR.classList.add('pct-medio');
-    } else {
-      cellPctR.classList.add('pct-bajo');
-    }
+    cellPctR.className = clasePorcentaje(pctR);
   }
+}
+
+// Color según el porcentaje: verde >= 80, amarillo >= 60, naranja > 40, rojo el resto
+function clasePorcentaje(pct) {
+  if (pct >= 80) return 'pct-bueno';
+  if (pct >= 60) return 'pct-regular';
+  if (pct > 30) return 'pct-medio';
+  return 'pct-bajo';
 }
 
 // Abre y cierra el menú lateral de navegación (botón de tres líneas)
@@ -400,4 +403,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarMenu();
   });
+});
+
+// Muestra la opción "Ver áreas" del menú solo a la cuenta de Planeación
+document.addEventListener('DOMContentLoaded', async () => {
+  const opcion = document.getElementById('menuVerAreas');
+  if (!opcion) return;
+  try {
+    const respuesta = await fetch('../php/usuario.php');
+    if (respuesta.ok && (await respuesta.json()).esPlaneacion) opcion.hidden = false;
+  } catch (e) { /* si falla, la opción simplemente queda oculta */ }
 });

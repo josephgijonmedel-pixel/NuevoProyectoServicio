@@ -587,9 +587,9 @@ input[type=number] {
   color: #555;
 }
 
+.resumen-card.tarjeta-pendiente { border-left-color: #fd7e14; }
 .resumen-card.tarjeta-enviado { border-left-color: #0d6efd; }
-.resumen-card.tarjeta-observaciones { border-left-color: #fd7e14; }
-.resumen-card.tarjeta-aprobado { border-left-color: #198754; }
+.resumen-card.tarjeta-final { border-left-color: #198754; }
 
 /* Barra de búsqueda y filtros */
 .barra-filtros {
@@ -615,6 +615,11 @@ input[type=number] {
 }
 
 /* Tabla de la lista de áreas */
+/* La lista de áreas tiene pocas columnas: que quepa en la pantalla (la tabla del PTA sí necesita 1400px) */
+table.tabla-plan.tabla-areas {
+  min-width: 760px;
+}
+
 table.tabla-areas th {
   background-color: var(--azul-oscuro);
   color: #ffffff;
@@ -739,19 +744,9 @@ table.tabla-areas tbody tr:hover {
 }
 
 /* Fila de estados del plan y de los seguimientos */
-.estados-plan {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 15px;
-  font-size: 0.9rem;
-}
-
-.estados-plan strong { margin-right: 6px; }
-
 .th-semestre2 { background-color: #c5e0b4 !important; color: #000000 !important; }
 .th-totales { background-color: #ffe699 !important; color: #000000 !important; }
-.celda-total { background-color: #fff2cc; font-weight: bold; }
+.celda-total { background-color: #dcecfb; font-weight: bold; }
 
 @media (max-width: 600px) {
   .barra-filtros { flex-direction: column; align-items: stretch; }
@@ -763,3 +758,4 @@ table.tabla-areas tbody tr:hover {
   border-left-color: var(--amarillo);
   color: #ffffff;
 }
+

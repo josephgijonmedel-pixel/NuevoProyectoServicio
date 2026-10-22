@@ -32,6 +32,21 @@ function requerirUnidad()
     return (int) $unidadId;
 }
 
+// ¿La cuenta de la sesión puede supervisar a las demás áreas?
+function esPlaneacion()
+{
+    return in_array($_SESSION['tipo_usuario'] ?? '', ['PLANEACION', 'ADMIN'], true);
+}
+
+// Solo deja pasar a Planeación (o Admin); a los demás les responde 403.
+function requerirPlaneacion()
+{
+    requerirSesion();
+    if (!esPlaneacion()) {
+        responderJson(["error" => "Solo la Coordinación de Planeación puede ver las áreas."], 403);
+    }
+}
+
 // Guarda un movimiento en la tabla `bitacora`.
 function registrarBitacora($conexion, $tabla, $registroId, $accion, $detalle = null)
 {

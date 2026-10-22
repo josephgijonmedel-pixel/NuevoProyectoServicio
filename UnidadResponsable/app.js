@@ -287,3 +287,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') cerrarMenu();
   });
 });
+
+// Muestra la opción "Ver áreas" del menú solo a la cuenta de Planeación
+document.addEventListener('DOMContentLoaded', async () => {
+  const opcion = document.getElementById('menuVerAreas');
+  if (!opcion) return;
+  try {
+    const respuesta = await fetch('../php/usuario.php');
+    if (respuesta.ok && (await respuesta.json()).esPlaneacion) opcion.hidden = false;
+  } catch (e) { /* si falla, la opción simplemente queda oculta */ }
+});

@@ -348,6 +348,20 @@ table.tabla-plan th.th-calendario {
 .col-var { width: 40px; }
 .col-accion { width: 50px; }
 
+/* Beneficiados, Responsable(s), Participantes y Observaciones Generales */
+.col-complementaria { width: 200px; min-width: 200px; }
+.col-observaciones { width: 260px; min-width: 260px; }
+
+.celda-complementaria {
+  background-color: #ffffff;
+  vertical-align: top;
+}
+
+/* Un poco más alto que los demás cuadros de texto, porque aquí se escriben listas de nombres */
+textarea.campo-complementario {
+  min-height: 110px;
+}
+
 /* Color de fondo de la fila de "Programado" */
 .fila-programado {
   background-color: #ffffff;
@@ -744,3 +758,10 @@ select.campo-tabla {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.caja-aviso.aviso-exito {
+  background-color: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+

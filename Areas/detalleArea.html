@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalle del Área - Plan de Trabajo Anual</title>
-  <link rel="stylesheet" href="../Areas/style.css">
+  <link rel="stylesheet" href="../Areas/style.css?v=20261022m">
 </head>
 <body>
 
@@ -73,7 +73,7 @@
 
   <form id="formDetalleArea" onsubmit="return false;">
     <div class="titulo-seccion">
-      <span id="tituloArea">COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES</span>
+      <span id="tituloArea">Cargando…</span>
     </div>
 
     <!-- Avisos: errores al cargar, área no encontrada o sin plan -->
@@ -84,7 +84,7 @@
       <div class="ficha-encabezado">
         <div class="ficha-dato">
           <span class="ficha-etiqueta">Unidad Responsable</span>
-          <span class="ficha-valor" id="fichaNombre">COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES</span>
+          <span class="ficha-valor" id="fichaNombre"></span>
         </div>
         <button type="button" class="boton-mas-datos" id="btnMasDatos" aria-expanded="false" aria-controls="fichaDetalles" title="Mostrar más datos">…</button>
       </div>
@@ -92,37 +92,31 @@
       <div class="ficha-detalles" id="fichaDetalles" hidden>
       <div class="ficha-dato">
         <span class="ficha-etiqueta">Tipo</span>
-        <span class="ficha-valor" id="fichaTipo">ACADÉMICA</span>
+        <span class="ficha-valor" id="fichaTipo"></span>
       </div>
       <div class="ficha-dato">
         <span class="ficha-etiqueta">Responsable</span>
-        <span class="ficha-valor" id="fichaResponsable">Irma Berenice Vega Ferrusca</span>
+        <span class="ficha-valor" id="fichaResponsable"></span>
       </div>
       <div class="ficha-dato">
         <span class="ficha-etiqueta">Cargo</span>
-        <span class="ficha-valor" id="fichaCargo">COORDINADORA</span>
+        <span class="ficha-valor" id="fichaCargo"></span>
       </div>
       <div class="ficha-dato">
         <span class="ficha-etiqueta">Celular</span>
-        <span class="ficha-valor" id="fichaTelefono">7449092310</span>
+        <span class="ficha-valor" id="fichaTelefono"></span>
       </div>
       <div class="ficha-dato">
         <span class="ficha-etiqueta">Correo institucional</span>
-        <span class="ficha-valor" id="fichaCorreoInst">oeducativa_zs@uagro.mx</span>
+        <span class="ficha-valor" id="fichaCorreoInst"></span>
       </div>
       <div class="ficha-dato">
         <span class="ficha-etiqueta">Correo personal</span>
-        <span class="ficha-valor" id="fichaCorreoPers">13968@uagro.mx</span>
+        <span class="ficha-valor" id="fichaCorreoPers"></span>
       </div>
       </div>
     </div>
 
-    <!-- Estados del plan y de cada seguimiento -->
-    <div class="estados-plan">
-      <div><strong>Plan de Trabajo <span id="anioPlan">2026</span>:</strong> <span class="estado estado-enviado" id="estadoPlan">ENVIADO</span></div>
-      <div><strong>Primer Seguimiento:</strong> <span class="estado estado-borrador" id="estadoSeg1">BORRADOR</span></div>
-      <div><strong>Segundo Seguimiento:</strong> <span class="estado estado-sin-plan" id="estadoSeg2">SIN CAPTURAR</span></div>
-    </div>
 
     <div class="titulo-seccion">
       <span>Alineación y Programación de Acciones Estratégicas</span>
@@ -167,39 +161,18 @@
           </tr>
         </thead>
         <tbody id="cuerpoDetalle">
-          <!-- Fila de EJEMPLO para ver el diseño; el JavaScript la reemplazará con los datos reales -->
-          <tr class="fila-programado">
-            <td rowspan="2" class="col-proyecto celda-texto">4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias</td>
-            <td rowspan="2" class="col-linea celda-texto">4.1.1. Catálogo de Servicios Actualizado.</td>
-            <td rowspan="2" class="col-accion-est celda-texto">Difundir la Oferta Educativa del Nivel Superior en las escuelas del NMS de la zona.</td>
-            <td rowspan="2" class="col-recursos celda-texto">CON RECURSOS ECONÓMICOS</td>
-            <td rowspan="2" class="col-unidad celda-texto">Visitas</td>
-            <td class="col-var"><span class="etiqueta-programado">Programado</span></td>
-            <td>2</td><td>3</td><td></td><td></td><td></td><td>1</td>
-            <td class="celda-subtotal">6</td><td class="celda-subtotal">100.0%</td>
-            <td>4</td><td></td><td></td><td></td><td></td><td>5</td>
-            <td class="celda-subtotal">9</td><td class="celda-subtotal">100.0%</td>
-            <td class="celda-total">15</td><td class="celda-total">100.0%</td>
-          </tr>
-          <tr class="fila-realizado">
-            <td class="col-var"><span class="etiqueta-realizado">Realizado</span></td>
-            <td>2</td><td>1</td><td></td><td></td><td></td><td>3</td>
-            <td class="celda-realizado">6</td><td class="pct-bueno">100.0%</td>
-            <td>2</td><td></td><td>3</td><td></td><td></td><td>1</td>
-            <td class="celda-realizado">6</td><td class="pct-regular">66.7%</td>
-            <td class="celda-realizado">12</td><td class="pct-bueno">80.0%</td>
-          </tr>
+          <!-- Las filas las agrega el JavaScript con los datos reales -->
         </tbody>
       </table>
     </div>
 
     <!-- Barra de Acciones -->
     <div class="barra-botones">
-      <a href="../Areas/areas.html" class="boton boton-secundario">← Volver a Ver áreas</a>
+      <a href="../Areas/areas.html" class="boton boton-secundario"> Volver a Ver áreas</a>
     </div>
   </form>
 </div>
 
-<script src="../Areas/app.js"></script>
+<script src="../Areas/app.js?v=20261022m"></script>
 </body>
 </html>
