@@ -1,56 +1,45 @@
-// Variable global para almacenar el estado de la Unidad Responsable
-let unidadResponsableData = {
-  nombreUnidad: "COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES",
-  tipo: "ACADÉMICA",
-  nombreResp: "Irma Berenice Vega Ferrusca",
-  cargo: "COORDINADOR",
-  tel: "7449092310",
-  correoInst: "oeducativa_zs@uagro.mx",
-  correoPers: "13968@uagro.mx"
-};
+// Archivo PHP que lee (GET) y guarda (POST) los datos de la unidad en la base de datos
+const API_UNIDAD = '../php/unidad.php';
+const PAGINA_LOGIN = '../InicioSesion/inicioSesion.html';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const btnAccion = document.getElementById('btnAccionUR');
-  const alertBox = document.getElementById('alertBox');
-  
-  const inputNombreUnidad = document.getElementById('urNombreUnidad');
-  const inputTipo = document.getElementById('urTipo');
-  const inputNombreResp = document.getElementById('urNombreResp');
-  const inputCargo = document.getElementById('urCargo');
-  const inputTel = document.getElementById('urTel');
-  const inputCorreoInst = document.getElementById('urCorreoInst');
-  const inputCorreoPers = document.getElementById('urCorreoPers');
+  const btnAccion = document.getElementById('btnEditarUnidad');
+  const cajaAvisos = document.getElementById('cajaAvisos');
+  const cajaExito = document.getElementById('cajaExito');
 
-  const campos = [
-    inputNombreUnidad,
-    inputTipo,
-    inputNombreResp,
-    inputCargo,
-    inputTel,
-    inputCorreoInst,
-    inputCorreoPers
-  ];
+  // Cada campo del formulario con el nombre que usa la base de datos
+  const campos = {
+    nombre: document.getElementById('urNombreUnidad'),
+    tipo_unidad_id: document.getElementById('urTipo'),
+    responsable_nombre: document.getElementById('urNombreResp'),
+    cargo_id: document.getElementById('urCargo'),
+    telefono: document.getElementById('urTel'),
+    correo_institucional: document.getElementById('urCorreoInst'),
+    correo_personal: document.getElementById('urCorreoPers')
+  };
+  const listaCampos = Object.values(campos);
 
   let modoEdicion = false;
 
-  const modalConfirmar = document.getElementById('modalConfirmarGuardar');
+  const modalConfirmar = document.getElementById('ventanaConfirmar');
   const btnConfirmarSi = document.getElementById('btnConfirmarSi');
   const btnConfirmarNo = document.getElementById('btnConfirmarNo');
-  const btnCerrarConfirmX = document.getElementById('btnCerrarConfirmX');
+  const btnCerrarVentana = document.getElementById('btnCerrarVentana');
 
- 
-  cargarDatosGuardados();
+  btnAccion.disabled = true; // se habilita cuando terminen de cargar los datos
+  cargarDatos();
 
   btnAccion.addEventListener('click', () => {
     if (!modoEdicion) {
       // HABILITAR EDICIÓN
       modoEdicion = true;
-      campos.forEach(campo => campo.removeAttribute('disabled'));
-      
+      listaCampos.forEach(campo => campo.removeAttribute('disabled'));
+      ocultarMensajes();
+
       btnAccion.innerText = ' Guardar Unidad';
-      btnAccion.className = 'btn btn-submit';
-      
-      campos[0].focus();
+      btnAccion.className = 'boton boton-guardar';
+
+      campos.nombre.focus();
     } else {
       // VALIDAR Y ABRIR MODAL DE CONFIRMACIÓN
       if (validarCampos()) {
@@ -59,11 +48,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Solo números en el celular
+  campos.telefono.addEventListener('input', () => {
+    campos.telefono.value = campos.telefono.value.replace(/\D/g, '').slice(0, 10);
+  });
+
   // Evento al presionar 'Sí' en el modal de confirmación
   if (btnConfirmarSi) {
     btnConfirmarSi.addEventListener('click', () => {
-      guardarDatosUnidad();
       cerrarModalConfirmacion();
+      guardarDatosUnidad();
     });
   }
 
@@ -72,8 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btnConfirmarNo.addEventListener('click', cerrarModalConfirmacion);
   }
 
-  if (btnCerrarConfirmX) {
-    btnCerrarConfirmX.addEventListener('click', cerrarModalConfirmacion);
+  if (btnCerrarVentana) {
+    btnCerrarVentana.addEventListener('click', cerrarModalConfirmacion);
   }
 
   if (modalConfirmar) {
@@ -90,93 +84,154 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function guardarDatosUnidad() {
-    modoEdicion = false;
-    
-    // Actualizar la Variable Global
-    unidadResponsableData = {
-      nombreUnidad: inputNombreUnidad.value.trim(),
-      tipo: inputTipo.value.trim(),
-      nombreResp: inputNombreResp.value.trim(),
-      cargo: inputCargo.value.trim(),
-      tel: inputTel.value.trim(),
-      correoInst: inputCorreoInst.value.trim(),
-      correoPers: inputCorreoPers.value.trim()
-    };
+  // Pide al servidor los datos de la unidad y las opciones de las listas
+  async function cargarDatos() {
+    try {
+      const respuesta = await fetch(API_UNIDAD);
+      const resultado = await leerRespuesta(respuesta);
 
-    // Guardar también en localStorage para persistencia al recargar
-    localStorage.setItem('unidadResponsableData', JSON.stringify(unidadResponsableData));
-
-    const sidebarUnidadNombre = document.getElementById('sidebarUnidadNombre');
-    if (sidebarUnidadNombre && unidadResponsableData.nombreUnidad) {
-      sidebarUnidadNombre.textContent = unidadResponsableData.nombreUnidad;
+      llenarLista(campos.tipo_unidad_id, resultado.tipos);
+      llenarLista(campos.cargo_id, resultado.cargos);
+      mostrarDatos(resultado.unidad);
+      btnAccion.disabled = false;
+    } catch (error) {
+      mostrarError(error.message);
     }
-
-    // Bloquear campos
-    campos.forEach(campo => {
-      campo.setAttribute('disabled', 'disabled');
-      campo.classList.remove('input-error');
-    });
-
-    alertBox.style.display = 'none';
-
-    // Restaurar estado del botón
-    btnAccion.innerText = ' Editar mi Unidad';
-    btnAccion.className = 'btn btn-edit';
-
-    console.log('Variable unidadResponsableData actualizada:', unidadResponsableData);
   }
 
-  function cargarDatosGuardados() {
-    const datosLocales = localStorage.getItem('unidadResponsableData');
-    if (datosLocales) {
-      unidadResponsableData = JSON.parse(datosLocales);
+  // Envía los datos editados al servidor
+  async function guardarDatosUnidad() {
+    const datos = {};
+    for (const [nombre, campo] of Object.entries(campos)) {
+      datos[nombre] = campo.value.trim();
     }
 
-    // Poblar los campos con los valores de la variable
-    inputNombreUnidad.value = unidadResponsableData.nombreUnidad;
-    inputTipo.value = unidadResponsableData.tipo;
-    inputNombreResp.value = unidadResponsableData.nombreResp;
-    inputCargo.value = unidadResponsableData.cargo;
-    inputTel.value = unidadResponsableData.tel;
-    inputCorreoInst.value = unidadResponsableData.correoInst;
-    inputCorreoPers.value = unidadResponsableData.correoPers;
+    btnAccion.disabled = true;
+    try {
+      const respuesta = await fetch(API_UNIDAD, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+      });
+      const resultado = await leerRespuesta(respuesta);
 
-    const sidebarUnidadNombre = document.getElementById('sidebarUnidadNombre');
-    if (sidebarUnidadNombre && unidadResponsableData.nombreUnidad) {
-      sidebarUnidadNombre.textContent = unidadResponsableData.nombreUnidad;
+      mostrarDatos(resultado.unidad);
+      bloquearFormulario();
+      cajaExito.innerText = '✔ ' + resultado.mensaje;
+      cajaExito.style.display = 'block';
+    } catch (error) {
+      mostrarError(error.message, error.campos);
+    } finally {
+      btnAccion.disabled = false;
     }
+  }
+
+  // Convierte la respuesta del servidor en datos, o lanza un error con su mensaje
+  async function leerRespuesta(respuesta) {
+    if (respuesta.status === 401) {
+      window.location.href = PAGINA_LOGIN;
+      throw new Error('Tu sesión expiró. Inicia sesión de nuevo.');
+    }
+
+    let resultado;
+    try {
+      resultado = await respuesta.json();
+    } catch {
+      throw new Error('El servidor no respondió correctamente. Intenta de nuevo.');
+    }
+
+    if (!respuesta.ok) {
+      const error = new Error(resultado.error || 'Ocurrió un error.');
+      error.campos = resultado.campos;
+      throw error;
+    }
+    return resultado;
+  }
+
+  function llenarLista(select, opciones) {
+    opciones.forEach(({ id, nombre }) => {
+      const opcion = document.createElement('option');
+      opcion.value = id;
+      opcion.textContent = nombre;
+      select.appendChild(opcion);
+    });
+  }
+
+  function mostrarDatos(unidad) {
+    for (const [nombre, campo] of Object.entries(campos)) {
+      campo.value = unidad[nombre] ?? '';
+    }
+
+    const menuNombreUnidad = document.getElementById('menuNombreUnidad');
+    if (menuNombreUnidad) menuNombreUnidad.textContent = unidad.nombre;
+  }
+
+  function bloquearFormulario() {
+    modoEdicion = false;
+    listaCampos.forEach(campo => {
+      campo.setAttribute('disabled', 'disabled');
+      campo.classList.remove('campo-error');
+    });
+    ocultarMensajes();
+
+    btnAccion.innerText = ' Editar mi Unidad';
+    btnAccion.className = 'boton boton-editar';
+  }
+
+  function mostrarError(mensaje, erroresPorCampo) {
+    cajaExito.style.display = 'none';
+    let texto = '⚠️ ' + mensaje;
+
+    if (erroresPorCampo) {
+      for (const [nombre, detalle] of Object.entries(erroresPorCampo)) {
+        if (campos[nombre]) campos[nombre].classList.add('campo-error');
+        texto += '\n• ' + detalle;
+      }
+    }
+
+    cajaAvisos.innerText = texto;
+    cajaAvisos.style.display = 'block';
+  }
+
+  function ocultarMensajes() {
+    cajaAvisos.style.display = 'none';
+    cajaExito.style.display = 'none';
   }
 
   function validarCampos() {
     let camposVacios = 0;
 
-    campos.forEach(campo => {
+    listaCampos.forEach(campo => {
       if (!campo.value.trim()) {
-        campo.classList.add('input-error');
+        campo.classList.add('campo-error');
         camposVacios++;
       } else {
-        campo.classList.remove('input-error');
+        campo.classList.remove('campo-error');
       }
     });
 
     if (camposVacios > 0) {
-      alertBox.innerText = `⚠️ Por favor, completa todos los campos requeridos. (${camposVacios} campo(s) vacío(s))`;
-      alertBox.style.display = 'block';
+      mostrarError(`Por favor, completa todos los campos requeridos. (${camposVacios} campo(s) vacío(s))`);
       return false;
     }
 
-    alertBox.style.display = 'none';
+    if (campos.telefono.value.length !== 10) {
+      campos.telefono.classList.add('campo-error');
+      mostrarError('El celular debe tener 10 dígitos.');
+      return false;
+    }
+
+    ocultarMensajes();
     return true;
   }
 });
 
 // FUNCIONES DEL MODAL DE CONFIRMACIÓN
 function abrirModalConfirmacion() {
-  const modal = document.getElementById('modalConfirmarGuardar');
-  const titulo = document.getElementById('modalConfirmTitulo');
-  const icono = document.getElementById('modalConfirmIcon');
-  const texto = document.getElementById('modalConfirmTexto');
+  const modal = document.getElementById('ventanaConfirmar');
+  const titulo = document.getElementById('ventanaTitulo');
+  const icono = document.getElementById('ventanaIcono');
+  const texto = document.getElementById('ventanaTexto');
 
   if (titulo) titulo.innerText = 'Confirmación';
   if (icono) icono.innerText = '⚠️';
@@ -186,49 +241,49 @@ function abrirModalConfirmacion() {
 }
 
 function cerrarModalConfirmacion() {
-  const modal = document.getElementById('modalConfirmarGuardar');
+  const modal = document.getElementById('ventanaConfirmar');
   if (modal) modal.style.display = 'none';
 }
 
 // Abre y cierra el menú lateral de navegación (botón de tres líneas)
 document.addEventListener('DOMContentLoaded', () => {
-  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const botonMenu = document.getElementById('botonMenu');
+  const menuFondo = document.getElementById('menuFondo');
 
-  function cerrarSidebar() {
-    document.body.classList.remove('sidebar-open');
-    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'false');
+  function cerrarMenu() {
+    document.body.classList.remove('menu-abierto');
+    if (botonMenu) botonMenu.setAttribute('aria-expanded', 'false');
   }
 
-  function abrirSidebar() {
-    document.body.classList.add('sidebar-open');
-    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'true');
+  function abrirMenu() {
+    document.body.classList.add('menu-abierto');
+    if (botonMenu) botonMenu.setAttribute('aria-expanded', 'true');
   }
 
-  if (sidebarToggleBtn) {
-    sidebarToggleBtn.addEventListener('click', () => {
-      if (document.body.classList.contains('sidebar-open')) {
-        cerrarSidebar();
+  if (botonMenu) {
+    botonMenu.addEventListener('click', () => {
+      if (document.body.classList.contains('menu-abierto')) {
+        cerrarMenu();
       } else {
-        abrirSidebar();
+        abrirMenu();
       }
     });
   }
 
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', cerrarSidebar);
+  if (menuFondo) {
+    menuFondo.addEventListener('click', cerrarMenu);
   }
 
   // Si ya estás en esa página, el enlace activo no debe recargarla
-  const sidebarActiveLink = document.querySelector('.sidebar-link.sidebar-link-active');
-  if (sidebarActiveLink) {
-    sidebarActiveLink.addEventListener('click', (e) => {
+  const enlaceActivo = document.querySelector('.menu-enlace.menu-enlace-activo');
+  if (enlaceActivo) {
+    enlaceActivo.addEventListener('click', (e) => {
       e.preventDefault();
-      cerrarSidebar();
+      cerrarMenu();
     });
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') cerrarSidebar();
+    if (e.key === 'Escape') cerrarMenu();
   });
 });

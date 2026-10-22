@@ -1,0 +1,315 @@
+<?php
+// Plan de trabajo del año actual de la Unidad Responsable que inició sesión.
+//   GET  → devuelve el plan (si existe), sus acciones con los 12 meses y los catálogos
+//   POST → recibe JSON {acciones: [...]} y guarda la programación completa
+//
+// Reglas:
+//   * Un plan por unidad por año (se crea solo la primera vez que se guarda).
+//   * Aquí solo se captura lo PROGRAMADO; lo REALIZADO se captura en los seguimientos
+//     y aquí solo se muestra (guardar la programación no lo borra).
+//   * Solo se puede editar mientras el plan está en BORRADOR o CON OBSERVACIONES.
+
+require "sesion.php";
+$unidadId = requerirUnidad();
+require "conexion.php";
+
+const ESTADOS_EDITABLES = ['BORRADOR', 'CON OBSERVACIONES'];
+$anio = (int) date('Y');
+
+try {
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        responderJson(armarRespuesta($conexion, $unidadId, $anio));
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $datos = json_decode(file_get_contents("php://input"), true);
+        $acciones = validarAcciones($conexion, $datos['acciones'] ?? null);
+
+        mysqli_begin_transaction($conexion);
+        $plan = obtenerPlan($conexion, $unidadId, $anio);
+        $esNuevo = !$plan;
+        if ($esNuevo) {
+            $plan = crearPlan($conexion, $unidadId, $anio);
+        }
+        if (!in_array($plan['estado'], ESTADOS_EDITABLES, true)) {
+            mysqli_rollback($conexion);
+            responderJson(["error" => "El plan ya fue enviado a Planeación y no se puede modificar."], 409);
+        }
+
+        guardarAcciones($conexion, (int) $plan['id'], $acciones);
+        registrarBitacora($conexion, "planes_trabajo", (int) $plan['id'], $esNuevo ? "CREAR" : "EDITAR");
+        mysqli_commit($conexion);
+
+        $respuesta = armarRespuesta($conexion, $unidadId, $anio);
+        $respuesta["mensaje"] = "Programación guardada correctamente.";
+        responderJson($respuesta);
+    }
+
+    responderJson(["error" => "Método no permitido."], 405);
+} catch (mysqli_sql_exception $e) {
+    error_log("programacion.php: " . $e->getMessage());
+    responderJson(["error" => "Ocurrió un error al consultar la base de datos."], 500);
+}
+
+// ---------------------------------------------------------------------
+// Lectura
+// ---------------------------------------------------------------------
+
+function armarRespuesta($conexion, $unidadId, $anio)
+{
+    $plan = obtenerPlan($conexion, $unidadId, $anio);
+
+    return [
+        "unidad" => ["nombre" => nombreUnidad($conexion, $unidadId)],
+        "anio" => $anio,
+        "plan" => $plan ? [
+            "id" => (int) $plan['id'],
+            "estado" => $plan['estado'],
+            "editable" => in_array($plan['estado'], ESTADOS_EDITABLES, true),
+            "observaciones" => $plan['observaciones_planeacion'],
+        ] : null,
+        "acciones" => $plan ? obtenerAcciones($conexion, (int) $plan['id']) : [],
+        "catalogos" => obtenerCatalogos($conexion),
+    ];
+}
+
+function nombreUnidad($conexion, $unidadId)
+{
+    $consulta = mysqli_prepare($conexion, "SELECT nombre FROM unidades_responsables WHERE id = ?");
+    mysqli_stmt_bind_param($consulta, "i", $unidadId);
+    mysqli_stmt_execute($consulta);
+    $fila = mysqli_fetch_assoc(mysqli_stmt_get_result($consulta));
+    mysqli_stmt_close($consulta);
+    return $fila['nombre'] ?? '';
+}
+
+function obtenerPlan($conexion, $unidadId, $anio)
+{
+    $consulta = mysqli_prepare(
+        $conexion,
+        "SELECT id, estado, observaciones_planeacion FROM planes_trabajo
+         WHERE unidad_responsable_id = ? AND anio = ?"
+    );
+    mysqli_stmt_bind_param($consulta, "ii", $unidadId, $anio);
+    mysqli_stmt_execute($consulta);
+    $plan = mysqli_fetch_assoc(mysqli_stmt_get_result($consulta));
+    mysqli_stmt_close($consulta);
+    return $plan;
+}
+
+// Acciones del plan, cada una con sus 12 meses de programado (p) y realizado (r)
+function obtenerAcciones($conexion, $planId)
+{
+    $consulta = mysqli_prepare(
+        $conexion,
+        "SELECT a.id, a.lineas_accion_id, o.proyecto_id, a.descripcion, a.con_recursos, a.unidad_medida_id
+         FROM acciones_estrategicas a
+         JOIN lineas_accion l ON l.id = a.lineas_accion_id
+         JOIN objetivos_especificos o ON o.id = l.objetivo_id
+         WHERE a.plan_id = ?
+         ORDER BY a.orden, a.id"
+    );
+    mysqli_stmt_bind_param($consulta, "i", $planId);
+    mysqli_stmt_execute($consulta);
+    $resultado = mysqli_stmt_get_result($consulta);
+
+    $acciones = [];
+    while ($fila = mysqli_fetch_assoc($resultado)) {
+        $acciones[(int) $fila['id']] = [
+            "id" => (int) $fila['id'],
+            "linea_id" => (int) $fila['lineas_accion_id'],
+            "proyecto_id" => (int) $fila['proyecto_id'],
+            "descripcion" => $fila['descripcion'],
+            "con_recursos" => (int) $fila['con_recursos'],
+            "unidad_medida_id" => (int) $fila['unidad_medida_id'],
+            "p" => array_fill(0, 12, 0),
+            "r" => array_fill(0, 12, 0),
+        ];
+    }
+    mysqli_stmt_close($consulta);
+
+    if ($acciones) {
+        $consulta = mysqli_prepare(
+            $conexion,
+            "SELECT m.accion_id, m.mes, m.programado, m.realizado
+             FROM metas_mensuales m
+             JOIN acciones_estrategicas a ON a.id = m.accion_id
+             WHERE a.plan_id = ?"
+        );
+        mysqli_stmt_bind_param($consulta, "i", $planId);
+        mysqli_stmt_execute($consulta);
+        $resultado = mysqli_stmt_get_result($consulta);
+        while ($meta = mysqli_fetch_assoc($resultado)) {
+            $indice = (int) $meta['mes'] - 1;
+            $acciones[(int) $meta['accion_id']]['p'][$indice] = (int) $meta['programado'];
+            $acciones[(int) $meta['accion_id']]['r'][$indice] = (int) $meta['realizado'];
+        }
+        mysqli_stmt_close($consulta);
+    }
+
+    return array_values($acciones);
+}
+
+function obtenerCatalogos($conexion)
+{
+    $todos = fn($sql) => mysqli_fetch_all(mysqli_query($conexion, $sql), MYSQLI_ASSOC);
+
+    return [
+        "proyectos" => $todos("SELECT id, clave, nombre FROM proyectos_institucionales ORDER BY CAST(clave AS UNSIGNED), id"),
+        "lineas" => $todos(
+            "SELECT l.id, o.proyecto_id, l.clave, l.descripcion
+             FROM lineas_accion l JOIN objetivos_especificos o ON o.id = l.objetivo_id
+             ORDER BY o.proyecto_id, l.clave"
+        ),
+        "unidades" => $todos("SELECT id, nombre FROM unidades_medida ORDER BY nombre"),
+    ];
+}
+
+// ---------------------------------------------------------------------
+// Validación
+// ---------------------------------------------------------------------
+
+// Revisa las acciones recibidas; si algo está mal responde 422 con los errores por fila.
+function validarAcciones($conexion, $acciones)
+{
+    if (!is_array($acciones) || count($acciones) === 0) {
+        responderJson(["error" => "Agrega al menos una acción estratégica."], 422);
+    }
+    if (count($acciones) > 200) {
+        responderJson(["error" => "Demasiadas acciones en un solo plan (máximo 200)."], 422);
+    }
+
+    $idsDe = fn($sql) => array_map('intval', array_column(mysqli_fetch_all(mysqli_query($conexion, $sql)), 0));
+    $lineasValidas = array_flip($idsDe("SELECT id FROM lineas_accion"));
+    $unidadesValidas = array_flip($idsDe("SELECT id FROM unidades_medida"));
+
+    $limpias = [];
+    $errores = [];
+
+    foreach (array_values($acciones) as $i => $a) {
+        $fila = $i + 1;
+        $a = is_array($a) ? $a : [];
+
+        $accion = [
+            "id" => isset($a['id']) && $a['id'] !== '' && $a['id'] !== null ? (int) $a['id'] : null,
+            "linea_id" => (int) ($a['linea_id'] ?? 0),
+            "descripcion" => trim((string) ($a['descripcion'] ?? '')),
+            "con_recursos" => !empty($a['con_recursos']) ? 1 : 0,
+            "unidad_medida_id" => (int) ($a['unidad_medida_id'] ?? 0),
+            "p" => [],
+        ];
+
+        if (!isset($lineasValidas[$accion['linea_id']])) {
+            $errores[] = ["fila" => $fila, "campo" => "linea_id", "mensaje" => "Acción $fila: selecciona una línea de acción."];
+        }
+        if ($accion['descripcion'] === '') {
+            $errores[] = ["fila" => $fila, "campo" => "descripcion", "mensaje" => "Acción $fila: escribe la acción estratégica."];
+        } elseif (mb_strlen($accion['descripcion']) > 2000) {
+            $errores[] = ["fila" => $fila, "campo" => "descripcion", "mensaje" => "Acción $fila: la descripción es muy larga (máximo 2000 caracteres)."];
+        }
+        if (!isset($unidadesValidas[$accion['unidad_medida_id']])) {
+            $errores[] = ["fila" => $fila, "campo" => "unidad_medida_id", "mensaje" => "Acción $fila: selecciona una unidad de medida."];
+        }
+
+        $p = $a['p'] ?? [];
+        $mesesValidos = is_array($p) && count($p) === 12;
+        for ($mes = 0; $mesesValidos && $mes < 12; $mes++) {
+            $valor = $p[$mes] === '' || $p[$mes] === null ? 0 : $p[$mes];
+            if (!is_numeric($valor) || (int) $valor != $valor || $valor < 0 || $valor > 1000000) {
+                $mesesValidos = false;
+            } else {
+                $accion['p'][] = (int) $valor;
+            }
+        }
+        if (!$mesesValidos) {
+            $errores[] = ["fila" => $fila, "campo" => "p", "mensaje" => "Acción $fila: los meses deben ser números enteros de 0 en adelante."];
+        }
+
+        $limpias[] = $accion;
+    }
+
+    if ($errores) {
+        responderJson(["error" => "Revisa las acciones marcadas.", "errores" => $errores], 422);
+    }
+    return $limpias;
+}
+
+// ---------------------------------------------------------------------
+// Escritura (se llama dentro de una transacción)
+// ---------------------------------------------------------------------
+
+function crearPlan($conexion, $unidadId, $anio)
+{
+    // Se copia el responsable actual de la unidad como responsable del plan
+    $consulta = mysqli_prepare(
+        $conexion,
+        "INSERT INTO planes_trabajo (unidad_responsable_id, anio, responsable_nombre, responsable_cargo, estado)
+         SELECT ur.id, ?, ur.responsable_nombre, c.nombre, 'BORRADOR'
+         FROM unidades_responsables ur LEFT JOIN cargos c ON c.id = ur.cargo_id
+         WHERE ur.id = ?"
+    );
+    mysqli_stmt_bind_param($consulta, "ii", $anio, $unidadId);
+    mysqli_stmt_execute($consulta);
+    mysqli_stmt_close($consulta);
+
+    return obtenerPlan($conexion, $unidadId, $anio);
+}
+
+function guardarAcciones($conexion, $planId, $acciones)
+{
+    // Ids de las acciones que ya tiene el plan
+    $consulta = mysqli_prepare($conexion, "SELECT id FROM acciones_estrategicas WHERE plan_id = ?");
+    mysqli_stmt_bind_param($consulta, "i", $planId);
+    mysqli_stmt_execute($consulta);
+    $existentes = array_flip(array_map('intval', array_column(mysqli_fetch_all(mysqli_stmt_get_result($consulta)), 0)));
+    mysqli_stmt_close($consulta);
+
+    $actualizar = mysqli_prepare(
+        $conexion,
+        "UPDATE acciones_estrategicas
+         SET lineas_accion_id = ?, descripcion = ?, con_recursos = ?, unidad_medida_id = ?, orden = ?
+         WHERE id = ? AND plan_id = ?"
+    );
+    $insertar = mysqli_prepare(
+        $conexion,
+        "INSERT INTO acciones_estrategicas (plan_id, lineas_accion_id, descripcion, con_recursos, unidad_medida_id, orden)
+         VALUES (?, ?, ?, ?, ?, ?)"
+    );
+    // Solo cambia lo programado; lo realizado (de los seguimientos) se conserva
+    $guardarMes = mysqli_prepare(
+        $conexion,
+        "INSERT INTO metas_mensuales (accion_id, mes, programado) VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE programado = VALUES(programado)"
+    );
+
+    $conservadas = [];
+    foreach ($acciones as $orden => $a) {
+        if ($a['id'] !== null && isset($existentes[$a['id']])) {
+            mysqli_stmt_bind_param($actualizar, "isiiiii", $a['linea_id'], $a['descripcion'], $a['con_recursos'], $a['unidad_medida_id'], $orden, $a['id'], $planId);
+            mysqli_stmt_execute($actualizar);
+            $accionId = $a['id'];
+        } else {
+            // Id desconocido o vacío: es una acción nueva
+            mysqli_stmt_bind_param($insertar, "iisiii", $planId, $a['linea_id'], $a['descripcion'], $a['con_recursos'], $a['unidad_medida_id'], $orden);
+            mysqli_stmt_execute($insertar);
+            $accionId = mysqli_insert_id($conexion);
+        }
+        $conservadas[] = (int) $accionId;
+
+        foreach ($a['p'] as $indice => $programado) {
+            $mes = $indice + 1;
+            mysqli_stmt_bind_param($guardarMes, "iii", $accionId, $mes, $programado);
+            mysqli_stmt_execute($guardarMes);
+        }
+    }
+    mysqli_stmt_close($actualizar);
+    mysqli_stmt_close($insertar);
+    mysqli_stmt_close($guardarMes);
+
+    // Las acciones que se quitaron de la tabla se borran (sus metas y seguimientos se borran en cascada)
+    $quitadas = array_diff(array_keys($existentes), $conservadas);
+    if ($quitadas) {
+        $lista = implode(",", array_map('intval', $quitadas));
+        mysqli_query($conexion, "DELETE FROM acciones_estrategicas WHERE plan_id = " . (int) $planId . " AND id IN ($lista)");
+    }
+}

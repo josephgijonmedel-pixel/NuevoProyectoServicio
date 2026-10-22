@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Segundo Seguimiento Jul-Dic</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="contenedor">
+  <!-- Banner / Encabezado -->
+  <div class="encabezado">
+    <img src="../img/cgzs.png" alt="CGZS" class="logo logo-izquierdo">
+    <img src="../img/Elfuturo.png" alt="El Futuro es Hoy" class="logo logo-derecho">
+    <h1>Coordinación General de la Zona Sur</h1>
+    <h2>Seguimiento de Segundo Semestre</h2>
+  </div>
+
+  <!-- Botón de tres líneas que abre/cierra el menú lateral de navegación -->
+  <button type="button" class="boton-menu" id="botonMenu" aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="menuLateral">
+    <span class="raya"></span>
+    <span class="raya"></span>
+    <span class="raya"></span>
+  </button>
+
+  <!-- Fondo oscuro detrás del menú lateral mientras está abierto -->
+  <div class="menu-fondo" id="menuFondo"></div>
+
+  <!-- Menú lateral de navegación -->
+  <nav class="menu-lateral" id="menuLateral">
+    <div class="menu-nombre-unidad" id="menuNombreUnidad"></div>
+    <ul class="menu-lista">
+      <li>
+        <a href="../Programacion/programacion.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+          <span>Inicio</span>
+        </a>
+      </li>
+      <li>
+        <a href="../Seguimiento/seguimiento.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8.5 13.5l2 2 4-4.5"/></svg>
+          <span>Primer seguimiento</span>
+        </a>
+      </li>
+      <li>
+        <a href="segundoSeguimiento.html" class="menu-enlace menu-enlace-activo">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M3 20h18"/></svg>
+          <span>Segundo seguimiento</span>
+        </a>
+      </li>
+      <!-- Solo para la cuenta de Planeación: se muestra desde JavaScript -->
+      <li id="menuVerAreas" hidden>
+        <a href="../Areas/areas.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Ver áreas</span>
+        </a>
+      </li>
+      <li>
+        <a href="../UnidadResponsable/unidadResponsable.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M2.5 21h19"/><path d="M9 21v-5h6v5"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg>
+          <span>Mi unidad</span>
+        </a>
+      </li>
+      <li>
+        <a href="../php/logout.php" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          <span>Cerrar sesión</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <form id="formSeguimiento2">
+    <!-- Sección de Unidad Responsable -->
+    <div class="caja-unidad">
+      <div class="grupo-campo">
+        <label for="unidadResponsable">Nombre de la Unidad Responsable:</label>
+        <input type="text" id="unidadResponsable" class="campo-bloqueado" readonly value="">
+      </div>
+    </div>
+
+    <div class="titulo-seccion">
+      <span>SEGUIMIENTO DEL SEGUNDO SEMESTRE</span>
+    </div>
+
+    <!-- Avisos: errores al guardar, falta de programación o estado del seguimiento -->
+    <div id="cajaAvisos" class="caja-aviso" style="display: none;"></div>
+
+    <!-- Tabla de Seguimiento -->
+    <div class="tabla-desplazable">
+      <table class="tabla-plan">
+        <thead>
+          <tr>
+            <th rowspan="2" class="th-texto col-proyecto">Proyecto Estratégico</th>
+            <th rowspan="2" class="th-texto col-linea">Línea de Acción</th>
+            <th rowspan="2" class="th-texto col-accion-est">Acción Estratégica</th>
+            <th rowspan="2" class="th-texto col-recursos">Recursos Requeridos</th>
+            <th rowspan="2" class="th-texto col-unidad">Unidad de Medida</th>
+            <th rowspan="2" class="th-texto col-var">Variables</th>
+            <th colspan="6" class="th-calendario" id="encabezadoSemestre">SEGUNDO SEMESTRE</th>
+            <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
+          </tr>
+          <tr>
+            <th class="th-mes">Julio</th>
+            <th class="th-mes">Agosto</th>
+            <th class="th-mes">Septiembre</th>
+            <th class="th-mes">Octubre</th>
+            <th class="th-mes">Noviembre</th>
+            <th class="th-mes">Diciembre</th>
+            <th class="th-calendario th-semestre">Abs</th>
+            <th class="th-calendario th-semestre">%</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoSeguimiento2">
+          <!-- Carga dinámicamente con texto plano -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Barra de Acciones -->
+    <div class="barra-botones">
+      <a href="../Seguimiento/seguimiento.html" class="boton boton-secundario">← Primer seguimiento</a>
+      <button type="submit" class="boton boton-guardar" id="btnGuardarSeguimiento" disabled> Guardar Segundo Seguimiento</button>
+    </div>
+  </form>
+</div>
+
+<!-- MODAL CONFIRMAR GUARDAR -->
+<div class="ventana-fondo" id="ventanaConfirmar">
+  <div class="ventana-contenido">
+    <div class="ventana-encabezado ventana-confirmar-encabezado">
+      <h3 id="ventanaTitulo">Confirmación</h3>
+      <button type="button" class="boton-cerrar-ventana" id="btnCerrarVentana">✕</button>
+    </div>
+    <div class="ventana-cuerpo ventana-confirmar-cuerpo">
+      <div class="ventana-icono" id="ventanaIcono"></div>
+      <p class="ventana-texto" id="ventanaTexto">¿Estás seguro que desea guardar?</p>
+    </div>
+    <div class="ventana-pie ventana-confirmar-pie" id="ventanaBotones">
+      <button type="button" class="boton boton-cancelar" id="btnConfirmarNo">No</button>
+      <button type="button" class="boton boton-confirmar" id="btnConfirmarSi">Sí</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

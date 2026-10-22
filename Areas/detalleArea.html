@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle del Área - Plan de Trabajo Anual</title>
+  <link rel="stylesheet" href="../Areas/style.css">
+</head>
+<body>
+
+<div class="contenedor">
+  <!-- Banner / Encabezado -->
+  <div class="encabezado">
+    <img src="../img/cgzs.png" alt="CGZS" class="logo logo-izquierdo">
+    <img src="../img/Elfuturo.png" alt="El Futuro es Hoy" class="logo logo-derecho">
+    <h1>Coordinación General de la Zona Sur</h1>
+    <h2>PLAN DE TRABAJO ANUAL - CONSULTA DE ÁREA</h2>
+  </div>
+
+  <!-- Botón de tres líneas que abre/cierra el menú lateral de navegación -->
+  <button type="button" class="boton-menu" id="botonMenu" aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="menuLateral">
+    <span class="raya"></span>
+    <span class="raya"></span>
+    <span class="raya"></span>
+  </button>
+
+  <!-- Fondo oscuro detrás del menú lateral mientras está abierto -->
+  <div class="menu-fondo" id="menuFondo"></div>
+
+  <!-- Menú lateral de navegación -->
+  <nav class="menu-lateral" id="menuLateral">
+    <div class="menu-nombre-unidad" id="menuNombreUnidad"></div>
+    <ul class="menu-lista">
+      <li>
+        <a href="../Programacion/programacion.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+          <span>Inicio</span>
+        </a>
+      </li>
+      <li>
+        <a href="../Seguimiento/seguimiento.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8.5 13.5l2 2 4-4.5"/></svg>
+          <span>Primer seguimiento</span>
+        </a>
+      </li>
+      <li>
+        <a href="../SegundoSeguimiento/segundoSeguimiento.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M3 20h18"/></svg>
+          <span>Segundo seguimiento</span>
+        </a>
+      </li>
+      <li id="menuVerAreas">
+        <!-- Activo también aquí: el detalle es parte de "Ver áreas" -->
+        <a href="../Areas/areas.html" class="menu-enlace menu-enlace-activo-padre">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Ver áreas</span>
+        </a>
+      </li>
+      <li>
+        <a href="../UnidadResponsable/unidadResponsable.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M2.5 21h19"/><path d="M9 21v-5h6v5"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg>
+          <span>Mi unidad</span>
+        </a>
+      </li>
+      <li>
+        <a href="../php/logout.php" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          <span>Cerrar sesión</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <form id="formDetalleArea" onsubmit="return false;">
+    <div class="titulo-seccion">
+      <span id="tituloArea">COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES</span>
+    </div>
+
+    <!-- Avisos: errores al cargar, área no encontrada o sin plan -->
+    <div id="cajaAvisos" class="caja-aviso" style="display: none;"></div>
+
+    <!-- Datos de la Unidad Responsable: solo se ve el nombre; el botón "…" muestra el resto -->
+    <div class="ficha-unidad">
+      <div class="ficha-encabezado">
+        <div class="ficha-dato">
+          <span class="ficha-etiqueta">Unidad Responsable</span>
+          <span class="ficha-valor" id="fichaNombre">COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES</span>
+        </div>
+        <button type="button" class="boton-mas-datos" id="btnMasDatos" aria-expanded="false" aria-controls="fichaDetalles" title="Mostrar más datos">…</button>
+      </div>
+
+      <div class="ficha-detalles" id="fichaDetalles" hidden>
+      <div class="ficha-dato">
+        <span class="ficha-etiqueta">Tipo</span>
+        <span class="ficha-valor" id="fichaTipo">ACADÉMICA</span>
+      </div>
+      <div class="ficha-dato">
+        <span class="ficha-etiqueta">Responsable</span>
+        <span class="ficha-valor" id="fichaResponsable">Irma Berenice Vega Ferrusca</span>
+      </div>
+      <div class="ficha-dato">
+        <span class="ficha-etiqueta">Cargo</span>
+        <span class="ficha-valor" id="fichaCargo">COORDINADORA</span>
+      </div>
+      <div class="ficha-dato">
+        <span class="ficha-etiqueta">Celular</span>
+        <span class="ficha-valor" id="fichaTelefono">7449092310</span>
+      </div>
+      <div class="ficha-dato">
+        <span class="ficha-etiqueta">Correo institucional</span>
+        <span class="ficha-valor" id="fichaCorreoInst">oeducativa_zs@uagro.mx</span>
+      </div>
+      <div class="ficha-dato">
+        <span class="ficha-etiqueta">Correo personal</span>
+        <span class="ficha-valor" id="fichaCorreoPers">13968@uagro.mx</span>
+      </div>
+      </div>
+    </div>
+
+    <!-- Estados del plan y de cada seguimiento -->
+    <div class="estados-plan">
+      <div><strong>Plan de Trabajo <span id="anioPlan">2026</span>:</strong> <span class="estado estado-enviado" id="estadoPlan">ENVIADO</span></div>
+      <div><strong>Primer Seguimiento:</strong> <span class="estado estado-borrador" id="estadoSeg1">BORRADOR</span></div>
+      <div><strong>Segundo Seguimiento:</strong> <span class="estado estado-sin-plan" id="estadoSeg2">SIN CAPTURAR</span></div>
+    </div>
+
+    <div class="titulo-seccion">
+      <span>Alineación y Programación de Acciones Estratégicas</span>
+    </div>
+
+    <!-- Tabla anual en solo lectura: misma estructura que Programación, sin columna de Acción -->
+    <div class="tabla-desplazable">
+      <table class="tabla-plan" id="tablaDetalle">
+        <thead>
+          <tr>
+            <th rowspan="2" class="th-texto col-proyecto">Proyecto Estratégico</th>
+            <th rowspan="2" class="th-texto col-linea">Línea de Acción</th>
+            <th rowspan="2" class="th-texto col-accion-est">Acción Estratégica</th>
+            <th rowspan="2" class="th-texto col-recursos">Recursos</th>
+            <th rowspan="2" class="th-texto col-unidad">Unidad de Medida</th>
+            <th rowspan="2" class="th-texto col-var">Variables</th>
+            <th colspan="6" class="th-calendario">Primer Semestre (Ene - Jun)</th>
+            <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
+            <th colspan="6" class="th-calendario th-semestre2">Segundo Semestre (Jul - Dic)</th>
+            <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
+            <th colspan="2" class="th-calendario th-totales">Total Anual</th>
+          </tr>
+          <tr>
+            <th class="th-calendario th-mes">ENE</th>
+            <th class="th-calendario th-mes">FEB</th>
+            <th class="th-calendario th-mes">MAR</th>
+            <th class="th-calendario th-mes">ABR</th>
+            <th class="th-calendario th-mes">MAY</th>
+            <th class="th-calendario th-mes">JUN</th>
+            <th class="th-calendario th-semestre">Abs</th>
+            <th class="th-calendario th-semestre">%</th>
+            <th class="th-calendario th-mes">JUL</th>
+            <th class="th-calendario th-mes">AGO</th>
+            <th class="th-calendario th-mes">SEP</th>
+            <th class="th-calendario th-mes">OCT</th>
+            <th class="th-calendario th-mes">NOV</th>
+            <th class="th-calendario th-mes">DIC</th>
+            <th class="th-calendario th-semestre">Abs</th>
+            <th class="th-calendario th-semestre">%</th>
+            <th class="th-calendario th-semestre">Abs</th>
+            <th class="th-calendario th-semestre">%</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoDetalle">
+          <!-- Fila de EJEMPLO para ver el diseño; el JavaScript la reemplazará con los datos reales -->
+          <tr class="fila-programado">
+            <td rowspan="2" class="col-proyecto celda-texto">4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias</td>
+            <td rowspan="2" class="col-linea celda-texto">4.1.1. Catálogo de Servicios Actualizado.</td>
+            <td rowspan="2" class="col-accion-est celda-texto">Difundir la Oferta Educativa del Nivel Superior en las escuelas del NMS de la zona.</td>
+            <td rowspan="2" class="col-recursos celda-texto">CON RECURSOS ECONÓMICOS</td>
+            <td rowspan="2" class="col-unidad celda-texto">Visitas</td>
+            <td class="col-var"><span class="etiqueta-programado">Programado</span></td>
+            <td>2</td><td>3</td><td></td><td></td><td></td><td>1</td>
+            <td class="celda-subtotal">6</td><td class="celda-subtotal">100.0%</td>
+            <td>4</td><td></td><td></td><td></td><td></td><td>5</td>
+            <td class="celda-subtotal">9</td><td class="celda-subtotal">100.0%</td>
+            <td class="celda-total">15</td><td class="celda-total">100.0%</td>
+          </tr>
+          <tr class="fila-realizado">
+            <td class="col-var"><span class="etiqueta-realizado">Realizado</span></td>
+            <td>2</td><td>1</td><td></td><td></td><td></td><td>3</td>
+            <td class="celda-realizado">6</td><td class="pct-bueno">100.0%</td>
+            <td>2</td><td></td><td>3</td><td></td><td></td><td>1</td>
+            <td class="celda-realizado">6</td><td class="pct-regular">66.7%</td>
+            <td class="celda-realizado">12</td><td class="pct-bueno">80.0%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Barra de Acciones -->
+    <div class="barra-botones">
+      <a href="../Areas/areas.html" class="boton boton-secundario">← Volver a Ver áreas</a>
+    </div>
+  </form>
+</div>
+
+<script src="../Areas/app.js"></script>
+</body>
+</html>

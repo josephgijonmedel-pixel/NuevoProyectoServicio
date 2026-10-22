@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ver Áreas - Supervisión de Planes de Trabajo</title>
+  <link rel="stylesheet" href="../Areas/style.css">
+</head>
+<body>
+
+<div class="contenedor">
+  <!-- Banner / Encabezado -->
+  <div class="encabezado">
+    <img src="../img/cgzs.png" alt="CGZS" class="logo logo-izquierdo">
+    <img src="../img/Elfuturo.png" alt="El Futuro es Hoy" class="logo logo-derecho">
+    <h1>Coordinación General de la Zona Sur</h1>
+    <h2>SUPERVISIÓN DE PLANES DE TRABAJO ANUAL</h2>
+  </div>
+
+  <!-- Botón de tres líneas que abre/cierra el menú lateral de navegación -->
+  <button type="button" class="boton-menu" id="botonMenu" aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="menuLateral">
+    <span class="raya"></span>
+    <span class="raya"></span>
+    <span class="raya"></span>
+  </button>
+
+  <!-- Fondo oscuro detrás del menú lateral mientras está abierto -->
+  <div class="menu-fondo" id="menuFondo"></div>
+
+  <!-- Menú lateral de navegación -->
+  <nav class="menu-lateral" id="menuLateral">
+    <div class="menu-nombre-unidad" id="menuNombreUnidad"></div>
+    <ul class="menu-lista">
+      <li>
+        <a href="../Programacion/programacion.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+          <span>Inicio</span>
+        </a>
+      </li>
+      <li>
+        <a href="../Seguimiento/seguimiento.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8.5 13.5l2 2 4-4.5"/></svg>
+          <span>Primer seguimiento</span>
+        </a>
+      </li>
+      <li>
+        <a href="../SegundoSeguimiento/segundoSeguimiento.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M3 20h18"/></svg>
+          <span>Segundo seguimiento</span>
+        </a>
+      </li>
+      <li id="menuVerAreas">
+        <a href="../Areas/areas.html" class="menu-enlace menu-enlace-activo">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Ver áreas</span>
+        </a>
+      </li>
+      <li>
+        <a href="../UnidadResponsable/unidadResponsable.html" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M2.5 21h19"/><path d="M9 21v-5h6v5"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg>
+          <span>Mi unidad</span>
+        </a>
+      </li>
+      <li>
+        <a href="../php/logout.php" class="menu-enlace">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          <span>Cerrar sesión</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <form id="formAreas" onsubmit="return false;">
+    <div class="titulo-seccion">
+      <span>Planes de Trabajo de las Áreas (<span id="anioPlanes">2026</span>)</span>
+    </div>
+
+    <!-- Avisos: errores al cargar o falta de permisos -->
+    <div id="cajaAvisos" class="caja-aviso" style="display: none;"></div>
+
+    <!-- Resumen: cuántas áreas hay en cada estado -->
+    <div class="resumen-cards">
+      <div class="resumen-card">
+        <span class="resumen-numero" id="totalAreas">2</span>
+        <span class="resumen-texto">Áreas registradas</span>
+      </div>
+      <div class="resumen-card tarjeta-enviado">
+        <span class="resumen-numero" id="totalEnviados">1</span>
+        <span class="resumen-texto">Planes enviados por revisar</span>
+      </div>
+      <div class="resumen-card tarjeta-observaciones">
+        <span class="resumen-numero" id="totalObservaciones">0</span>
+        <span class="resumen-texto">Con observaciones</span>
+      </div>
+      <div class="resumen-card tarjeta-aprobado">
+        <span class="resumen-numero" id="totalAprobados">0</span>
+        <span class="resumen-texto">Aprobados</span>
+      </div>
+    </div>
+
+    <!-- Búsqueda y filtros -->
+    <div class="barra-filtros">
+      <div class="grupo-campo">
+        <label for="buscarArea">Buscar área:</label>
+        <input type="text" id="buscarArea" placeholder="Nombre del área o del responsable">
+      </div>
+      <div class="grupo-campo">
+        <label for="filtroTipo">Tipo de unidad:</label>
+        <select id="filtroTipo">
+          <option value="">Todos</option>
+          <option value="ACADÉMICA">ACADÉMICA</option>
+          <option value="ADMINISTRATIVA">ADMINISTRATIVA</option>
+        </select>
+      </div>
+      <div class="grupo-campo">
+        <label for="filtroEstado">Estado del plan:</label>
+        <select id="filtroEstado">
+          <option value="">Todos</option>
+          <option value="SIN PLAN">Sin plan</option>
+          <option value="BORRADOR">Borrador</option>
+          <option value="ENVIADO">Enviado</option>
+          <option value="CON OBSERVACIONES">Con observaciones</option>
+          <option value="APROBADO">Aprobado</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Lista de áreas -->
+    <div class="tabla-desplazable">
+      <table class="tabla-plan tabla-areas">
+        <thead>
+          <tr>
+            <th class="col-area">Área (Unidad Responsable)</th>
+            <th>Tipo</th>
+            <th>Responsable</th>
+            <th class="col-estado">Plan de Trabajo</th>
+            <th class="col-estado">Primer Seguimiento</th>
+            <th class="col-estado">Segundo Seguimiento</th>
+            <th class="col-ver">Ver</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoAreas">
+          <!-- Filas de EJEMPLO para ver el diseño; el JavaScript las reemplazará con los datos reales -->
+          <tr>
+            <td class="celda-texto">COORDINACIÓN DE ATENCIÓN A LOS ESTUDIANTES</td>
+            <td>ACADÉMICA</td>
+            <td class="celda-texto">Irma Berenice Vega Ferrusca</td>
+            <td><span class="estado estado-enviado">ENVIADO</span></td>
+            <td><span class="estado estado-borrador">BORRADOR</span></td>
+            <td><span class="estado estado-sin-plan">SIN CAPTURAR</span></td>
+            <td><a href="../Areas/detalleArea.html?id=1" class="boton-ver">Ver</a></td>
+          </tr>
+          <tr>
+            <td class="celda-texto">COORDINACIÓN DE EXTENSIÓN (EJEMPLO)</td>
+            <td>ADMINISTRATIVA</td>
+            <td class="celda-texto">Nombre del responsable</td>
+            <td><span class="estado estado-sin-plan">SIN PLAN</span></td>
+            <td><span class="estado estado-sin-plan">SIN CAPTURAR</span></td>
+            <td><span class="estado estado-sin-plan">SIN CAPTURAR</span></td>
+            <td><a href="../Areas/detalleArea.html?id=2" class="boton-ver">Ver</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Se muestra cuando ningún área coincide con la búsqueda -->
+    <div id="listaVacia" class="lista-vacia" style="display: none;">No hay áreas que coincidan con la búsqueda.</div>
+  </form>
+</div>
+
+<script src="../Areas/app.js"></script>
+</body>
+</html>

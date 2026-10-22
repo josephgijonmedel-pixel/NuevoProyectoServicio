@@ -1,94 +1,69 @@
+// Archivo PHP que lee (GET) y guarda (POST) la programación en la base de datos
+const API_PROGRAMACION = '../php/programacion.php';
+const PAGINA_LOGIN = '../InicioSesion/inicioSesion.html';
+const PAGINA_SEGUIMIENTO = '../Seguimiento/seguimiento.html';
+
+// Listas de opciones (proyectos, líneas de acción, unidades de medida); llegan del servidor
+let catalogos = { proyectos: [], lineas: [], unidades: [] };
+
+let contadorFilas = 0;
+
 // Esto se ejecuta apenas se abre la página
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Cargar el dato de Unidad Responsable guardado en localStorage
-  const datosLocales = localStorage.getItem('unidadResponsableData');
-  if (datosLocales) {
-    try {
-      const dataUR = JSON.parse(datosLocales);
-      const inputUR = document.getElementById('unidadResponsable');
-      const sidebarUnidadNombre = document.getElementById('sidebarUnidadNombre');
-      if (inputUR && dataUR.nombreUnidad) {
-        inputUR.value = dataUR.nombreUnidad;
-      }
-      if (sidebarUnidadNombre && dataUR.nombreUnidad) {
-        sidebarUnidadNombre.textContent = dataUR.nombreUnidad;
-      }
-    } catch (e) {
-      console.error('Error al leer datos locales de UR:', e);
-    }
-  }
-
-  // 2. Cargar las filas guardadas (si existen) o las filas iniciales por defecto
-  cargarProgramacionGuardada().forEach(d => agregarFilaAccion(d));
-
-  // 3. Evento del botón para agregar nuevas filas
   const btnAgregar = document.getElementById('btnAgregarAccion');
-  if (btnAgregar) {
-    btnAgregar.addEventListener('click', () => agregarFilaAccion());
-    
-  }
-
-  // 4. Evento para guardar el formulario con confirmación
+  const btnGuardarProg = document.getElementById('btnGuardarProgramacion');
   const formProg = document.getElementById('formProgramacion');
-  const modalConfirmar = document.getElementById('modalConfirmarGuardar');
+  const modalConfirmar = document.getElementById('ventanaConfirmar');
   const btnConfirmarSi = document.getElementById('btnConfirmarSi');
   const btnConfirmarNo = document.getElementById('btnConfirmarNo');
-  const btnCerrarConfirmX = document.getElementById('btnCerrarConfirmX');
-  const btnGuardarProg = document.getElementById('btnGuardarProgramacion');
+  const btnCerrarVentana = document.getElementById('btnCerrarVentana');
 
-  if (btnGuardarProg) {
-    btnGuardarProg.addEventListener('click', function(e) {
-      e.preventDefault();
-      abrirModalConfirmacion();
-    });
-  }
+  // Los botones se habilitan cuando terminen de cargar los datos
+  btnAgregar.disabled = true;
+  btnGuardarProg.disabled = true;
+  cargarProgramacion();
 
-  if (formProg) {
-    formProg.addEventListener('submit', function(e) {
-      e.preventDefault();
-      abrirModalConfirmacion();
-    });
-  }
+  btnAgregar.addEventListener('click', () => agregarFilaAccion());
 
-  if (btnConfirmarNo) {
-    btnConfirmarNo.addEventListener('click', cerrarModalConfirmacion);
-  }
+  btnGuardarProg.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (validarFilas()) abrirModalConfirmacion();
+  });
 
-  if (btnCerrarConfirmX) {
-    btnCerrarConfirmX.addEventListener('click', cerrarModalConfirmacion);
-  }
+  formProg.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (validarFilas()) abrirModalConfirmacion();
+  });
+
+  if (btnConfirmarNo) btnConfirmarNo.addEventListener('click', cerrarModalConfirmacion);
+  if (btnCerrarVentana) btnCerrarVentana.addEventListener('click', cerrarModalConfirmacion);
 
   if (btnConfirmarSi) {
     btnConfirmarSi.addEventListener('click', () => {
-      guardarProgramacion();
       cerrarModalConfirmacion();
-      window.location.href = '/Seguimiento/seguimiento.html';
+      guardarProgramacion();
     });
   }
 
   // Cerrar al hacer clic en el fondo fuera del modal
   if (modalConfirmar) {
     modalConfirmar.addEventListener('click', (e) => {
-      if (e.target === modalConfirmar) {
-        cerrarModalConfirmacion();
-      }
+      if (e.target === modalConfirmar) cerrarModalConfirmacion();
     });
   }
 
   // Cerrar modal con tecla Escape
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      cerrarModalConfirmacion();
-    }
+    if (e.key === 'Escape') cerrarModalConfirmacion();
   });
 });
 
 // Estas dos funciones solo muestran y ocultan la ventana de confirmación
 function abrirModalConfirmacion() {
-  const modal = document.getElementById('modalConfirmarGuardar');
-  const titulo = document.getElementById('modalConfirmTitulo');
-  const icono = document.getElementById('modalConfirmIcon');
-  const texto = document.getElementById('modalConfirmTexto');
+  const modal = document.getElementById('ventanaConfirmar');
+  const titulo = document.getElementById('ventanaTitulo');
+  const icono = document.getElementById('ventanaIcono');
+  const texto = document.getElementById('ventanaTexto');
 
   if (titulo) titulo.innerText = 'Confirmación';
   if (icono) icono.innerText = '⚠️';
@@ -98,155 +73,207 @@ function abrirModalConfirmacion() {
 }
 
 function cerrarModalConfirmacion() {
-  const modal = document.getElementById('modalConfirmarGuardar');
+  const modal = document.getElementById('ventanaConfirmar');
   if (modal) modal.style.display = 'none';
 }
 
-// Busca lo que ya se había guardado antes; si no hay nada guardado, usa el dato de ejemplo
-function cargarProgramacionGuardada() {
-  const payloadGuardado = localStorage.getItem('programacionCompletaData');
-  if (payloadGuardado) {
-    try {
-      const parsed = JSON.parse(payloadGuardado);
-      if (Array.isArray(parsed.programacion) && parsed.programacion.length > 0) {
-        return parsed.programacion;
-      }
-    } catch (e) {
-      console.error('Error al leer programacionCompletaData:', e);
-    }
+// ---------------------------------------------------------------------
+// Comunicación con el servidor
+// ---------------------------------------------------------------------
+
+// Pide al servidor el plan del año, sus acciones y las listas de opciones
+async function cargarProgramacion() {
+  try {
+    const resultado = await leerRespuesta(await fetch(API_PROGRAMACION));
+    catalogos = resultado.catalogos;
+
+    mostrarNombreUnidad(resultado.unidad.nombre);
+
+    const acciones = resultado.acciones.length > 0 ? resultado.acciones : [null];
+    acciones.forEach(accion => agregarFilaAccion(accion));
+
+    mostrarEstadoPlan(resultado.plan);
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
   }
-  return datosIniciales;
 }
 
-// Junta todo lo que se escribió en la tabla (cada acción con sus meses) y lo guarda
-function guardarProgramacion() {
-  const filas = Array.from(document.querySelectorAll('#bodyProgramacion tr.var-row-p'));
+// Envía todas las acciones de la tabla al servidor
+async function guardarProgramacion() {
+  const btnGuardarProg = document.getElementById('btnGuardarProgramacion');
+  btnGuardarProg.disabled = true;
 
-  const programacion = filas.map((trP) => {
-    const idMatch = trP.id.match(/fila-(\d+)-p/);
-    const id = idMatch ? idMatch[1] : null;
+  try {
+    await leerRespuesta(await fetch(API_PROGRAMACION, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acciones: recolectarAcciones() })
+    }));
 
-    if (!id) return null;
+    window.location.href = new URL(PAGINA_SEGUIMIENTO, window.location.href).href;
+  } catch (error) {
+    marcarErroresDelServidor(error.errores);
+    mostrarMensaje(error.message, 'error', error.errores);
+    btnGuardarProg.disabled = false;
+  }
+}
 
-    const proyecto = trP.querySelector(`select[name^="proyecto_"]`)?.value || '';
-    const lineaAccion = trP.querySelector(`select[name^="lineaAccion_"]`)?.value || '';
-    const accionEstrategica = trP.querySelector(`textarea[name^="accionEstrategica_"]`)?.value || '';
-    const recursos = trP.querySelector(`select[name^="recursos_"]`)?.value || '';
-    const unidadMedida = trP.querySelector(`select[name^="unidadMedida_"]`)?.value || '';
+// Convierte la respuesta del servidor en datos, o lanza un error con su mensaje
+async function leerRespuesta(respuesta) {
+  if (respuesta.status === 401) {
+    window.location.href = PAGINA_LOGIN;
+    throw new Error('Tu sesión expiró. Inicia sesión de nuevo.');
+  }
 
-    const p = Array.from(document.querySelectorAll(`.input-p-${id}`)).map((input) => {
-      const valor = parseInt(input.value, 10);
-      return Number.isNaN(valor) ? 0 : valor;
-    });
+  let resultado;
+  try {
+    resultado = await respuesta.json();
+  } catch {
+    throw new Error('El servidor no respondió correctamente. Intenta de nuevo.');
+  }
 
-    const r = Array.from(document.querySelectorAll(`.input-r-${id}`)).map((input) => {
-      const valor = parseInt(input.value, 10);
-      return Number.isNaN(valor) ? 0 : valor;
-    });
+  if (!respuesta.ok) {
+    const error = new Error(resultado.error || 'Ocurrió un error.');
+    error.errores = resultado.errores;
+    throw error;
+  }
+  return resultado;
+}
 
+// Junta lo que se escribió en la tabla: cada acción con sus 12 meses de programado
+function recolectarAcciones() {
+  return filasDeAcciones().map((trP) => {
+    const id = trP.dataset.fila;
     return {
-      proyecto,
-      lineaAccion,
-      accionEstrategica,
-      recursos,
-      unidadMedida,
-      p,
-      r
+      id: trP.dataset.accionId || null,
+      linea_id: trP.querySelector('select[name^="lineaAccion_"]').value,
+      descripcion: trP.querySelector('textarea[name^="accionEstrategica_"]').value.trim(),
+      con_recursos: trP.querySelector('select[name^="recursos_"]').value === '1',
+      unidad_medida_id: trP.querySelector('select[name^="unidadMedida_"]').value,
+      p: Array.from(document.querySelectorAll(`.input-p-${id}`)).map(input => parseInt(input.value, 10) || 0)
     };
-  }).filter(Boolean);
+  });
+}
 
-  const payload = {
-    programacion,
-    guardadoEn: new Date().toISOString()
+// ---------------------------------------------------------------------
+// Estado de la página
+// ---------------------------------------------------------------------
+
+function mostrarNombreUnidad(nombre) {
+  const inputUR = document.getElementById('unidadResponsable');
+  const menuNombreUnidad = document.getElementById('menuNombreUnidad');
+  if (inputUR) inputUR.value = nombre;
+  if (menuNombreUnidad) menuNombreUnidad.textContent = nombre;
+}
+
+// Habilita los botones, o bloquea la tabla si el plan ya se envió a Planeación
+function mostrarEstadoPlan(plan) {
+  const btnAgregar = document.getElementById('btnAgregarAccion');
+  const btnGuardarProg = document.getElementById('btnGuardarProgramacion');
+
+  if (plan && !plan.editable) {
+    document.querySelectorAll('#cuerpoProgramacion select, #cuerpoProgramacion textarea, #cuerpoProgramacion input')
+      .forEach(campo => { campo.disabled = true; });
+    document.querySelectorAll('#cuerpoProgramacion .boton-quitar').forEach(boton => { boton.style.display = 'none'; });
+    btnAgregar.style.display = 'none';
+    btnGuardarProg.style.display = 'none';
+    mostrarMensaje(`El plan está en estado "${plan.estado}" y ya no se puede modificar.`, 'info');
+    return;
+  }
+
+  if (plan && plan.estado === 'CON OBSERVACIONES' && plan.observaciones) {
+    mostrarMensaje('Planeación dejó observaciones: ' + plan.observaciones, 'info');
+  }
+
+  btnAgregar.disabled = false;
+  btnGuardarProg.disabled = false;
+}
+
+// Muestra un aviso arriba de la tabla. tipo: 'error' (rojo) o 'info' (azul)
+function mostrarMensaje(texto, tipo, errores) {
+  const cajaAvisos = document.getElementById('cajaAvisos');
+  if (!cajaAvisos) return;
+
+  let contenido = (tipo === 'error' ? '⚠️ ' : 'ℹ️ ') + texto;
+  if (errores) {
+    errores.forEach(e => { contenido += '\n• ' + e.mensaje; });
+  }
+
+  cajaAvisos.innerText = contenido;
+  cajaAvisos.className = tipo === 'error' ? 'caja-aviso' : 'caja-aviso aviso-info';
+  cajaAvisos.style.display = 'block';
+  cajaAvisos.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function ocultarMensaje() {
+  const cajaAvisos = document.getElementById('cajaAvisos');
+  if (cajaAvisos) cajaAvisos.style.display = 'none';
+}
+
+// Revisa que cada acción tenga línea de acción, descripción y unidad de medida
+function validarFilas() {
+  const filas = filasDeAcciones();
+  const faltantes = [];
+
+  document.querySelectorAll('#cuerpoProgramacion .campo-error').forEach(el => el.classList.remove('campo-error'));
+
+  if (filas.length === 0) {
+    mostrarMensaje('Agrega al menos una acción estratégica.', 'error');
+    return false;
+  }
+
+  filas.forEach((trP, i) => {
+    const requeridos = [
+      ['select[name^="lineaAccion_"]', 'línea de acción'],
+      ['textarea[name^="accionEstrategica_"]', 'acción estratégica'],
+      ['select[name^="unidadMedida_"]', 'unidad de medida']
+    ];
+    requeridos.forEach(([selector, nombre]) => {
+      const campo = trP.querySelector(selector);
+      if (!campo.value.trim()) {
+        campo.classList.add('campo-error');
+        faltantes.push({ mensaje: `Acción ${i + 1}: falta ${nombre}.` });
+      }
+    });
+  });
+
+  if (faltantes.length > 0) {
+    mostrarMensaje('Completa los campos marcados en rojo.', 'error', faltantes);
+    return false;
+  }
+
+  ocultarMensaje();
+  return true;
+}
+
+// Marca en rojo los campos que el servidor rechazó (errores = [{fila, campo, mensaje}])
+function marcarErroresDelServidor(errores) {
+  if (!errores) return;
+  const filas = filasDeAcciones();
+  const selectores = {
+    linea_id: 'select[name^="lineaAccion_"]',
+    descripcion: 'textarea[name^="accionEstrategica_"]',
+    unidad_medida_id: 'select[name^="unidadMedida_"]'
   };
 
-  localStorage.setItem('programacionCompletaData', JSON.stringify(payload));
-  return payload;
+  errores.forEach(({ fila, campo }) => {
+    const trP = filas[fila - 1];
+    if (!trP) return;
+    if (campo === 'p') {
+      document.querySelectorAll(`.input-p-${trP.dataset.fila}`).forEach(input => input.classList.add('campo-error'));
+    } else if (selectores[campo]) {
+      trP.querySelector(selectores[campo]).classList.add('campo-error');
+    }
+  });
 }
 
-// Listas de opciones para los menús desplegables del formulario
-const proyectosOptions = [
-  "Responsabilidad Social y Ambiental",
-  "Impulsar la digitalización de la gestión administrativa de la CGZS",
-  "Redimensionar la gestión Institucional",
-  "Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias"
-];
+function filasDeAcciones() {
+  return Array.from(document.querySelectorAll('#cuerpoProgramacion tr.fila-programado'));
+}
 
-const lineasAccionOptions = [
-  "1. Responsabilidad Social y Ambiental",
-
-  "1.1.1. Sensibilización y Formación en Responsabilidad Social. Implementar programas de sensibilización y formación dirigidos a la comunidad UAGro sobre la importancia de la responsabilidad social y ambiental. Se realizarán actividades de capacitación, charlas y campañas de concientización.",
-
-  "1.2.1. Desarrollo de Proyectos y Programas Socioambientales. Fomentar la creación y desarrollo de proyectos y programas de responsabilidad social y ambiental que aborden problemáticas relevantes para la sociedad. Se impulsará la participación de estudiantes, docentes y personal administrativo en la concepción e implementación de estas iniciativas.",
-
-  "1.3.1. Promoción de la Participación Activa. Estimular la participación activa de la comunidad UAGro en proyectos y programas de responsabilidad social y ambiental. Se crearán espacios y plataformas para que los miembros de la comunidad puedan involucrarse y contribuir con sus ideas y esfuerzos.",
-
-  "1.4.1. Implementación de Prácticas Sustentables en la Gestión Universitaria. Promover la implementación de prácticas sustentables en la gestión universitaria en aspectos como la gestión de residuos, el uso eficiente de recursos y la movilidad sustentable, entre otros. Se establecerán políticas y acciones concretas para reducir el impacto ambiental de la universidad.",
-
-  "1.5.1. Formación de Profesionales Comprometidos. Introducir la responsabilidad social y ambiental como un eje transversal en la formación de profesionales en la UAGro. Se incorporarán contenidos curriculares relacionados con estas temáticas y se promoverá la participación en actividades extracurriculares relacionadas con la responsabilidad social.",
-
-  "1.6.1. Evaluación y Mejora Continua. Establecer mecanismos  de evaluación periódica para medir el avance y los resultados de los proyectos y programas de responsabilidad social y ambiental. Se utilizarán indicadores de desempeño para retroalimentar y mejorar continuamente las acciones implementadas.",
-
-  "1.7.1. Alianzas Estratégicas. Establecer alianzas con organizaciones y entidades del sector público y privado que compartan los mismos valores y objetivos en materia de responsabilidad social y ambiental. Se buscarán sinergias para fortalecer la capacidad de la UAGro en este ámbito y ampliar el impacto de las acciones.",
-  "2. Impulsar la digitalización de la gestión  administrativa  de la CGZS",
-  "2.1.1. Fortalecimiento de la Infraestructura Tecnológica. Mejorar y actualizar la infraestructura tecnológica de la universidad, incluyendo redes de alta velocidad, sistemas de almacenamiento y seguridad informática, para garantizar una base sólida para la digitalización integral.",
-  "2.2.1. Capacitación en Competencias Digitales. Brindar capacitación y formación en competencias digitales al personal administrativo, para que estén preparados para utilizar eficazmente las herramientas digitales en sus labores educativas y administrativas.",
-
-  "2.3.1. Digitalización de Procesos Administrativos. Optimizar los procesos administrativos mediante la digitalización de trámites, gestión de recursos humanos y finanzas, entre otros, para mejorar la eficiencia y reducir tiempos y costos.",
-
-  "2.4.1. Evaluación y Seguimiento de la Transformación Digital. Establecer un sistema de evaluación y seguimiento periódico para medir el avance y el impacto de la transformación digital, los procesos administrativos y la satisfacción de los usuarios.",
-
-  "3. Redimensionar la gestión Institucional",
-
-  "3.1.1. Optimización de Procesos Administrativos. Realizar una revisión exhaustiva de los procesos administrativos y de gestión en la CGZS para identificar áreas de mejora y oportunidades de optimización. Implementar cambios y actualizaciones para asegurar la eficiencia, eficacia y efectividad en el uso de los recursos.",
-
-  "3.2.1. Establecimiento de Políticas Transparentes. Desarrollar y difundir políticas y procedimientos claros y transparentes para la toma de decisiones en la gestión de los medios necesarios para el funcionamiento óptimo de la Universidad. Esto incluirá la definición de criterios de asignación de recursos y el establecimiento de mecanismos de rendición de cuentas.",
-
-  "3.3.1 Implementación de Sistemas de Control y Seguimiento. Establecer sistemas y herramientas de control y seguimiento para asegurar la transparencia en el uso de los recursos en la CGZS. Esto incluirá la implementación de tecnologías de información que permitan el monitoreo de los gastos y la gestión financiera.",
-
-  "3.4.1.  Promoción de la Ética y la Integridad.  Fomentar una cultura de ética y responsabilidad en la gestión de los recursos de la universidad. Implementar programas de formación y capacitación en ética administrativa y promover cultura de la rendición de cuentas en todos los niveles de la institución.",
-
-  "3.5.1. Capacitación en Administración Eficiente. Desarrollar programas de capacitación y formación en administración y gestión eficiente, eficaz y efectiva para el personal de la CGZS. Esto incluirá cursos y talleres sobre buenas prácticas en la administración de recursos, manejo de presupuestos, planificación estratégica, entre otros.",
-
-  "3.6.1. Identidad Institucional. Fomentar la identidad institucional en todos los trabajadores de las coordinaciones y áreas de la CGZS, con la finalidad que todo el personal de la CGZS conozca y se identifique con la Visión, Misión y Principios Institucionales, así como con el Código de Ética.",
-
-  "3.6.2. Promover el trabajo colaborativo, integral, sistemático y planeativo de toda la CGZS. A través de la participación para elaborar los Planes de Trabajo y Programas Operativos Anuales, se fomentará el trabajo colaborativo entre las diferentes áreas de una coordinación y entre coordinaciones.",
-
-  "4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias",
-
-  "4.1.1. Catálogo de Servicios Actualizado. Desarrollar y difundir a través del Catálogo en todas las Unidades Académicas de las regiones de Costa Chica, Costa Grande y Acapulco los servicios que ofrece la Coordinación de Extensión.",
-
-  "4.2.1. Formación de extensionistas. Implementar programas de capacitación para la formación de extensionistas en cada Unidad Académica de la Zona Sur con la finalidad de difundir y promover el arte, la cultura, la poesía, la oratoria, así como el deporte, que contribuyan a la formación integral de los estudiantes.",
-
-  "4.3.1. Expresiones diversas en eventos de importancia regional. Representar a la Universidad a través de estudiantes de EMS y Superior con participaciones artísticas, culturales, deportivas, científicas y tecnológicas, etc., en eventos de importancia regional.",
-
-  "4.4.1. Conformar consejos de vinculación en las unidades académicas (Coordinadores de PE y de CA) con la CGZS y que estos promuevan: 1.- La revisión de las LGAC que desarrollan los CA, con la finalidad de incorporar líneas de investigación tendientes a la transmisión del conocimiento al Sector Productivo y de servicio, 2.- Revisión de Planes y programas de los PE que incorporen competencias y unidades de aprendizaje relacionadas con el sector productivo y de servicios, 3.- Revisión de la pertinencia del PE.",
-
-];
-
-const unidadesMedidaOptions = [
-  "Actualizaciones", "Bazares", "Catálogos", "Charlas", "Coloquios", "Concursos",
-  "Convenios", "Digitalizaciones", "Docentes", "Encuestas", "Equipos de cómputo",
-  "Estudiantes", "Evaluaciones", "Eventos Académicos", "Eventos Artísticos",
-  "Expedientes", "Exposiciones", "Gestiones", "Oficios", "Procesos y Procedimientos",
-  "Registros", "Reportes", "Reuniones", "Seguimiento", "Simulacros", "Talleres",
-  "Utensilios", "Visitas", "Otros"
-];
-
-// Acción de ejemplo que aparece solo si todavía no se ha guardado nada
-const datosIniciales = [
-  {
-    proyecto: "4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias",
-    lineaAccion: "4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias.",
-    accionEstrategica: "Difundir, gestionar y acompañar en la promoción de la Oferta Eduactiva del Nivel Superior de la UAGro, en las escuelas del NMS y otros subsitemas educativos de la zona.",
-    recursos: "CON RECURSOS ECONOMICOS",
-    unidadMedida: "Visitas",
-    p: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    r: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-  }
-];
-
-let contadorFilas = 0;
+// ---------------------------------------------------------------------
+// Construcción de la tabla
+// ---------------------------------------------------------------------
 
 // Evita que se escriban letras: solo deja pasar números
 function soloEnteros(event) {
@@ -268,151 +295,193 @@ function validarPegadoEnteros(event) {
   }
 }
 
-// Arma las opciones de un menú desplegable a partir de una lista
-function crearOpcionesSelect(lista, valorSeleccionado) {
-  return lista.map(item => `<option value="${item}" ${item === valorSeleccionado ? 'selected' : ''}>${item}</option>`).join('');
+// Evita que un texto escrito por el usuario se interprete como HTML
+function escaparHtml(texto) {
+  return String(texto ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// Crea una acción nueva en la tabla: una fila de Programado y una de Realizado
+function textoLinea(linea) {
+  return linea.clave ? `${linea.clave}. ${linea.descripcion}` : '';
+}
+
+// Arma las opciones de un menú desplegable: lista de {id, ...}, cómo mostrar cada una y cuál va seleccionada
+function crearOpciones(lista, obtenerTexto, idSeleccionado, textoVacio) {
+  const vacia = `<option value="">${escaparHtml(textoVacio)}</option>`;
+  return vacia + lista.map(item => {
+    const seleccionado = Number(item.id) === Number(idSeleccionado) ? 'selected' : '';
+    return `<option value="${item.id}" ${seleccionado}>${escaparHtml(obtenerTexto(item))}</option>`;
+  }).join('');
+}
+
+// Opciones de líneas de acción: siempre las 22, agrupadas por proyecto
+function opcionesLineas(lineaSeleccionada) {
+  const grupos = catalogos.proyectos.map(proyecto => {
+    const lineas = catalogos.lineas.filter(l => Number(l.proyecto_id) === Number(proyecto.id));
+    if (lineas.length === 0) return '';
+    const opciones = lineas.map(l => {
+      const seleccionado = Number(l.id) === Number(lineaSeleccionada) ? 'selected' : '';
+      return `<option value="${l.id}" ${seleccionado}>${escaparHtml(textoLinea(l))}</option>`;
+    }).join('');
+    return `<optgroup label="${escaparHtml(`${proyecto.clave}. ${proyecto.nombre}`)}">${opciones}</optgroup>`;
+  }).join('');
+
+  return '<option value="">Seleccione una línea de acción</option>' + grupos;
+}
+
+// Al elegir una línea de acción, el proyecto de la fila se ajusta al proyecto de esa línea
+function cambiarLinea(id) {
+  const lineaId = document.querySelector(`select[name="lineaAccion_${id}"]`).value;
+  const linea = catalogos.lineas.find(l => Number(l.id) === Number(lineaId));
+  if (linea) {
+    document.querySelector(`select[name="proyecto_${id}"]`).value = linea.proyecto_id;
+  }
+}
+
+// Crea una acción en la tabla: una fila de Programado y una de Realizado.
+// data viene del servidor: {id, proyecto_id, linea_id, descripcion, con_recursos, unidad_medida_id, p[12], r[12]}
 function agregarFilaAccion(data = null) {
   contadorFilas++;
   const id = contadorFilas;
-  const tbody = document.getElementById('bodyProgramacion');
+  const tbody = document.getElementById('cuerpoProgramacion');
 
   if (!tbody) {
-    console.error('El elemento <tbody> con id="bodyProgramacion" no existe en el HTML.');
+    console.error('El elemento <tbody> con id="cuerpoProgramacion" no existe en el HTML.');
     return;
   }
 
   const esPrimeraAccion = tbody.children.length === 0;
 
-  const pVals = data ? data.p : Array(12).fill("");
+  const pVals = data ? data.p : Array(12).fill('');
   const rVals = data ? data.r : Array(12).fill(0);
+  const conRecursos = data ? data.con_recursos === 1 : true;
 
   const trP = document.createElement('tr');
-  trP.className = 'var-row-p';
+  trP.className = 'fila-programado';
   trP.id = `fila-${id}-p`;
+  trP.dataset.fila = id;
+  if (data && data.id) trP.dataset.accionId = data.id;
 
   trP.innerHTML = `
     <td rowspan="2">
-      <select class="table-control" name="proyecto_${id}">
-        ${crearOpcionesSelect(proyectosOptions, data ? data.proyecto : '')}
+      <select class="campo-tabla" name="proyecto_${id}">
+        ${crearOpciones(catalogos.proyectos, p => `${p.clave}. ${p.nombre}`, data ? data.proyecto_id : null, 'Seleccione un proyecto')}
       </select>
     </td>
     <td rowspan="2">
-      <select class="table-control" name="lineaAccion_${id}">
-        <option value="">Seleccione una línea de acción</option>
-        ${crearOpcionesSelect(lineasAccionOptions, data ? data.lineaAccion : '')}
+      <select class="campo-tabla" name="lineaAccion_${id}" onchange="cambiarLinea(${id})">
+        ${opcionesLineas(data ? data.linea_id : null)}
       </select>
     </td>
     <td rowspan="2">
-      <textarea class="table-control" name="accionEstrategica_${id}">${data ? data.accionEstrategica : ''}</textarea>
+      <textarea class="campo-tabla" name="accionEstrategica_${id}" maxlength="2000">${escaparHtml(data ? data.descripcion : '')}</textarea>
     </td>
     <td rowspan="2">
-      <select class="table-control" name="recursos_${id}">
-        <option value="CON RECURSOS ECONOMICOS" ${data && data.recursos === 'CON RECURSOS ECONOMICOS' ? 'selected' : ''}>CON RECURSOS ECONÓMICOS</option>
-        <option value="SIN RECURSOS ECONOMICOS" ${data && data.recursos === 'SIN RECURSOS ECONOMICOS' ? 'selected' : ''}>SIN RECURSOS ECONÓMICOS</option>
+      <select class="campo-tabla" name="recursos_${id}">
+        <option value="1" ${conRecursos ? 'selected' : ''}>CON RECURSOS ECONÓMICOS</option>
+        <option value="0" ${conRecursos ? '' : 'selected'}>SIN RECURSOS ECONÓMICOS</option>
       </select>
     </td>
     <td rowspan="2">
-      <select class="table-control" name="unidadMedida_${id}">
-        ${crearOpcionesSelect(unidadesMedidaOptions, data ? data.unidadMedida : '')}
+      <select class="campo-tabla" name="unidadMedida_${id}">
+        ${crearOpciones(catalogos.unidades, u => u.nombre, data ? data.unidad_medida_id : null, 'Seleccione')}
       </select>
     </td>
-    <td style="text-align:center;"><span class="badge-p">Programado</span></td>
+    <td style="text-align:center;"><span class="etiqueta-programado">Programado</span></td>
 
     <!-- Meses 1er Semestre -->
     ${pVals.slice(0, 6).map((val, idx) => `
       <td>
-        <input type="number" min="0" step="1" class="cal-input input-p-${id}" name="p_${id}_${idx}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
+        <input type="number" min="0" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
       </td>
     `).join('')}
 
     <!-- Abs 1er Semestre P (Seguimiento) -->
-    <td class="cell-bg-subp">
-      <input type="number" class="cal-input input-readonly input-abs-p-${id}" id="subtotal-p-sem-${id}" name="abs_p_sem_${id}" value="0" readonly title="Se calcula automáticamente con la suma de los meses">
+    <td class="celda-subtotal">
+      <input type="number" class="campo-mes campo-bloqueado input-abs-p-${id}" id="subtotal-p-sem-${id}" name="abs_p_sem_${id}" value="0" readonly title="Se calcula automáticamente con la suma de los meses">
     </td>
     <!-- % 1er Semestre P (Seguimiento): calculado = Abs R * 100 / Abs P -->
-    <td class="cell-bg-subp">
-      <input type="text" class="cal-input input-readonly" id="pct-p-sem-${id}" name="pct_p_sem_${id}" value="0%" readonly>
+    <td class="celda-subtotal">
+      <input type="text" class="campo-mes campo-bloqueado" id="pct-p-sem-${id}" name="pct_p_sem_${id}" value="0%" readonly>
     </td>
 
     <!-- Meses 2do Semestre -->
     ${pVals.slice(6, 12).map((val, idx) => `
       <td>
-        <input type="number" min="0" step="1" class="cal-input input-p-${id}" name="p_${id}_${idx + 6}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
+        <input type="number" min="0" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx + 6}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
       </td>
     `).join('')}
 
     <!-- Abs 2do Semestre P (Seguimiento) -->
-    <td class="cell-bg-subp">
-      <input type="number" class="cal-input input-readonly input-abs-p-sem2-${id}" id="subtotal-p-sem2-${id}" name="abs_p_sem2_${id}" value="0" readonly title="Se calcula automáticamente con la suma de los meses">
+    <td class="celda-subtotal">
+      <input type="number" class="campo-mes campo-bloqueado input-abs-p-sem2-${id}" id="subtotal-p-sem2-${id}" name="abs_p_sem2_${id}" value="0" readonly title="Se calcula automáticamente con la suma de los meses">
     </td>
-    <td class="cell-bg-subp">
-      <input type="text" class="cal-input input-readonly" id="pct-p-sem2-${id}" name="pct_p_sem2_${id}" value="0%" readonly>
+    <td class="celda-subtotal">
+      <input type="text" class="campo-mes campo-bloqueado" id="pct-p-sem2-${id}" name="pct_p_sem2_${id}" value="0%" readonly>
     </td>
 
     <!-- Total Anual P -->
-    <td class="cell-bg-totp" id="total-p-${id}">0</td>
+    <td class="celda-total" id="total-p-${id}">0</td>
     <!-- % Total Anual P: calculado = Total R * 100 / Total P -->
-    <td class="cell-bg-totp">
-      <input type="text" class="cal-input input-readonly" id="pct-p-anual-${id}" name="pct_p_anual_${id}" value="0%" readonly>
+    <td class="celda-total">
+      <input type="text" class="campo-mes campo-bloqueado" id="pct-p-anual-${id}" name="pct_p_anual_${id}" value="0%" readonly>
     </td>
 
     <td rowspan="2">
-      <button type="button" class="btn-remove" onclick="eliminarFila(${id})">✕</button>
+      <button type="button" class="boton-quitar" onclick="eliminarFila(${id})">✕</button>
     </td>
   `;
 
   const trR = document.createElement('tr');
-  trR.className = 'var-row-r';
+  trR.className = 'fila-realizado';
   trR.id = `fila-${id}-r`;
 
   trR.innerHTML = `
-    <td style="text-align:center;"><span class="badge-r">Realizado</span></td>
+    <td style="text-align:center;"><span class="etiqueta-realizado">Realizado</span></td>
 
     <!-- Meses 1er Semestre R -->
     ${rVals.slice(0, 6).map((val, idx) => `
       <td>
-        <input type="number" min="0" step="1" class="cal-input input-readonly input-r-${id}" name="r_${id}_${idx}" value="${val !== '' ? val : 0}" readonly title="Se modifica en la hoja de Seguimiento">
+        <input type="number" min="0" step="1" class="campo-mes campo-bloqueado input-r-${id}" name="r_${id}_${idx}" value="${val !== '' ? val : 0}" readonly title="Se modifica en la hoja de Seguimiento">
       </td>
     `).join('')}
 
     <!-- Abs 1er Semestre R (Seguimiento) -->
-    <td class="cell-bg-r">
-      <input type="number" class="cal-input input-readonly input-abs-r-${id}" id="subtotal-r-sem-${id}" name="abs_r_sem_${id}" value="0" readonly title="Se calcula automáticamente con la suma de los meses">
+    <td class="celda-realizado">
+      <input type="number" class="campo-mes campo-bloqueado input-abs-r-${id}" id="subtotal-r-sem-${id}" name="abs_r_sem_${id}" value="0" readonly title="Se calcula automáticamente con la suma de los meses">
     </td>
     <!-- % 1er Semestre R (Seguimiento): bloqueado -->
-    <td class="cell-bg-r">
-      <input type="text" class="cal-input input-readonly" id="pct-r-sem-${id}" name="pct_r_sem_${id}" value="0%" readonly title="Bloqueado: se calcula automáticamente (R x 100 / P)">
+    <td class="celda-realizado">
+      <input type="text" class="campo-mes campo-bloqueado" id="pct-r-sem-${id}" name="pct_r_sem_${id}" value="0%" readonly title="Bloqueado: se calcula automáticamente (R x 100 / P)">
     </td>
 
     <!-- Meses 2do Semestre R -->
     ${rVals.slice(6, 12).map((val, idx) => `
       <td>
-        <input type="number" min="0" step="1" class="cal-input input-readonly input-r-${id}" name="r_${id}_${idx + 6}" value="${val !== '' ? val : 0}" readonly title="Se modifica en la hoja de Seguimiento">
+        <input type="number" min="0" step="1" class="campo-mes campo-bloqueado input-r-${id}" name="r_${id}_${idx + 6}" value="${val !== '' ? val : 0}" readonly title="Se modifica en la hoja de Seguimiento">
       </td>
     `).join('')}
 
     <!-- Abs 2do Semestre R (Seguimiento) -->
-    <td class="cell-bg-r">
-      <input type="number" class="cal-input input-readonly input-abs-r-sem2-${id}" id="subtotal-r-sem2-${id}" name="abs_r_sem2_${id}" value="0" readonly title="Se calcula automáticamente con la suma de los meses">
+    <td class="celda-realizado">
+      <input type="number" class="campo-mes campo-bloqueado input-abs-r-sem2-${id}" id="subtotal-r-sem2-${id}" name="abs_r_sem2_${id}" value="0" readonly title="Se calcula automáticamente con la suma de los meses">
     </td>
-    <td class="cell-bg-r">
-      <input type="text" class="cal-input input-readonly" id="pct-r-sem2-${id}" name="pct_r_sem2_${id}" value="0%" readonly title="Bloqueado: se calcula automáticamente (R x 100 / P)">
+    <td class="celda-realizado">
+      <input type="text" class="campo-mes campo-bloqueado" id="pct-r-sem2-${id}" name="pct_r_sem2_${id}" value="0%" readonly title="Bloqueado: se calcula automáticamente (R x 100 / P)">
     </td>
 
     <!-- Total Anual R -->
-    <td class="cell-bg-r" id="total-r-${id}">0</td>
+    <td class="celda-realizado" id="total-r-${id}">0</td>
     <!-- % Total Anual R: bloqueado -->
-    <td class="cell-bg-r">
-      <input type="text" class="cal-input input-readonly" id="pct-r-anual-${id}" name="pct_r_anual_${id}" value="0%" readonly title="Bloqueado: se calcula automáticamente (R x 100 / P)">
+    <td class="celda-realizado">
+      <input type="text" class="campo-mes campo-bloqueado" id="pct-r-anual-${id}" name="pct_r_anual_${id}" value="0%" readonly title="Bloqueado: se calcula automáticamente (R x 100 / P)">
     </td>
   `;
 
   if (!esPrimeraAccion) {
     const trEspaciador = document.createElement('tr');
-    trEspaciador.className = 'row-spacer';
+    trEspaciador.className = 'fila-separador';
     trEspaciador.innerHTML = `<td colspan="25"></td>`;
     tbody.appendChild(trEspaciador);
   }
@@ -455,14 +524,14 @@ function calcularTotales(id) {
   // (si ya se capturó algo), y el de Realizado es lo que de verdad se cumplió
   let pctPSem = valAbsP > 0 ? ((valAbsP / valAbsP) * 100).toFixed(1) : 0;
   let pctRSem = valAbsP > 0 ? ((valAbsR / valAbsP) * 100).toFixed(1) : 0;
-  aplicarPorcentaje(inputPctPSem, pctPSem, 'cell-bg-subp');
-  aplicarPorcentaje(inputPctRSem, pctRSem, 'cell-bg-r');
+  aplicarPorcentaje(inputPctPSem, pctPSem, 'celda-subtotal');
+  aplicarPorcentaje(inputPctRSem, pctRSem, 'celda-realizado');
 
   // Lo mismo, pero para el segundo semestre
   let pctPSem2 = subP2 > 0 ? ((subP2 / subP2) * 100).toFixed(1) : 0;
   let pctRSem2 = subP2 > 0 ? ((subR2 / subP2) * 100).toFixed(1) : 0;
-  aplicarPorcentaje(inputPctPSem2, pctPSem2, 'cell-bg-subp');
-  aplicarPorcentaje(inputPctRSem2, pctRSem2, 'cell-bg-r');
+  aplicarPorcentaje(inputPctPSem2, pctPSem2, 'celda-subtotal');
+  aplicarPorcentaje(inputPctRSem2, pctRSem2, 'celda-realizado');
 
   // Totales de todo el año (sumando los 12 meses)
   let totalP = pInputs.reduce((sum, inp) => sum + (parseInt(inp.value, 10) || 0), 0);
@@ -479,8 +548,8 @@ function calcularTotales(id) {
 
   const inputPctPAnual = document.getElementById(`pct-p-anual-${id}`);
   const inputPctRAnual = document.getElementById(`pct-r-anual-${id}`);
-  aplicarPorcentaje(inputPctPAnual, pctPAnual, 'cell-bg-totp');
-  aplicarPorcentaje(inputPctRAnual, pctRAnual, 'cell-bg-r');
+  aplicarPorcentaje(inputPctPAnual, pctPAnual, 'celda-total');
+  aplicarPorcentaje(inputPctRAnual, pctRAnual, 'celda-realizado');
 }
 
 // Pone el porcentaje ya calculado en su casilla y le pone color
@@ -492,25 +561,32 @@ function aplicarPorcentaje(input, pct, claseBase) {
   if (!td) return;
   td.className = claseBase;
   if (pct >= 100) {
-    td.classList.add('pct-good');
+    td.classList.add('pct-bueno');
   } else if (pct >= 50) {
-    td.classList.add('pct-warn');
+    td.classList.add('pct-regular');
   } else {
-    td.classList.add('pct-bad');
+    td.classList.add('pct-bajo');
   }
 }
 
-// Borra una acción completa de la tabla (su fila de arriba, la de abajo y el espacio)
+// Borra una acción completa de la tabla (su fila de arriba, la de abajo y el espacio).
+// El borrado en la base de datos ocurre al presionar "Guardar Programación".
 function eliminarFila(id) {
   const filaP = document.getElementById(`fila-${id}-p`);
   const filaR = document.getElementById(`fila-${id}-r`);
 
+  // Si la acción ya tiene avances capturados en los seguimientos, pedir confirmación
+  const totalRealizado = parseInt(document.getElementById(`total-r-${id}`)?.innerText, 10) || 0;
+  if (totalRealizado > 0 && !confirm('Esta acción ya tiene avances capturados en los seguimientos. Al guardar se borrarán también. ¿Quitarla?')) {
+    return;
+  }
+
   // Quitar también el espaciador asociado a esta acción, sin dejar dos seguidos
   const espaciadorAntes = filaP?.previousElementSibling;
   const espaciadorDespues = filaR?.nextElementSibling;
-  if (espaciadorAntes && espaciadorAntes.classList.contains('row-spacer')) {
+  if (espaciadorAntes && espaciadorAntes.classList.contains('fila-separador')) {
     espaciadorAntes.remove();
-  } else if (espaciadorDespues && espaciadorDespues.classList.contains('row-spacer')) {
+  } else if (espaciadorDespues && espaciadorDespues.classList.contains('fila-separador')) {
     espaciadorDespues.remove();
   }
 
@@ -520,43 +596,43 @@ function eliminarFila(id) {
 
 // Abre y cierra el menú lateral de navegación (botón de tres líneas)
 document.addEventListener('DOMContentLoaded', () => {
-  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const botonMenu = document.getElementById('botonMenu');
+  const menuFondo = document.getElementById('menuFondo');
 
-  function cerrarSidebar() {
-    document.body.classList.remove('sidebar-open');
-    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'false');
+  function cerrarMenu() {
+    document.body.classList.remove('menu-abierto');
+    if (botonMenu) botonMenu.setAttribute('aria-expanded', 'false');
   }
 
-  function abrirSidebar() {
-    document.body.classList.add('sidebar-open');
-    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'true');
+  function abrirMenu() {
+    document.body.classList.add('menu-abierto');
+    if (botonMenu) botonMenu.setAttribute('aria-expanded', 'true');
   }
 
-  if (sidebarToggleBtn) {
-    sidebarToggleBtn.addEventListener('click', () => {
-      if (document.body.classList.contains('sidebar-open')) {
-        cerrarSidebar();
+  if (botonMenu) {
+    botonMenu.addEventListener('click', () => {
+      if (document.body.classList.contains('menu-abierto')) {
+        cerrarMenu();
       } else {
-        abrirSidebar();
+        abrirMenu();
       }
     });
   }
 
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', cerrarSidebar);
+  if (menuFondo) {
+    menuFondo.addEventListener('click', cerrarMenu);
   }
 
   // Si ya estás en esa página, el enlace activo no debe recargarla
-  const sidebarActiveLink = document.querySelector('.sidebar-link.sidebar-link-active');
-  if (sidebarActiveLink) {
-    sidebarActiveLink.addEventListener('click', (e) => {
+  const enlaceActivo = document.querySelector('.menu-enlace.menu-enlace-activo');
+  if (enlaceActivo) {
+    enlaceActivo.addEventListener('click', (e) => {
       e.preventDefault();
-      cerrarSidebar();
+      cerrarMenu();
     });
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') cerrarSidebar();
+    if (e.key === 'Escape') cerrarMenu();
   });
 });

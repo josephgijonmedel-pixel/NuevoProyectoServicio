@@ -1,16 +1,18 @@
+// Archivo PHP que lee (GET) y guarda (POST) el seguimiento. periodo=1 → enero a junio
+const API_SEGUIMIENTO = '../php/seguimiento.php?periodo=1';
+const PAGINA_LOGIN = '../InicioSesion/inicioSesion.html';
+const PAGINA_PROGRAMACION = '../Programacion/programacion.html';
+const PAGINA_SIGUIENTE = '../SegundoSeguimiento/segundoSeguimiento.html';
+
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Cargar el nombre de la Unidad Responsable guardada
-  cargarUnidadResponsable();
+  cargarSeguimiento();
 
-  // 2. Cargar las filas guardadas desde Programación
-  cargarProgramacionParaSeguimiento();
-
-  // 3. Evento para guardar el formulario con confirmación
+  // Evento para guardar el formulario con confirmación
   const formSeg = document.getElementById('formSeguimiento');
-  const modalConfirmar = document.getElementById('modalConfirmarGuardar');
+  const modalConfirmar = document.getElementById('ventanaConfirmar');
   const btnConfirmarSi = document.getElementById('btnConfirmarSi');
   const btnConfirmarNo = document.getElementById('btnConfirmarNo');
-  const btnCerrarConfirmX = document.getElementById('btnCerrarConfirmX');
+  const btnCerrarVentana = document.getElementById('btnCerrarVentana');
 
   if (formSeg) {
     formSeg.addEventListener('submit', (e) => {
@@ -23,15 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btnConfirmarNo.addEventListener('click', cerrarModalConfirmacion);
   }
 
-  if (btnCerrarConfirmX) {
-    btnCerrarConfirmX.addEventListener('click', cerrarModalConfirmacion);
+  if (btnCerrarVentana) {
+    btnCerrarVentana.addEventListener('click', cerrarModalConfirmacion);
   }
 
   if (btnConfirmarSi) {
     btnConfirmarSi.addEventListener('click', () => {
-      guardarSeguimiento();
       cerrarModalConfirmacion();
-      window.location.href = '/Segundo%20seguimiento/segundoSeguimiento.html';
+      guardarSeguimiento();
     });
   }
 
@@ -54,10 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // FUNCIONES DEL MODAL DE CONFIRMACIÓN
 function abrirModalConfirmacion() {
-  const modal = document.getElementById('modalConfirmarGuardar');
-  const titulo = document.getElementById('modalConfirmTitulo');
-  const icono = document.getElementById('modalConfirmIcon');
-  const texto = document.getElementById('modalConfirmTexto');
+  const modal = document.getElementById('ventanaConfirmar');
+  const titulo = document.getElementById('ventanaTitulo');
+  const icono = document.getElementById('ventanaIcono');
+  const texto = document.getElementById('ventanaTexto');
 
   if (titulo) titulo.innerText = 'Confirmación';
   if (icono) icono.innerText = '⚠️';
@@ -67,28 +68,155 @@ function abrirModalConfirmacion() {
 }
 
 function cerrarModalConfirmacion() {
-  const modal = document.getElementById('modalConfirmarGuardar');
+  const modal = document.getElementById('ventanaConfirmar');
   if (modal) modal.style.display = 'none';
 }
 
-function cargarUnidadResponsable() {
-  const datosLocales = localStorage.getItem('unidadResponsableData');
-  if (datosLocales) {
-    try {
-      const dataUR = JSON.parse(datosLocales);
-      const inputUR = document.getElementById('unidadResponsable');
-      const sidebarUnidadNombre = document.getElementById('sidebarUnidadNombre');
-      if (inputUR && dataUR.nombreUnidad) {
-        inputUR.value = dataUR.nombreUnidad;
-      }
-      if (sidebarUnidadNombre && dataUR.nombreUnidad) {
-        sidebarUnidadNombre.textContent = dataUR.nombreUnidad;
-      }
-    } catch (e) {
-      console.error('Error al parsear unidadResponsableData:', e);
+// ---------------------------------------------------------------------
+// Comunicación con el servidor
+// ---------------------------------------------------------------------
+
+// Pide al servidor las acciones del plan con lo programado y lo realizado de enero a junio
+async function cargarSeguimiento() {
+  try {
+    const resultado = await leerRespuesta(await fetch(API_SEGUIMIENTO));
+
+    mostrarNombreUnidad(resultado.unidad.nombre);
+    const encabezado = document.getElementById('encabezadoSemestre');
+    if (encabezado) encabezado.innerText = `PRIMER SEMESTRE (${resultado.anio})`;
+
+    if (!resultado.hayPlan || resultado.acciones.length === 0) {
+      mostrarAvisoSinProgramacion();
+      return;
     }
+
+    pintarTabla(resultado.acciones);
+    mostrarEstadoSeguimiento(resultado.seguimiento);
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
   }
 }
+
+// Envía lo realizado de cada acción al servidor
+async function guardarSeguimiento() {
+  const btnGuardar = document.getElementById('btnGuardarSeguimiento');
+  btnGuardar.disabled = true;
+
+  try {
+    await leerRespuesta(await fetch(API_SEGUIMIENTO, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acciones: recolectarRealizado() })
+    }));
+    window.location.href = new URL(PAGINA_SIGUIENTE, window.location.href).href;
+  } catch (error) {
+    marcarErrores(error.errores);
+    mostrarMensaje(error.message, 'error', error.errores);
+    btnGuardar.disabled = false;
+  }
+}
+
+// Convierte la respuesta del servidor en datos, o lanza un error con su mensaje
+async function leerRespuesta(respuesta) {
+  if (respuesta.status === 401) {
+    window.location.href = PAGINA_LOGIN;
+    throw new Error('Tu sesión expiró. Inicia sesión de nuevo.');
+  }
+
+  let resultado;
+  try {
+    resultado = await respuesta.json();
+  } catch {
+    throw new Error('El servidor no respondió correctamente. Intenta de nuevo.');
+  }
+
+  if (!respuesta.ok) {
+    const error = new Error(resultado.error || 'Ocurrió un error.');
+    error.errores = resultado.errores;
+    throw error;
+  }
+  return resultado;
+}
+
+// Junta lo realizado de cada acción: [{id, r: [6 meses]}]
+function recolectarRealizado() {
+  return filasDeAcciones().map(trP => ({
+    id: trP.dataset.accionId,
+    r: Array.from(document.querySelectorAll(`.seg-r-${trP.dataset.fila}`)).map(inp => parseInt(inp.value, 10) || 0)
+  }));
+}
+
+// ---------------------------------------------------------------------
+// Estado de la página
+// ---------------------------------------------------------------------
+
+function mostrarNombreUnidad(nombre) {
+  const inputUR = document.getElementById('unidadResponsable');
+  const menuNombreUnidad = document.getElementById('menuNombreUnidad');
+  if (inputUR) inputUR.value = nombre;
+  if (menuNombreUnidad) menuNombreUnidad.textContent = nombre;
+}
+
+function mostrarAvisoSinProgramacion() {
+  const cajaAvisos = document.getElementById('cajaAvisos');
+  cajaAvisos.innerHTML = `ℹ️ Todavía no hay acciones programadas. Primero captura y guarda tu <a href="${PAGINA_PROGRAMACION}">Programación</a>.`;
+  cajaAvisos.className = 'caja-aviso aviso-info';
+  cajaAvisos.style.display = 'block';
+}
+
+// Habilita el botón, o bloquea la tabla si el seguimiento ya se envió a Planeación
+function mostrarEstadoSeguimiento(seguimiento) {
+  const btnGuardar = document.getElementById('btnGuardarSeguimiento');
+
+  if (!seguimiento.editable) {
+    document.querySelectorAll('#cuerpoSeguimiento input').forEach(input => {
+      input.readOnly = true;
+      input.classList.add('campo-bloqueado');
+    });
+    btnGuardar.style.display = 'none';
+    mostrarMensaje(`El seguimiento está en estado "${seguimiento.estado}" y ya no se puede modificar.`, 'info');
+    return;
+  }
+
+  btnGuardar.disabled = false;
+}
+
+// Muestra un aviso arriba de la tabla. tipo: 'error' (rojo) o 'info' (azul)
+function mostrarMensaje(texto, tipo, errores) {
+  const cajaAvisos = document.getElementById('cajaAvisos');
+  if (!cajaAvisos) return;
+
+  let contenido = (tipo === 'error' ? '⚠️ ' : 'ℹ️ ') + texto;
+  if (errores) {
+    errores.forEach(e => { contenido += '\n• ' + e.mensaje; });
+  }
+
+  cajaAvisos.innerText = contenido;
+  cajaAvisos.className = tipo === 'error' ? 'caja-aviso' : 'caja-aviso aviso-info';
+  cajaAvisos.style.display = 'block';
+  cajaAvisos.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Marca en rojo lo realizado de las acciones que el servidor rechazó (errores = [{fila, mensaje}])
+function marcarErrores(errores) {
+  document.querySelectorAll('#cuerpoSeguimiento .campo-error').forEach(el => el.classList.remove('campo-error'));
+  if (!errores) return;
+  const filas = filasDeAcciones();
+  errores.forEach(({ fila }) => {
+    const trP = filas[fila - 1];
+    if (trP) {
+      document.querySelectorAll(`.seg-r-${trP.dataset.fila}`).forEach(input => input.classList.add('campo-error'));
+    }
+  });
+}
+
+function filasDeAcciones() {
+  return Array.from(document.querySelectorAll('#cuerpoSeguimiento tr.fila-programado'));
+}
+
+// ---------------------------------------------------------------------
+// Construcción de la tabla
+// ---------------------------------------------------------------------
 
 // FUNCIONES AUXILIARES DE VALIDACIÓN (solo números enteros)
 function soloEnteros(event) {
@@ -109,105 +237,71 @@ function validarPegadoEnteros(event) {
   }
 }
 
-function cargarProgramacionParaSeguimiento() {
-  const tbody = document.getElementById('bodySeguimiento');
+// Evita que un texto escrito por el usuario se interprete como HTML
+function escaparHtml(texto) {
+  return String(texto ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// acciones viene del servidor: [{id, proyecto, linea, descripcion, con_recursos, unidad_medida, p[6], r[6]}]
+function pintarTabla(acciones) {
+  const tbody = document.getElementById('cuerpoSeguimiento');
   if (!tbody) return;
-
-  let programacionData = null;
-  const payloadGuardado = localStorage.getItem('programacionCompletaData');
-
-  if (payloadGuardado) {
-    try {
-      const parsed = JSON.parse(payloadGuardado);
-      programacionData = parsed.programacion;
-    } catch (e) {
-      console.error('Error al leer programacionCompletaData:', e);
-    }
-  }
-
-  // Datos de respaldo si aún no se ha guardado nada en Programación
-  if (!programacionData || programacionData.length === 0) {
-    programacionData = [
-      {
-        proyecto: "4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias",
-        lineaAccion: "4. Coadyuvar en la formación integral del estudiante, a través de la extensión y vinculación universitarias.",
-        accionEstrategica: "Difundir, gestionar y acompañar en la promoción de la Oferta Educativa del Nivel Superior de la UAGro en la Región Acapulco - Coyuca de Benítez.",
-        recursos: "CON RECURSOS ECONOMICOS",
-        unidadMedida: "Visitas",
-        p: [0, 0, 0, 0, 0, 0],
-        r: [0, 0, 0, 0, 0, 0]
-      }
-    ];
-  }
-
   tbody.innerHTML = '';
 
-  programacionData.forEach((item, index) => {
+  acciones.forEach((item, index) => {
     const id = index + 1;
-    const mesNombres = ['ene', 'feb', 'mar', 'abr', 'may', 'jun'];
-
-    // Textos informativos planos
-    const txtProyecto = item.proyecto || '';
-    const txtLinea = item.lineaAccion || item.linea || '';
-    const txtAccion = item.accionEstrategica || item.accion || '';
-    const txtRecursos = item.recursos || '';
-    const txtUnidad = item.unidadMedida || '';
-
-    // Valores de P (Lectura) y R (Edición)
-    const pVals = Array.isArray(item.p) 
-      ? item.p.slice(0, 6) 
-      : mesNombres.map(m => item.programado?.meses?.[m] ?? 0);
-
-    const rVals = Array.isArray(item.r) 
-      ? item.r.slice(0, 6) 
-      : mesNombres.map(m => item.realizado?.meses?.[m] ?? 0);
+    const txtRecursos = item.con_recursos ? 'CON RECURSOS ECONÓMICOS' : 'SIN RECURSOS ECONÓMICOS';
 
     const trP = document.createElement('tr');
-    trP.className = 'var-row-p';
+    trP.className = 'fila-programado';
     trP.id = `seg-fila-${id}-p`;
+    trP.dataset.fila = id;
+    trP.dataset.accionId = item.id;
 
     trP.innerHTML = `
-      <td rowspan="2" class="col-proyecto cell-text">${txtProyecto}</td>
-      <td rowspan="2" class="col-linea cell-text">${txtLinea}</td>
-      <td rowspan="2" class="col-accion-est cell-text">${txtAccion}</td>
-      <td rowspan="2" class="col-recursos cell-text">${txtRecursos}</td>
-      <td rowspan="2" class="col-unidad cell-text">${txtUnidad}</td>
-      <td class="col-var"><span class="badge-p">Programado</span></td>
+      <td rowspan="2" class="col-proyecto celda-texto">${escaparHtml(item.proyecto)}</td>
+      <td rowspan="2" class="col-linea celda-texto">${escaparHtml(item.linea)}</td>
+      <td rowspan="2" class="col-accion-est celda-texto">${escaparHtml(item.descripcion)}</td>
+      <td rowspan="2" class="col-recursos celda-texto">${txtRecursos}</td>
+      <td rowspan="2" class="col-unidad celda-texto">${escaparHtml(item.unidad_medida)}</td>
+      <td class="col-var"><span class="etiqueta-programado">Programado</span></td>
 
       <!-- Meses 1er Semestre P (LECTURA Y PLACEHOLDER 0) -->
-      ${pVals.map((val) => `
+      ${item.p.map((val) => `
         <td>
-          <input type="number" class="cal-input input-readonly seg-p-${id}" value="${val !== 0 && val !== '' ? val : ''}" placeholder="0" readonly title="Definido en Programación">
+          <input type="number" class="campo-mes campo-bloqueado seg-p-${id}" value="${val !== 0 ? val : ''}" placeholder="0" readonly title="Definido en Programación">
         </td>
       `).join('')}
 
       <!-- Seguimiento: Abs y % de Programado -->
-      <td class="cell-bg-subp" id="seg-absP-${id}">0</td>
-      <td class="cell-bg-subp" id="seg-pctP-${id}">0%</td>
+      <td class="celda-subtotal" id="seg-absP-${id}">0</td>
+      <td class="celda-subtotal" id="seg-pctP-${id}">0%</td>
     `;
 
     const trR = document.createElement('tr');
-    trR.className = 'var-row-r';
+    trR.className = 'fila-realizado';
     trR.id = `seg-fila-${id}-r`;
 
     trR.innerHTML = `
-      <td class="col-var"><span class="badge-r">Realizado</span></td>
+      <td class="col-var"><span class="etiqueta-realizado">Realizado</span></td>
 
       <!-- Meses 1er Semestre R (EDITABLE CON PLACEHOLDER 0) -->
-      ${rVals.map((val) => `
+      ${item.r.map((val) => `
         <td>
-          <input type="number" min="0" step="1" class="cal-input seg-r-${id}" value="${val !== 0 && val !== '' ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotalesSeguimiento(${id})">
+          <input type="number" min="0" step="1" class="campo-mes seg-r-${id}" value="${val !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotalesSeguimiento(${id})">
         </td>
       `).join('')}
 
       <!-- Seguimiento: Abs y % de Realizado -->
-      <td class="cell-bg-r" id="seg-absR-${id}">0</td>
+      <td class="celda-realizado" id="seg-absR-${id}">0</td>
       <td id="seg-pctR-${id}">0%</td>
     `;
 
     if (index > 0) {
       const trEspaciador = document.createElement('tr');
-      trEspaciador.className = 'row-spacer';
+      trEspaciador.className = 'fila-separador';
       trEspaciador.innerHTML = `<td colspan="14"></td>`;
       tbody.appendChild(trEspaciador);
     }
@@ -245,76 +339,56 @@ function calcularTotalesSeguimiento(id) {
     cellPctR.className = '';
 
     if (pctR >= 80) {
-      cellPctR.classList.add('pct-good');
+      cellPctR.classList.add('pct-bueno');
     } else if (pctR >= 60) {
-      cellPctR.classList.add('pct-warn');
+      cellPctR.classList.add('pct-regular');
     } else if (pctR > 40) {
-      cellPctR.classList.add('pct-mid');
+      cellPctR.classList.add('pct-medio');
     } else {
-      cellPctR.classList.add('pct-bad');
+      cellPctR.classList.add('pct-bajo');
     }
   }
 }
 
-function guardarSeguimiento() {
-  const filasP = document.querySelectorAll('#bodySeguimiento tr.var-row-p');
-  const seguimientoResultados = [];
-
-  filasP.forEach((trP, index) => {
-    const id = index + 1;
-    const rInputs = Array.from(document.querySelectorAll(`.seg-r-${id}`));
-    const valoresR = rInputs.map(inp => parseInt(inp.value, 10) || 0);
-
-    seguimientoResultados.push({
-      accionIndex: index,
-      realizadoSemestre1: valoresR,
-      totalRealizado: parseInt(document.getElementById(`seg-absR-${id}`)?.innerText || 0),
-      porcentajeEficacia: document.getElementById(`seg-pctR-${id}`)?.innerText || '0%'
-    });
-  });
-
-  localStorage.setItem('seguimientoEneJunData', JSON.stringify(seguimientoResultados));
-}
-
 // Abre y cierra el menú lateral de navegación (botón de tres líneas)
 document.addEventListener('DOMContentLoaded', () => {
-  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const botonMenu = document.getElementById('botonMenu');
+  const menuFondo = document.getElementById('menuFondo');
 
-  function cerrarSidebar() {
-    document.body.classList.remove('sidebar-open');
-    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'false');
+  function cerrarMenu() {
+    document.body.classList.remove('menu-abierto');
+    if (botonMenu) botonMenu.setAttribute('aria-expanded', 'false');
   }
 
-  function abrirSidebar() {
-    document.body.classList.add('sidebar-open');
-    if (sidebarToggleBtn) sidebarToggleBtn.setAttribute('aria-expanded', 'true');
+  function abrirMenu() {
+    document.body.classList.add('menu-abierto');
+    if (botonMenu) botonMenu.setAttribute('aria-expanded', 'true');
   }
 
-  if (sidebarToggleBtn) {
-    sidebarToggleBtn.addEventListener('click', () => {
-      if (document.body.classList.contains('sidebar-open')) {
-        cerrarSidebar();
+  if (botonMenu) {
+    botonMenu.addEventListener('click', () => {
+      if (document.body.classList.contains('menu-abierto')) {
+        cerrarMenu();
       } else {
-        abrirSidebar();
+        abrirMenu();
       }
     });
   }
 
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', cerrarSidebar);
+  if (menuFondo) {
+    menuFondo.addEventListener('click', cerrarMenu);
   }
 
   // Si ya estás en esa página, el enlace activo no debe recargarla
-  const sidebarActiveLink = document.querySelector('.sidebar-link.sidebar-link-active');
-  if (sidebarActiveLink) {
-    sidebarActiveLink.addEventListener('click', (e) => {
+  const enlaceActivo = document.querySelector('.menu-enlace.menu-enlace-activo');
+  if (enlaceActivo) {
+    enlaceActivo.addEventListener('click', (e) => {
       e.preventDefault();
-      cerrarSidebar();
+      cerrarMenu();
     });
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') cerrarSidebar();
+    if (e.key === 'Escape') cerrarMenu();
   });
 });
