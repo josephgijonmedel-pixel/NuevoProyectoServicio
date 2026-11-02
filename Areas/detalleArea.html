@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalle del Área - Plan de Trabajo Anual</title>
-  <link rel="stylesheet" href="../Areas/style.css?v=20261022m">
+  <link rel="stylesheet" href="../Areas/style.css?v=20261101c">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
     <img src="../img/cgzs.png" alt="CGZS" class="logo logo-izquierdo">
     <img src="../img/Elfuturo.png" alt="El Futuro es Hoy" class="logo logo-derecho">
     <h1>Coordinación General de la Zona Sur</h1>
-    <h2>PLAN DE TRABAJO ANUAL - CONSULTA DE ÁREA</h2>
+    <h2>PLAN DE TRABAJO ANUAL <span id="anioEncabezado"></span> - CONSULTA DE ÁREA</h2>
   </div>
 
   <!-- Botón de tres líneas que abre/cierra el menú lateral de navegación -->
@@ -117,6 +117,18 @@
       </div>
     </div>
 
+    <!-- Revisión del PTA: estado y botones Aceptar / Rechazar (solo cuando está en revisión) -->
+    <div class="barra-revision" id="barraRevision" hidden>
+      <div class="revision-info">
+        <span class="revision-etiqueta">Estado del PTA</span>
+        <span id="estadoRevision"></span>
+        <span class="revision-detalle" id="detalleRevision"></span>
+      </div>
+      <div class="revision-botones" id="botonesRevision" hidden>
+        <button type="button" class="boton boton-rechazar" id="btnRechazarPTA">Rechazar</button>
+        <button type="button" class="boton boton-confirmar" id="btnAceptarPTA">Aceptar</button>
+      </div>
+    </div>
 
     <div class="titulo-seccion">
       <span>Alineación y Programación de Acciones Estratégicas</span>
@@ -138,6 +150,10 @@
             <th colspan="6" class="th-calendario th-semestre2">Segundo Semestre (Jul - Dic)</th>
             <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
             <th colspan="2" class="th-calendario th-totales">Total Anual</th>
+            <th rowspan="2" class="th-texto col-complementaria">Beneficiados</th>
+            <th rowspan="2" class="th-texto col-complementaria">Responsable(s)</th>
+            <th rowspan="2" class="th-texto col-complementaria">Participantes</th>
+            <th rowspan="2" class="th-texto col-complementaria col-observaciones">Observaciones Generales</th>
           </tr>
           <tr>
             <th class="th-calendario th-mes">ENE</th>
@@ -173,6 +189,25 @@
   </form>
 </div>
 
-<script src="../Areas/app.js?v=20261022m"></script>
+<!-- Ventana para confirmar la revisión. Al rechazar pide el motivo -->
+<div class="ventana-fondo" id="ventanaRevision">
+  <div class="ventana-contenido ventana-confirmar-contenido">
+    <div class="ventana-encabezado ventana-confirmar-encabezado">
+      <h3 id="tituloRevision">Revisar PTA</h3>
+      <button type="button" class="boton-cerrar-ventana" id="btnCerrarRevision">✕</button>
+    </div>
+    <div class="ventana-cuerpo ventana-confirmar-cuerpo">
+      <p class="ventana-texto" id="textoRevision"></p>
+      <textarea class="campo-motivo" id="motivoRechazo" maxlength="2000" rows="4"
+                placeholder="Escribe qué debe corregir el área" hidden></textarea>
+    </div>
+    <div class="ventana-pie ventana-confirmar-pie">
+      <button type="button" class="boton boton-cancelar" id="btnCancelarRevision">Cancelar</button>
+      <button type="button" class="boton boton-confirmar" id="btnConfirmarRevision">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../Areas/app.js?v=20261101c"></script>
 </body>
 </html>

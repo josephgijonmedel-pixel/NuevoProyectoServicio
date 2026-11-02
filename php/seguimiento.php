@@ -8,13 +8,13 @@
 // El registro en `seguimientos` se crea la primera vez que se guarda.
 //
 // Los seguimientos no se envían a Planeación: Planeación los consulta en "Ver áreas".
-// Se pueden editar mientras el plan no esté marcado como enviado (estado_final = BORRADOR).
+// Solo se pueden capturar cuando Planeación ya aceptó el PTA (estado APROBADO).
 
 require "sesion.php";
 $unidadId = requerirUnidad();
 require "conexion.php";
 
-$anio = (int) date('Y');
+$anio = anioActivo($conexion);
 
 $periodo = (int) ($_GET['periodo'] ?? 0);
 if ($periodo !== 1 && $periodo !== 2) {
@@ -81,6 +81,7 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
         "hayPlan" => (bool) $plan,
         "seguimiento" => [
             "editable" => $plan ? seguimientoEditable($plan) : false,
+            "motivo_bloqueo" => $plan && !seguimientoEditable($plan) ? motivoBloqueo($plan) : null,
             "guardado" => (bool) $seguimiento,
             "estado_programacion" => $plan['estado'] ?? null,
             "estado_final" => $plan['estado_final'] ?? null,
@@ -259,15 +260,24 @@ function guardarRealizado($conexion, $acciones, $primerMes)
     mysqli_stmt_close($guardarMes);
 }
 
-// ¿Se puede capturar lo realizado? Mientras el PTA final no se haya enviado
-// (no hace falta enviar antes la Programación)
+// ¿Se puede capturar lo realizado? Solo cuando Planeación ya aceptó el PTA
+// (y el PTA final no se ha cerrado)
 function seguimientoEditable($plan)
 {
-    return $plan['estado_final'] === 'BORRADOR';
+    return $plan['estado'] === 'APROBADO' && $plan['estado_final'] === 'BORRADOR';
 }
 
-// Explicación de por qué no se puede capturar
+// Explicación de por qué no se puede capturar lo realizado
 function motivoBloqueo($plan)
 {
-    return "Tu PTA final ya se envió a Planeación; ya no se puede modificar.";
+    switch ($plan['estado']) {
+        case 'ENVIADO':
+            return "Tu PTA está en revisión por Planeación. Podrás capturar tus avances cuando lo acepte.";
+        case 'CON OBSERVACIONES':
+            return "Planeación rechazó tu PTA. Corrígelo en Inicio y vuelve a guardarlo; podrás capturar tus avances cuando lo acepte.";
+        case 'APROBADO':
+            return "Tu PTA final ya se envió a Planeación; ya no se puede modificar.";
+        default:
+            return "Todavía no puedes capturar tus avances.";
+    }
 }

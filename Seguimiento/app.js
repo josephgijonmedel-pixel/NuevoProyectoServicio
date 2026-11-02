@@ -85,6 +85,7 @@ async function cargarSeguimiento() {
     mostrarNombreUnidad(resultado.unidad.nombre);
     const encabezado = document.getElementById('encabezadoSemestre');
     if (encabezado) encabezado.innerText = `PRIMER SEMESTRE (${resultado.anio})`;
+    mostrarAnioEncabezado(resultado.anio);
 
     if (!resultado.hayPlan || resultado.acciones.length === 0) {
       mostrarAvisoSinProgramacion();
@@ -109,6 +110,7 @@ async function guardarSeguimiento() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ acciones: recolectarRealizado() })
     }));
+    avisarRealizadoGuardado();
     window.location.href = new URL(PAGINA_SIGUIENTE, window.location.href).href;
   } catch (error) {
     marcarErrores(error.errores);
@@ -162,7 +164,7 @@ function mostrarNombreUnidad(nombre) {
 
 function mostrarAvisoSinProgramacion() {
   const cajaAvisos = document.getElementById('cajaAvisos');
-  cajaAvisos.innerHTML = `Todavía no hay acciones programadas. Primero captura y guarda tu <a href="${PAGINA_PROGRAMACION}">Programación</a>.`;
+  cajaAvisos.innerHTML = `Todavía no hay acciones programadas. Primero guarda tu <a href="${PAGINA_PROGRAMACION}">Programación</a>.`;
   cajaAvisos.className = 'caja-aviso aviso-info';
   cajaAvisos.style.display = 'block';
 }
@@ -178,8 +180,8 @@ function mostrarEstadoSeguimiento(seguimiento) {
     });
     btnGuardar.style.display = 'none';
 
-    // Solo se bloquea cuando el PTA final ya se envió
-    mostrarMensaje('Tu PTA final ya se envió a Planeación. Ya no se puede modificar.', 'exito');
+    // Bloqueado: PTA en revisión, rechazado o ya cerrado. El servidor manda el motivo.
+    mostrarMensaje(seguimiento.motivo_bloqueo || 'Todavía no puedes capturar tus avances.', 'info');
     return;
   }
 
@@ -415,3 +417,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (respuesta.ok && (await respuesta.json()).esPlaneacion) opcion.hidden = false;
   } catch (e) { /* si falla, la opción simplemente queda oculta */ }
 });
+
+// Avisa a Programación (si está abierta en otra pestaña) que lo realizado cambió,
+// para que actualice su fila "Realizado" sin recargar la página.
+function avisarRealizadoGuardado() {
+  try {
+    const canal = new BroadcastChannel('pta-realizado');
+    canal.postMessage('guardado');
+    canal.close();
+  } catch (e) { /* navegador sin BroadcastChannel: Programación se actualiza al volver a verla */ }
+}
+
+// Año del PTA en el encabezado (el <span id="anioEncabezado"> del <h2>)
+function mostrarAnioEncabezado(anio) {
+  const span = document.getElementById('anioEncabezado');
+  if (span) span.textContent = anio;
+}

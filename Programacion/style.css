@@ -468,6 +468,13 @@ select.campo-tabla {
 .pct-regular { background-color: #fff3cd !important; color: #856404; font-weight: bold; }
 .pct-bajo  { background-color: #f8d7da !important; color: #721c24; font-weight: bold; }
 
+/* % de Realizado: el cuadro del número se pinta con la clasificación de los seguimientos.
+   Más específico que .campo-bloqueado para ganarle a su fondo gris. */
+input.campo-bloqueado.pct-bueno   { background-color: #00ff3c !important; color: #000000 !important; border-color: #00c22e !important; }
+input.campo-bloqueado.pct-regular { background-color: #ffc71f !important; color: #000000 !important; border-color: #e0a800 !important; }
+input.campo-bloqueado.pct-medio   { background-color: #ff8307 !important; color: #000000 !important; border-color: #d96d00 !important; }
+input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; color: #000000 !important; border-color: #c40014 !important; }
+
 .celda-subtotal { background-color: #eef6fc; font-weight: bold; }
 .celda-total { background-color: #dcecfb; font-weight: bold; }
 .celda-realizado    { background-color: #e9ecef; font-weight: bold; }
@@ -765,3 +772,6 @@ select.campo-tabla {
   border-color: #c3e6cb;
 }
 
+
+/* "Guardar" siempre a la derecha, aunque "Agregar Nueva Acción" esté oculto */
+#btnGuardarProgramacion { margin-left: auto; }

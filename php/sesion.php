@@ -39,11 +39,11 @@ function esPlaneacion()
 }
 
 // Solo deja pasar a Planeación (o Admin); a los demás les responde 403.
-function requerirPlaneacion()
+function requerirPlaneacion($mensaje = "Solo la Coordinación de Planeación puede ver las áreas.")
 {
     requerirSesion();
     if (!esPlaneacion()) {
-        responderJson(["error" => "Solo la Coordinación de Planeación puede ver las áreas."], 403);
+        responderJson(["error" => $mensaje], 403);
     }
 }
 
@@ -58,4 +58,12 @@ function registrarBitacora($conexion, $tabla, $registroId, $accion, $detalle = n
     mysqli_stmt_bind_param($consulta, "isiss", $usuarioId, $tabla, $registroId, $accion, $detalle);
     mysqli_stmt_execute($consulta);
     mysqli_stmt_close($consulta);
+}
+
+// Año del periodo activo: el que capturan las áreas y consulta Planeación.
+// Lo decide Planeación con el botón "Abrir nuevo periodo"; si todavía no hay ninguno, se usa el año actual.
+function anioActivo($conexion)
+{
+    $fila = mysqli_fetch_row(mysqli_query($conexion, "SELECT anio FROM periodos WHERE activo = 1 ORDER BY anio DESC LIMIT 1"));
+    return $fila ? (int) $fila[0] : (int) date('Y');
 }

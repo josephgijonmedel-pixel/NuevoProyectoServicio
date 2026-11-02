@@ -7,16 +7,23 @@
 //   * Un plan por unidad por año (se crea solo la primera vez que se guarda).
 //   * Aquí solo se captura lo PROGRAMADO; lo REALIZADO se captura en los seguimientos
 //     y aquí solo se muestra (guardar la programación no lo borra).
-//   * Se puede editar mientras el plan esté en BORRADOR.
+//   * Al guardar, el PTA se envía a Planeación (ENVIADO) y queda bloqueado mientras lo revisa.
+//     Si Planeación lo rechaza (CON OBSERVACIONES) se puede corregir y volver a guardar;
+//     si lo acepta (APROBADO) ya no se modifica y se habilitan los seguimientos.
 
 require "sesion.php";
 $unidadId = requerirUnidad();
 require "conexion.php";
 
-const ESTADOS_EDITABLES = ['BORRADOR'];
+// Estados del PTA (columna planes_trabajo.estado):
+//   ENVIADO            → el área lo guardó y Planeación lo está revisando (bloqueado)
+//   CON OBSERVACIONES  → Planeación lo rechazó con un motivo; el área lo corrige y lo vuelve a guardar
+//   APROBADO           → Planeación lo aceptó; ya se capturan los seguimientos (bloqueado)
+// La Programación solo se puede guardar cuando todavía no existe o cuando fue rechazada.
+const ESTADOS_EDITABLES = ['CON OBSERVACIONES'];
 // Columnas de texto libre de cada acción (después del Total Anual en la pantalla)
 const CAMPOS_COMPLEMENTARIOS = ['beneficiados', 'responsables', 'participantes', 'observaciones_generales'];
-$anio = (int) date('Y');
+$anio = anioActivo($conexion);
 
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -25,25 +32,30 @@ try {
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $datos = json_decode(file_get_contents("php://input"), true);
-        $acciones = validarAcciones($conexion, $datos['acciones'] ?? null);
-
-        mysqli_begin_transaction($conexion);
         $plan = obtenerPlan($conexion, $unidadId, $anio);
+
+        if ($plan && !in_array($plan['estado'], ESTADOS_EDITABLES, true)) {
+            $motivo = $plan['estado'] === 'APROBADO'
+                ? "Planeación ya aceptó tu PTA; no se puede modificar."
+                : "Tu PTA está en revisión por Planeación; no se puede modificar.";
+            responderJson(["error" => $motivo], 409);
+        }
+
+        // Primera vez (se crea el plan) o corrección después de un rechazo (se reemplaza lo programado).
+        // En los dos casos el PTA queda ENVIADO: en revisión por Planeación.
+        $acciones = validarAcciones($conexion, $datos['acciones'] ?? null);
+        mysqli_begin_transaction($conexion);
         $esNuevo = !$plan;
         if ($esNuevo) {
             $plan = crearPlan($conexion, $unidadId, $anio);
         }
-        if (!in_array($plan['estado'], ESTADOS_EDITABLES, true)) {
-            mysqli_rollback($conexion);
-            responderJson(["error" => "Tu PTA final ya fue enviado a Planeación; el plan no se puede modificar."], 409);
-        }
-
         guardarAcciones($conexion, (int) $plan['id'], $acciones);
-        registrarBitacora($conexion, "planes_trabajo", (int) $plan['id'], $esNuevo ? "CREAR" : "EDITAR");
+        mysqli_query($conexion, "UPDATE planes_trabajo SET estado = 'ENVIADO', fecha_envio = NOW() WHERE id = " . (int) $plan['id']);
+        registrarBitacora($conexion, "planes_trabajo", (int) $plan['id'], "ENVIAR", $esNuevo ? "PTA enviado a revisión" : "PTA corregido y reenviado a revisión");
         mysqli_commit($conexion);
 
         $respuesta = armarRespuesta($conexion, $unidadId, $anio);
-        $respuesta["mensaje"] = "Programación guardada correctamente.";
+        $respuesta["mensaje"] = "Tu PTA se envió a Planeación para su revisión.";
         responderJson($respuesta);
     }
 
@@ -68,6 +80,7 @@ function armarRespuesta($conexion, $unidadId, $anio)
             "id" => (int) $plan['id'],
             "estado" => $plan['estado'],
             "editable" => in_array($plan['estado'], ESTADOS_EDITABLES, true),
+            "observaciones" => $plan['observaciones_planeacion'],   // motivo del rechazo
             "estado_final" => $plan['estado_final'],
         ] : null,
         "acciones" => $plan ? obtenerAcciones($conexion, (int) $plan['id']) : [],
@@ -89,7 +102,7 @@ function obtenerPlan($conexion, $unidadId, $anio)
 {
     $consulta = mysqli_prepare(
         $conexion,
-        "SELECT id, estado, estado_final FROM planes_trabajo
+        "SELECT id, estado, estado_final, observaciones_planeacion FROM planes_trabajo
          WHERE unidad_responsable_id = ? AND anio = ?"
     );
     mysqli_stmt_bind_param($consulta, "ii", $unidadId, $anio);

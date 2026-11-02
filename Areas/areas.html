@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Áreas - Supervisión de Planes de Trabajo</title>
-  <link rel="stylesheet" href="../Areas/style.css?v=20261022m">
+  <link rel="stylesheet" href="../Areas/style.css?v=20261101c">
 </head>
 <body>
 
@@ -14,7 +14,8 @@
     <img src="../img/cgzs.png" alt="CGZS" class="logo logo-izquierdo">
     <img src="../img/Elfuturo.png" alt="El Futuro es Hoy" class="logo logo-derecho">
     <h1>Coordinación General de la Zona Sur</h1>
-    <h2>SUPERVISIÓN DE PLANES DE TRABAJO ANUAL</h2>
+    <!-- El año del PTA lo pone el JavaScript (se actualiza al cambiarlo con "Nuevo PTA") -->
+    <h2>SEGUIMIENTO DE PLANES DE TRABAJO ANUAL <span id="anioEncabezado"></span></h2>
   </div>
 
   <!-- Botón de tres líneas que abre/cierra el menú lateral de navegación -->
@@ -78,21 +79,37 @@
     <!-- Avisos: errores al cargar o falta de permisos -->
     <div id="cajaAvisos" class="caja-aviso" style="display: none;"></div>
 
+    <!-- Año del PTA y control para cambiarlo (solo Planeación llega a esta página) -->
+    <div class="barra-periodo" id="barraPeriodo" hidden>
+      <div class="periodo-info">
+        <span class="periodo-etiqueta">Año del PTA</span>
+        <span class="periodo-anio" id="periodoActivo">–</span>
+      </div>
+      <!-- "Nuevo PTA" muestra el campo del año. Solo se pueden crear años que no existan -->
+      <div class="periodo-cambiar">
+        <span class="periodo-campo" id="campoAnio" hidden>
+          <label for="anioNuevo">Cambiar a:</label>
+          <input type="text" id="anioNuevo" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Año">
+        </span>
+        <button type="button" class="boton boton-guardar" id="btnEstablecerAnio">Nuevo PTA</button>
+      </div>
+    </div>
+
     <!-- Resumen: cuántas áreas hay en cada estado -->
     <div class="resumen-cards">
       <div class="resumen-card">
         <span class="resumen-numero" id="totalAreas">–</span>
-        <span class="resumen-texto">Áreas registradas</span>
+        <span class="resumen-texto">Áreas con PTA</span>
       </div>
-      <div class="resumen-card tarjeta-pendiente">
+      <div class="resumen-card tarjeta-pendiente oculto">
         <span class="resumen-numero" id="totalSinEnviar">–</span>
         <span class="resumen-texto">Programación sin enviar</span>
       </div>
-      <div class="resumen-card tarjeta-enviado">
+      <div class="resumen-card tarjeta-enviado oculto">
         <span class="resumen-numero" id="totalProgramacion">–</span>
         <span class="resumen-texto">Programación enviada</span>
       </div>
-      <div class="resumen-card tarjeta-final">
+      <div class="resumen-card tarjeta-final oculto">
         <span class="resumen-numero" id="totalFinal">–</span>
         <span class="resumen-texto">PTA final enviado</span>
       </div>
@@ -104,15 +121,8 @@
         <label for="buscarArea">Buscar área:</label>
         <input type="text" id="buscarArea" placeholder="Nombre del área o del responsable">
       </div>
-      <div class="grupo-campo">
-        <label for="filtroTipo">Tipo de unidad:</label>
-        <select id="filtroTipo">
-          <option value="">Todos</option>
-          <option value="ACADÉMICA">ACADÉMICA</option>
-          <option value="ADMINISTRATIVA">ADMINISTRATIVA</option>
-        </select>
-      </div>
-      <div class="grupo-campo">
+      
+      <div class="grupo-campo oculto">
         <label for="filtroEstado">Estado de la programación:</label>
         <select id="filtroEstado">
           <option value="">Todos</option>
@@ -131,8 +141,9 @@
             <th class="col-area">Área (Unidad Responsable)</th>
             <th>Tipo</th>
             <th>Responsable</th>
-            <th class="col-estado">Programación</th>
-            <th class="col-estado">PTA final</th>
+            <th class="col-estado oculto">Programación</th>
+            <th class="col-estado oculto">PTA final</th>
+            <th class="col-revision">Revisión</th>
             <th class="col-ver">Ver</th>
           </tr>
         </thead>
@@ -147,6 +158,24 @@
   </form>
 </div>
 
-<script src="../Areas/app.js?v=20261022m"></script>
+<!-- Ventana que pide confirmar antes de crear un nuevo PTA -->
+<div class="ventana-fondo" id="ventanaConfirmar">
+  <div class="ventana-contenido ventana-confirmar-contenido">
+    <div class="ventana-encabezado ventana-confirmar-encabezado">
+      <h3>Crear nuevo PTA</h3>
+      <button type="button" class="boton-cerrar-ventana" id="btnCerrarVentana">✕</button>
+    </div>
+    <div class="ventana-cuerpo ventana-confirmar-cuerpo">
+      <div class="ventana-icono">⚠️</div>
+      <p class="ventana-texto" id="ventanaTexto"></p>
+    </div>
+    <div class="ventana-pie ventana-confirmar-pie">
+      <button type="button" class="boton boton-cancelar" id="btnConfirmarNo">Cancelar</button>
+      <button type="button" class="boton boton-confirmar" id="btnConfirmarSi">Sí, crear PTA</button>
+    </div>
+  </div>
+</div>
+
+<script src="../Areas/app.js?v=20261101c"></script>
 </body>
 </html>

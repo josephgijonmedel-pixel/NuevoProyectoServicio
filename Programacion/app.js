@@ -1,12 +1,12 @@
 // Archivo PHP que lee (GET) y guarda (POST) la programación en la base de datos
 const API_PROGRAMACION = '../php/programacion.php';
 const PAGINA_LOGIN = '../InicioSesion/inicioSesion.html';
-const PAGINA_SEGUIMIENTO = '../Seguimiento/seguimiento.html';
 
 // Listas de opciones (proyectos, líneas de acción, unidades de medida); llegan del servidor
 let catalogos = { proyectos: [], lineas: [], unidades: [] };
 
 let contadorFilas = 0;
+
 
 // Columnas de texto libre que van después del Total Anual.
 // Cada nombre es igual a su columna en la tabla acciones_estrategicas.
@@ -31,12 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnGuardarProg.addEventListener('click', (e) => {
     e.preventDefault();
-    if (validarFilas()) abrirModalConfirmacion('¿Confirmar programación?');
+    if (validarFilas()) abrirModalConfirmacion(mensajeConfirmacion());
   });
 
   formProg.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (validarFilas()) abrirModalConfirmacion('¿Confirmar programación?');
+    if (validarFilas()) abrirModalConfirmacion(mensajeConfirmacion());
   });
 
   if (btnConfirmarNo) btnConfirmarNo.addEventListener('click', cerrarModalConfirmacion);
@@ -92,14 +92,96 @@ async function cargarProgramacion() {
     catalogos = resultado.catalogos;
 
     mostrarNombreUnidad(resultado.unidad.nombre);
+    mostrarAnioEncabezado(resultado.anio);
 
     const acciones = resultado.acciones.length > 0 ? resultado.acciones : [null];
     acciones.forEach(accion => agregarFilaAccion(accion));
 
     mostrarEstadoPlan(resultado.plan);
+
+    // Planeación inició un PTA nuevo y esta área todavía no guarda su Programación de ese año.
+    // Sale solo una vez por inicio de sesión, y deja de salir en cuanto el área guarda su Programación.
+    if (!resultado.plan && !ventanaNuevoPTAYaVista(resultado.anio)) {
+      mostrarVentanaNuevoPTA(resultado.anio);
+      marcarVentanaNuevoPTAVista(resultado.anio);
+    }
   } catch (error) {
     mostrarMensaje(error.message, 'error');
   }
+}
+
+// Vuelve a pedir lo realizado al servidor y actualiza solo la fila "Realizado" de cada acción
+// (lo programado no se toca, por si hay cambios sin guardar).
+async function actualizarRealizado() {
+  if (!document.querySelector('#cuerpoProgramacion tr.fila-programado')) return; // la tabla aún no carga
+  try {
+    const resultado = await leerRespuesta(await fetch(API_PROGRAMACION));
+    const realizadoPorAccion = new Map(resultado.acciones.map(a => [String(a.id), a.r]));
+
+    filasDeAcciones().forEach(trP => {
+      const r = realizadoPorAccion.get(trP.dataset.accionId);
+      if (!r) return; // acción nueva que todavía no se guarda
+      const fila = trP.dataset.fila;
+      document.querySelectorAll(`.input-r-${fila}`).forEach((input, mes) => { input.value = r[mes] || 0; });
+      calcularTotales(fila);
+    });
+  } catch (error) { /* si falla, se queda lo que ya se mostraba */ }
+}
+
+// Cuándo se actualiza lo realizado:
+//  * al guardar un seguimiento en otra pestaña (aviso por BroadcastChannel)
+//  * al regresar a esta pestaña o a esta página con el botón "Atrás"
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    new BroadcastChannel('pta-realizado').addEventListener('message', actualizarRealizado);
+  } catch (e) { /* navegador sin BroadcastChannel */ }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') actualizarRealizado();
+  });
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) actualizarRealizado(); // la página salió de la memoria del navegador
+  });
+});
+
+// Memoria de "ya se mostró la ventana del nuevo PTA" (sessionStorage: dura mientras la pestaña
+// esté abierta; la página de inicio de sesión la borra para que vuelva a salir al siguiente ingreso).
+const CLAVE_VENTANA_NUEVO_PTA = 'ventanaNuevoPTAVista';
+
+function ventanaNuevoPTAYaVista(anio) {
+  try {
+    return sessionStorage.getItem(CLAVE_VENTANA_NUEVO_PTA) === String(anio);
+  } catch (e) {
+    return false; // si el navegador no deja usar sessionStorage, se muestra
+  }
+}
+
+function marcarVentanaNuevoPTAVista(anio) {
+  try { sessionStorage.setItem(CLAVE_VENTANA_NUEVO_PTA, String(anio)); } catch (e) { /* sin memoria */ }
+}
+
+// Ventana flotante "Iniciaste un nuevo PTA". Se cierra con Entendido, ✕, Esc o clic fuera.
+function mostrarVentanaNuevoPTA(anio) {
+  const ventana = document.getElementById('ventanaNuevoPTA');
+  if (!ventana) return;
+
+  document.getElementById('textoNuevoPTA').innerText =
+    `Iniciaste un nuevo PTA ${anio}.
+
+Captura tus acciones y guarda tu Programación.`;
+  ventana.style.display = 'flex';
+
+  const cerrar = () => {
+    ventana.style.display = 'none';
+    document.removeEventListener('keydown', cerrarConEsc);
+  };
+  const cerrarConEsc = (e) => { if (e.key === 'Escape') cerrar(); };
+
+  document.getElementById('btnEntendidoNuevoPTA').onclick = cerrar;
+  document.getElementById('btnCerrarNuevoPTA').onclick = cerrar;
+  ventana.onclick = (e) => { if (e.target === ventana) cerrar(); };
+  document.addEventListener('keydown', cerrarConEsc);
+  document.getElementById('btnEntendidoNuevoPTA').focus();
 }
 
 // Envía todas las acciones de la tabla al servidor
@@ -114,12 +196,18 @@ async function guardarProgramacion() {
       body: JSON.stringify({ acciones: recolectarAcciones() })
     }));
 
-    window.location.href = new URL(PAGINA_SEGUIMIENTO, window.location.href).href;
+    // Se recarga Inicio: el PTA aparece "En revisión" y bloqueado
+    window.location.reload();
   } catch (error) {
     marcarErroresDelServidor(error.errores);
     mostrarMensaje(error.message, 'error', error.errores);
     btnGuardarProg.disabled = false;
   }
+}
+
+// Texto de la ventana de confirmación según lo que se va a guardar
+function mensajeConfirmacion() {
+  return '¿Enviar tu PTA a Planeación para su revisión? Mientras lo revisa no podrás modificarlo.';
 }
 
 // Convierte la respuesta del servidor en datos, o lanza un error con su mensaje
@@ -178,18 +266,44 @@ function mostrarEstadoPlan(plan) {
   const btnAgregar = document.getElementById('btnAgregarAccion');
   const btnGuardarProg = document.getElementById('btnGuardarProgramacion');
 
+  // En revisión o aceptado: todo bloqueado (lo realizado siempre es de solo lectura aquí)
   if (plan && !plan.editable) {
-    document.querySelectorAll('#cuerpoProgramacion select, #cuerpoProgramacion textarea, #cuerpoProgramacion input')
-      .forEach(campo => { campo.disabled = true; });
-    document.querySelectorAll('#cuerpoProgramacion .boton-quitar').forEach(boton => { boton.style.display = 'none'; });
+    bloquearProgramacion();
     btnAgregar.style.display = 'none';
     btnGuardarProg.style.display = 'none';
-    mostrarMensaje('Tu PTA final se envió a Planeación. ¡Plan de Trabajo concluido!', 'exito');
+    if (plan.estado === 'APROBADO') {
+      mostrarMensaje('Planeación aceptó tu PTA. Ya puedes capturar tus avances en Primer y Segundo seguimiento.', 'exito');
+    } else {
+      mostrarMensaje('Tu PTA se envió a Planeación y está en revisión. ' +
+        'Podrás capturar tus avances cuando lo acepte.', 'info');
+    }
     return;
+  }
+
+  // Rechazado: se puede corregir y volver a enviar
+  if (plan && plan.estado === 'CON OBSERVACIONES') {
+    mostrarMensaje('Planeación rechazó tu PTA. Corrígelo y vuelve a guardarlo para enviarlo a revisión.\n' +
+      'Motivo: ' + (plan.observaciones || 'sin motivo indicado'), 'error');
   }
 
   btnAgregar.disabled = false;
   btnGuardarProg.disabled = false;
+}
+
+// Deja toda la Programación de solo lectura: datos de cada acción, meses programados
+// y Beneficiados, Responsable(s), Participantes y Observaciones Generales.
+function bloquearProgramacion() {
+  const selector = [
+    '#cuerpoProgramacion select',
+    '#cuerpoProgramacion textarea',
+    '#cuerpoProgramacion .fila-programado input.campo-mes:not(.campo-bloqueado)'
+  ].join(', ');
+  document.querySelectorAll(selector).forEach(campo => {
+    campo.disabled = true;
+    campo.classList.add('campo-bloqueado');
+    campo.title = 'La Programación ya se guardó; esto ya no se puede modificar';
+  });
+  document.querySelectorAll('#cuerpoProgramacion .boton-quitar').forEach(boton => { boton.style.display = 'none'; });
 }
 
 // Muestra un aviso arriba de la tabla. tipo: 'error' (rojo) o 'info' (azul)
@@ -199,7 +313,7 @@ function mostrarMensaje(texto, tipo, errores) {
 
   const estilos = {
     error: ['⚠️ ', 'caja-aviso'],
-    info: ['ℹ️ ', 'caja-aviso aviso-info'],
+    info: [' ', 'caja-aviso aviso-info'],
     exito: ['✔ ', 'caja-aviso aviso-exito']
   };
   const [icono, clase] = estilos[tipo] || estilos.info;
@@ -537,13 +651,13 @@ function calcularTotales(id) {
   let pctPSem = valAbsP > 0 ? ((valAbsP / valAbsP) * 100).toFixed(1) : 0;
   let pctRSem = valAbsP > 0 ? ((valAbsR / valAbsP) * 100).toFixed(1) : 0;
   aplicarPorcentaje(inputPctPSem, pctPSem, 'celda-subtotal');
-  aplicarPorcentaje(inputPctRSem, pctRSem, 'celda-realizado');
+  colorearPorcentajeRealizado(inputPctRSem, pctRSem);
 
   // Lo mismo, pero para el segundo semestre
   let pctPSem2 = subP2 > 0 ? ((subP2 / subP2) * 100).toFixed(1) : 0;
   let pctRSem2 = subP2 > 0 ? ((subR2 / subP2) * 100).toFixed(1) : 0;
   aplicarPorcentaje(inputPctPSem2, pctPSem2, 'celda-subtotal');
-  aplicarPorcentaje(inputPctRSem2, pctRSem2, 'celda-realizado');
+  colorearPorcentajeRealizado(inputPctRSem2, pctRSem2);
 
   // Totales de todo el año (sumando los 12 meses)
   let totalP = pInputs.reduce((sum, inp) => sum + (parseInt(inp.value, 10) || 0), 0);
@@ -561,7 +675,7 @@ function calcularTotales(id) {
   const inputPctPAnual = document.getElementById(`pct-p-anual-${id}`);
   const inputPctRAnual = document.getElementById(`pct-r-anual-${id}`);
   aplicarPorcentaje(inputPctPAnual, pctPAnual, 'celda-total');
-  aplicarPorcentaje(inputPctRAnual, pctRAnual, 'celda-realizado');
+  colorearPorcentajeRealizado(inputPctRAnual, pctRAnual);
 }
 
 // Pone el porcentaje ya calculado en su casilla y le pone color
@@ -579,6 +693,25 @@ function aplicarPorcentaje(input, pct, claseBase) {
   } else {
     td.classList.add('pct-bajo');
   }
+}
+
+// % de Realizado: pinta el cuadro del número con la misma clasificación de colores
+// que los seguimientos (verde, amarillo, naranja o rojo)
+function colorearPorcentajeRealizado(input, pct) {
+  if (!input) return;
+  input.value = `${pct}%`;
+  input.classList.remove('pct-bueno', 'pct-regular', 'pct-medio', 'pct-bajo');
+  input.classList.add(clasePorcentaje(Number(pct)));
+  const td = input.closest('td');
+  if (td) td.className = 'celda-realizado';
+}
+
+// Clasificación de colores (igual que en Seguimiento y Segundo seguimiento)
+function clasePorcentaje(pct) {
+  if (pct >= 80) return 'pct-bueno';
+  if (pct >= 60) return 'pct-regular';
+  if (pct > 30) return 'pct-medio';
+  return 'pct-bajo';
 }
 
 // Borra una acción completa de la tabla (su fila de arriba, la de abajo y el espacio).
@@ -658,3 +791,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (respuesta.ok && (await respuesta.json()).esPlaneacion) opcion.hidden = false;
   } catch (e) { /* si falla, la opción simplemente queda oculta */ }
 });
+
+// Año del PTA en el encabezado (el <span id="anioEncabezado"> del <h2>)
+function mostrarAnioEncabezado(anio) {
+  const span = document.getElementById('anioEncabezado');
+  if (span) span.textContent = anio;
+}

@@ -173,3 +173,10 @@ INSERT IGNORE INTO `unidades_medida` (`nombre`) VALUES
   ('Utensilios'),
   ('Visitas'),
   ('Otros');
+
+-- ---------------------------------------------------------------------
+-- Periodo activo del PTA. Después Planeación abre los siguientes
+-- con el botón "Abrir periodo" en Ver áreas.
+-- ---------------------------------------------------------------------
+
+INSERT IGNORE INTO `periodos` (`anio`, `activo`) VALUES (2026, 1);

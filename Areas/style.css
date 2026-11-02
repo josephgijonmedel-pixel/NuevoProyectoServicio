@@ -319,6 +319,11 @@ table.tabla-plan th.th-calendario {
 .col-unidad { width: 120px; }
 .col-var { width: 45px; }
 
+/* Beneficiados, Responsable(s), Participantes y Observaciones Generales */
+.col-complementaria { width: 200px; min-width: 200px; }
+.col-observaciones { width: 260px; min-width: 260px; }
+.celda-complementaria { vertical-align: top; white-space: pre-line; }
+
 /* CELDAS DE TEXTO ESTÁTICO (PROYECTO, LÍNEA DE ACCIÓN, ACCIÓN ESTRATÉGICA) */
 .celda-texto {
   text-align: left !important;
@@ -759,3 +764,142 @@ table.tabla-areas tbody tr:hover {
   color: #ffffff;
 }
 
+
+/* Elementos ocultos por ahora (estados de Programación y PTA final en la lista de áreas).
+   Para volver a mostrarlos, quita la clase "oculto" en areas.html y en app.js. */
+.oculto { display: none !important; }
+
+/* Barra del periodo activo con el botón "Abrir periodo" (areas.html) */
+.barra-periodo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  background-color: #ffffff;
+  border: 1px solid var(--color-borde);
+  border-left: 4px solid var(--azul-boton);
+  border-radius: 6px;
+}
+
+.barra-periodo[hidden] { display: none; }
+
+.periodo-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.periodo-etiqueta {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.periodo-anio {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: var(--azul-boton);
+}
+
+/* Campo para cambiar el año del PTA */
+.periodo-cambiar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.periodo-campo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.periodo-campo[hidden] { display: none; }
+
+.periodo-cambiar label {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #495057;
+}
+
+.periodo-cambiar input {
+  width: 110px;
+  padding: 9px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.periodo-cambiar input.campo-error { border-color: #dc3545; background-color: #fff5f5; }
+
+#btnEstablecerAnio:disabled { opacity: 0.6; cursor: wait; }
+
+/* Revisión del PTA en el detalle del área: estado + botones Aceptar / Rechazar */
+.barra-revision {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  background-color: #ffffff;
+  border: 1px solid var(--color-borde);
+  border-left: 4px solid var(--azul-boton);
+  border-radius: 6px;
+}
+
+.barra-revision[hidden], .revision-botones[hidden] { display: none; }
+
+.revision-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.revision-etiqueta {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #495057;
+}
+
+.revision-detalle {
+  font-size: 0.85rem;
+  color: #495057;
+  white-space: pre-line;
+}
+
+.revision-botones {
+  display: flex;
+  gap: 10px;
+}
+
+.boton-rechazar {
+  background-color: #dc3545;
+  color: #ffffff;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.boton-rechazar:hover { background-color: #bb2d3b; }
+
+/* Motivo del rechazo dentro de la ventana */
+.campo-motivo {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.campo-motivo[hidden] { display: none; }
+.campo-motivo.campo-error { border-color: #dc3545; background-color: #fff5f5; }
+
+.col-revision { width: 130px; }

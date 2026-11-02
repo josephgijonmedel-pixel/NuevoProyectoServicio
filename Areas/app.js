@@ -16,10 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('cuerpoDetalle')) cargarDetalle();
 });
 
-// ---------------------------------------------------------------------
-// Comunicación con el servidor
-// ---------------------------------------------------------------------
-
 // Convierte la respuesta del servidor en datos, o lanza un error con su mensaje
 async function leerRespuesta(respuesta) {
   if (respuesta.status === 401) {
@@ -58,6 +54,7 @@ async function cargarLista() {
   try {
     const resultado = await leerRespuesta(await fetch(API_AREAS));
     document.getElementById('anioPlanes').textContent = resultado.anio;
+    mostrarAnioEncabezado(resultado.anio);
     pintarLista(resultado.areas);
     pintarResumen(resultado.areas);
   } catch (error) {
@@ -76,8 +73,9 @@ function pintarLista(areas) {
       <td class="celda-texto">${escaparHtml(area.nombre)}</td>
       <td>${escaparHtml(area.tipo || '—')}</td>
       <td class="celda-texto">${escaparHtml(area.responsable || '—')}</td>
-      <td>${etiquetaEstado(area.estado_plan, 'SIN PLAN')}</td>
-      <td>${etiquetaFinal(area.estado_plan, area.estado_final)}</td>
+      <td class="oculto">${etiquetaEstado(area.estado_plan, 'SIN PLAN')}</td>
+      <td class="oculto">${etiquetaFinal(area.estado_plan, area.estado_final)}</td>
+      <td>${etiquetaRevision(area.estado_plan)}</td>
       <td><a href="../Areas/detalleArea.html?id=${area.id}" class="boton-ver">Ver</a></td>
     `;
     tbody.appendChild(fila);
@@ -85,8 +83,10 @@ function pintarLista(areas) {
 
   const listaVacia = document.getElementById('listaVacia');
   if (areas.length === 0) {
-    listaVacia.textContent = 'Todavía no hay otras áreas registradas.';
+    listaVacia.textContent = 'Ninguna área ha guardado todavía su PTA de este año.';
     listaVacia.style.display = 'block';
+  } else {
+    listaVacia.style.display = 'none';
   }
 }
 
@@ -101,11 +101,11 @@ function pintarResumen(areas) {
 // Búsqueda y filtros de la lista (solo existen en areas.html)
 document.addEventListener('DOMContentLoaded', () => {
   const buscar = document.getElementById('buscarArea');
-  const filtroTipo = document.getElementById('filtroTipo');
-  const filtroEstado = document.getElementById('filtroEstado');
-  if (!buscar || !filtroTipo || !filtroEstado) return;
+  if (!buscar) return; // no estamos en areas.html
 
-  [buscar, filtroTipo, filtroEstado].forEach(control => {
+  // Los filtros son opcionales: se conecta solo el que exista en la página
+  const controles = [buscar, document.getElementById('filtroTipo'), document.getElementById('filtroEstado')];
+  controles.filter(Boolean).forEach(control => {
     control.addEventListener('input', filtrarAreas);
     control.addEventListener('change', filtrarAreas);
   });
@@ -114,8 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Columnas de la tabla: 0 área, 1 tipo, 2 responsable, 3 estado del plan
 function filtrarAreas() {
   const texto = normalizar(document.getElementById('buscarArea').value);
-  const tipo = document.getElementById('filtroTipo').value;
-  const estado = document.getElementById('filtroEstado').value;
+  const tipo = document.getElementById('filtroTipo')?.value || '';
+  const estado = document.getElementById('filtroEstado')?.value || '';
   const filas = Array.from(document.querySelectorAll('#cuerpoAreas tr'));
 
   let visibles = 0;
@@ -138,6 +138,131 @@ function filtrarAreas() {
 }
 
 // ---------------------------------------------------------------------
+// Nuevo PTA: Planeación crea el PTA de un año que todavía no existe (areas.html)
+// ---------------------------------------------------------------------
+
+const API_PERIODO = '../php/periodo.php';
+let anioActual = null;
+let aniosExistentes = [];   // años que ya tienen PTA: no se pueden volver a crear
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnEstablecer = document.getElementById('btnEstablecerAnio');
+  if (!btnEstablecer) return; // no estamos en areas.html
+
+  const ventana = document.getElementById('ventanaConfirmar');
+  const inputAnio = document.getElementById('anioNuevo');
+  const cerrar = () => { ventana.style.display = 'none'; };
+
+  btnEstablecer.addEventListener('click', () => {
+    // Primer clic en "Nuevo PTA": solo muestra el campo del año
+    if (document.getElementById('campoAnio').hidden) {
+      mostrarCampoAnio();
+      return;
+    }
+    const anio = Number(inputAnio.value);
+    if (!Number.isInteger(anio) || anio < 2020 || anio > 2100) {
+      inputAnio.classList.add('campo-error');
+      mostrarMensaje('Escribe un año válido.', 'error');
+      return;
+    }
+    inputAnio.classList.remove('campo-error');
+    if (aniosExistentes.includes(anio)) {
+      inputAnio.classList.add('campo-error');
+      mostrarMensaje(`Ya existe un PTA ${anio}. Vuelve a intentar con otro año`, 'error');
+      return;
+    }
+    document.getElementById('ventanaTexto').innerText =
+      `¿Crear el PTA ${anio}?\n\n` +
+      `Todas las áreas empezarán a capturar su PTA ${anio}. ` +
+      `El PTA ${anioActual} quedará guardado y ya no se podrá modificar.`;
+    ventana.style.display = 'flex';
+  });
+  // Solo números: borra cualquier otro carácter (escrito o pegado) y deja máximo 4 dígitos
+  inputAnio.addEventListener('input', () => {
+    const limpio = inputAnio.value.replace(/\D/g, '').slice(0, 4);
+    if (inputAnio.value !== limpio) inputAnio.value = limpio;
+  });
+  inputAnio.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); btnEstablecer.click(); }
+  });
+
+  document.getElementById('btnConfirmarNo').addEventListener('click', cerrar);
+  document.getElementById('btnCerrarVentana').addEventListener('click', cerrar);
+  ventana.addEventListener('click', (e) => { if (e.target === ventana) cerrar(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (ventana.style.display === 'flex') cerrar();
+    else ocultarCampoAnio();
+  });
+  document.getElementById('btnConfirmarSi').addEventListener('click', () => {
+    cerrar();
+    crearPTA(Number(inputAnio.value));
+  });
+
+  cargarPeriodo();
+});
+
+// Pide el año activo y lo muestra en la barra
+async function cargarPeriodo() {
+  try {
+    pintarPeriodo(await leerRespuesta(await fetch(API_PERIODO)));
+  } catch (error) { /* si falla, la barra queda oculta; el aviso lo muestra la carga de la lista */ }
+}
+
+// Año del PTA en el encabezado, después de "SEGUIMIENTO DE PLANES DE TRABAJO ANUAL"
+function mostrarAnioEncabezado(anio) {
+  const span = document.getElementById('anioEncabezado');
+  if (span) span.textContent = anio;
+}
+
+// Muestra "Cambiar a:" con el campo del año (sugiere el año siguiente)
+function mostrarCampoAnio() {
+  const inputAnio = document.getElementById('anioNuevo');
+  document.getElementById('campoAnio').hidden = false;
+  document.getElementById('btnEstablecerAnio').textContent = 'Establecer año';
+  inputAnio.value = Math.max(anioActual, ...aniosExistentes) + 1;   // el siguiente año que no existe
+  inputAnio.focus();
+  inputAnio.select();
+}
+
+// Vuelve a dejar solo el botón "Nuevo PTA"
+function ocultarCampoAnio() {
+  document.getElementById('campoAnio').hidden = true;
+  document.getElementById('anioNuevo').classList.remove('campo-error');
+  document.getElementById('btnEstablecerAnio').textContent = 'Nuevo PTA';
+}
+
+// datos = {anio, anios: [años que ya existen]}
+function pintarPeriodo(datos) {
+  anioActual = datos.anio;
+  document.getElementById('periodoActivo').textContent = datos.anio;
+  mostrarAnioEncabezado(datos.anio);
+  document.getElementById('anioNuevo').value = datos.anio;
+  aniosExistentes = datos.anios || [];
+  document.getElementById('barraPeriodo').hidden = false;
+}
+
+async function crearPTA(anio) {
+  const btnEstablecer = document.getElementById('btnEstablecerAnio');
+  btnEstablecer.disabled = true;
+  try {
+    const datos = await leerRespuesta(await fetch(API_PERIODO + '?accion=crear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anio })
+    }));
+    pintarPeriodo(datos);
+    ocultarCampoAnio();
+    await cargarLista();          // la lista muestra los planes del año elegido
+    mostrarMensaje(datos.mensaje, 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  } finally {
+    btnEstablecer.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------
 // Detalle de un área (detalleArea.html?id=5)
 // ---------------------------------------------------------------------
 
@@ -152,6 +277,8 @@ async function cargarDetalle() {
   try {
     const resultado = await leerRespuesta(await fetch(`${API_AREAS}?id=${id}`));
     pintarFicha(resultado.unidad);
+    mostrarAnioEncabezado(resultado.anio);
+    pintarRevision(resultado.plan, id);
 
     if (!resultado.plan) {
       mostrarMensaje('Esta área todavía no ha capturado su Plan de Trabajo de este año.', 'info');
@@ -162,6 +289,112 @@ async function cargarDetalle() {
     mostrarMensaje(error.message, 'error');
   }
 }
+
+// ---------------------------------------------------------------------
+// Revisión del PTA en el detalle: Aceptar / Rechazar con motivo
+// ---------------------------------------------------------------------
+
+// Texto y color de cada estado de revisión (columna planes_trabajo.estado)
+const ESTADOS_REVISION = {
+  'ENVIADO': ['En revisión', 'estado-enviado'],
+  'APROBADO': ['Aceptado', 'estado-aprobado'],
+  'CON OBSERVACIONES': ['Rechazado', 'estado-observaciones']
+};
+
+function etiquetaRevision(estado) {
+  const [texto, clase] = ESTADOS_REVISION[estado] || ['Sin enviar', 'estado-sin-plan'];
+  return `<span class="estado ${clase}">${texto}</span>`;
+}
+
+let areaEnRevision = null;   // id de la unidad del detalle abierto
+let decisionPendiente = null; // 'aceptar' o 'rechazar'
+
+// Muestra el estado del PTA y, si está en revisión, los botones Aceptar / Rechazar
+function pintarRevision(plan, unidadId) {
+  areaEnRevision = unidadId;
+  const barra = document.getElementById('barraRevision');
+  if (!barra) return;
+  if (!plan) { barra.hidden = true; return; }
+
+  document.getElementById('estadoRevision').innerHTML = etiquetaRevision(plan.estado);
+
+  let detalle = '';
+  if (plan.estado === 'CON OBSERVACIONES') detalle = 'Motivo: ' + (plan.observaciones || '—');
+  else if (plan.estado === 'ENVIADO') {
+    detalle = plan.fecha_envio ? 'Enviado el ' + plan.fecha_envio.slice(0, 10) : '';
+    // Si viene de un rechazo, recordar qué se le pidió corregir
+    if (plan.observaciones) detalle += '\nCorregido después del rechazo. Motivo anterior: ' + plan.observaciones;
+  }
+  else if (plan.estado === 'APROBADO' && plan.fecha_revision) detalle = 'Aceptado el ' + plan.fecha_revision.slice(0, 10);
+  document.getElementById('detalleRevision').textContent = detalle;
+
+  document.getElementById('botonesRevision').hidden = plan.estado !== 'ENVIADO';
+  barra.hidden = false;
+}
+
+// Abre la ventana para confirmar. Al rechazar también pide el motivo.
+function abrirVentanaRevision(decision) {
+  decisionPendiente = decision;
+  const motivo = document.getElementById('motivoRechazo');
+  const rechazar = decision === 'rechazar';
+
+  document.getElementById('tituloRevision').textContent = rechazar ? 'Rechazar PTA' : 'Aceptar PTA';
+  document.getElementById('textoRevision').innerText = rechazar
+    ? 'Escribe el motivo del rechazo. El área lo verá en su Inicio para corregir su PTA.'
+    : '¿Aceptar este PTA? El área ya no podrá modificarlo y podrá capturar sus avances en los seguimientos.';
+  motivo.hidden = !rechazar;
+  motivo.value = '';
+  motivo.classList.remove('campo-error');
+  document.getElementById('btnConfirmarRevision').textContent = rechazar ? 'Rechazar PTA' : 'Aceptar PTA';
+  document.getElementById('btnConfirmarRevision').className = 'boton ' + (rechazar ? 'boton-rechazar' : 'boton-confirmar');
+
+  document.getElementById('ventanaRevision').style.display = 'flex';
+  if (rechazar) motivo.focus();
+}
+
+function cerrarVentanaRevision() {
+  document.getElementById('ventanaRevision').style.display = 'none';
+}
+
+async function enviarRevision() {
+  const motivo = document.getElementById('motivoRechazo');
+  if (decisionPendiente === 'rechazar' && !motivo.value.trim()) {
+    motivo.classList.add('campo-error');
+    motivo.focus();
+    return;
+  }
+
+  const boton = document.getElementById('btnConfirmarRevision');
+  boton.disabled = true;
+  try {
+    const resultado = await leerRespuesta(await fetch(API_AREAS + '?accion=revisar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: areaEnRevision, decision: decisionPendiente, motivo: motivo.value.trim() })
+    }));
+    cerrarVentanaRevision();
+    pintarRevision(resultado.plan, areaEnRevision);
+    mostrarMensaje(resultado.mensaje, 'exito');
+  } catch (error) {
+    cerrarVentanaRevision();
+    mostrarMensaje(error.message, 'error');
+  } finally {
+    boton.disabled = false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ventana = document.getElementById('ventanaRevision');
+  if (!ventana) return; // no estamos en detalleArea.html
+
+  document.getElementById('btnAceptarPTA').addEventListener('click', () => abrirVentanaRevision('aceptar'));
+  document.getElementById('btnRechazarPTA').addEventListener('click', () => abrirVentanaRevision('rechazar'));
+  document.getElementById('btnConfirmarRevision').addEventListener('click', enviarRevision);
+  document.getElementById('btnCancelarRevision').addEventListener('click', cerrarVentanaRevision);
+  document.getElementById('btnCerrarRevision').addEventListener('click', cerrarVentanaRevision);
+  ventana.addEventListener('click', (e) => { if (e.target === ventana) cerrarVentanaRevision(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarVentanaRevision(); });
+});
 
 function pintarFicha(unidad) {
   document.getElementById('tituloArea').textContent = unidad.nombre;
@@ -180,13 +413,14 @@ function pintarFicha(unidad) {
   }
 }
 
-// acciones = [{proyecto, linea, descripcion, con_recursos, unidad_medida, p[12], r[12]}]
+// acciones = [{proyecto, linea, descripcion, con_recursos, unidad_medida,
+//              beneficiados, responsables, participantes, observaciones_generales, p[12], r[12]}]
 function pintarTablaAnual(acciones) {
   const tbody = document.getElementById('cuerpoDetalle');
   tbody.innerHTML = '';
 
   if (acciones.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="24" class="lista-vacia">Sin acciones programadas.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="28" class="lista-vacia">Sin acciones programadas.</td></tr>';
     return;
   }
 
@@ -194,13 +428,17 @@ function pintarTablaAnual(acciones) {
     if (indice > 0) {
       const separador = document.createElement('tr');
       separador.className = 'fila-separador';
-      separador.innerHTML = '<td colspan="24"></td>';
+      separador.innerHTML = '<td colspan="28"></td>';
       tbody.appendChild(separador);
     }
 
     const t = calcularTotales(accion.p, accion.r);
     const meses = (valores, desde) => valores.slice(desde, desde + 6).map(v => `<td>${v || ''}</td>`).join('');
     const recursos = accion.con_recursos ? 'CON RECURSOS ECONÓMICOS' : 'SIN RECURSOS ECONÓMICOS';
+    // Beneficiados, Responsable(s), Participantes y Observaciones Generales (abarcan las 2 filas)
+    const complementarios = ['beneficiados', 'responsables', 'participantes', 'observaciones_generales']
+      .map(campo => `<td rowspan="2" class="celda-texto celda-complementaria">${escaparHtml(accion[campo] || '')}</td>`)
+      .join('');
 
     const filaP = document.createElement('tr');
     filaP.className = 'fila-programado';
@@ -216,6 +454,7 @@ function pintarTablaAnual(acciones) {
       ${meses(accion.p, 6)}
       <td class="celda-subtotal">${t.p2}</td>${celdaCumplimiento(t.p2, t.p2)}
       <td class="celda-total">${t.pAnual}</td>${celdaCumplimiento(t.pAnual, t.pAnual)}
+      ${complementarios}
     `;
 
     const filaR = document.createElement('tr');
