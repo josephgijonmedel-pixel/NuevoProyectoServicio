@@ -39,6 +39,12 @@ try {
         }
         $planId = (int) $plan['id'];
 
+        // Solo se captura el mes en curso; los demás meses están bloqueados
+        $mesCaptura = mesDeCaptura($anio);
+        if ($mesCaptura < $primerMes || $mesCaptura > $primerMes + 5) {
+            responderJson(["error" => "En este seguimiento no hay un mes abierto para capturar. Solo se captura lo realizado del mes en curso."], 409);
+        }
+
         $datos = json_decode(file_get_contents("php://input"), true);
         $acciones = validarAcciones($conexion, $planId, $datos['acciones'] ?? null);
 
@@ -49,7 +55,7 @@ try {
             $seguimiento = crearSeguimiento($conexion, $planId, $periodo);
         }
 
-        guardarRealizado($conexion, $acciones, $primerMes);
+        guardarRealizado($conexion, $acciones, $primerMes, $mesCaptura);
         // Actualiza la fecha de modificación del seguimiento aunque no cambie otro campo
         mysqli_query($conexion, "UPDATE seguimientos SET fecha_modificacion = NOW() WHERE id = " . (int) $seguimiento['id']);
         registrarBitacora($conexion, "seguimientos", (int) $seguimiento['id'], $esNuevo ? "CREAR" : "EDITAR", "periodo $periodo");
@@ -85,6 +91,8 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
             "editable" => $plan ? seguimientoEditable($plan, $finalizado) : false,
             "motivo_bloqueo" => $plan && !seguimientoEditable($plan, $finalizado) ? motivoBloqueo($plan, $finalizado, $anio) : null,
             "guardado" => (bool) $seguimiento,
+            "mes_captura" => mesDeCaptura($anio),   // único mes que se puede escribir (1-12); 0 = ninguno
+            "primer_mes" => $primerMes,             // 1 = enero (Primer seguimiento), 7 = julio (Segundo)
             "estado_programacion" => $plan['estado'] ?? null,
             "estado_final" => $plan['estado_final'] ?? null,
         ],
@@ -245,7 +253,8 @@ function crearSeguimiento($conexion, $planId, $periodo)
 }
 
 // Solo cambia lo realizado; lo programado se conserva
-function guardarRealizado($conexion, $acciones, $primerMes)
+// Guarda solo el mes en curso ($mesCaptura); lo que llegue de los demás meses se ignora
+function guardarRealizado($conexion, $acciones, $primerMes, $mesCaptura)
 {
     $guardarMes = mysqli_prepare(
         $conexion,
@@ -255,11 +264,21 @@ function guardarRealizado($conexion, $acciones, $primerMes)
     foreach ($acciones as $a) {
         foreach ($a['r'] as $indice => $realizado) {
             $mes = $primerMes + $indice;
+            if ($mes !== $mesCaptura) {
+                continue; // mes bloqueado: ya pasó o todavía no llega
+            }
             mysqli_stmt_bind_param($guardarMes, "iii", $a['id'], $mes, $realizado);
             mysqli_stmt_execute($guardarMes);
         }
     }
     mysqli_stmt_close($guardarMes);
+}
+
+// Único mes en el que se puede capturar lo realizado: el mes en curso (1-12),
+// y solo si el PTA activo es del año en curso. 0 = ningún mes.
+function mesDeCaptura($anio)
+{
+    return (int) date('Y') === (int) $anio ? (int) date('n') : 0;
 }
 
 // ¿Se puede capturar lo realizado? Solo cuando Planeación ya aceptó el PTA

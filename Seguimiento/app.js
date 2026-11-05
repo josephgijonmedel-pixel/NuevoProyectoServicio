@@ -252,12 +252,40 @@ function mostrarEstadoSeguimiento(seguimiento) {
     return;
   }
 
+  // Solo el mes en curso se puede escribir; si no es de este semestre, no hay nada que capturar
+  if (!bloquearMesesCerrados(seguimiento.mes_captura, seguimiento.primer_mes)) {
+    btnGuardar.style.display = 'none';
+    return;
+  }
+
   btnGuardar.disabled = false;
 
   // Guardado automático: cualquier cambio en un mes de Realizado se guarda solo
   document.getElementById('cuerpoSeguimiento').addEventListener('input', (e) => {
     if (e.target.matches('input.campo-mes:not([readonly])')) programarAutoguardado();
   });
+}
+
+// Bloquea los meses de "Realizado" que no son el mes en curso (los que ya pasaron y los que no llegan).
+// mesCaptura = mes que se puede escribir (1-12, 0 = ninguno); primerMes = 1 (enero) o 7 (julio).
+// Devuelve true si en este seguimiento hay un mes abierto.
+function bloquearMesesCerrados(mesCaptura, primerMes) {
+  const NOMBRES_MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  document.querySelectorAll('#cuerpoSeguimiento tr.fila-realizado').forEach(fila => {
+    fila.querySelectorAll('input[class*="seg-r-"]').forEach((input, indice) => {
+      if (primerMes + indice === mesCaptura) return; // el mes en curso se queda abierto
+      input.readOnly = true;
+      input.classList.add('campo-bloqueado');
+      input.title = 'Solo se captura el mes en curso';
+    });
+  });
+
+  const hayMesAbierto = mesCaptura >= primerMes && mesCaptura <= primerMes + 5;
+  if (!hayMesAbierto) {
+    const actual = mesCaptura ? ` (estamos en ${NOMBRES_MES[mesCaptura - 1]})` : '';
+    mostrarMensaje(`Solo se captura lo realizado del mes en curso${actual}. En este seguimiento no hay un mes abierto.`, 'info');
+  }
+  return hayMesAbierto;
 }
 
 // Muestra un aviso arriba de la tabla. tipo: 'error' (rojo) o 'info' (azul)
@@ -372,7 +400,7 @@ function pintarTabla(acciones) {
     trR.innerHTML = `
       <td class="col-var"><span class="etiqueta-realizado">Realizado</span></td>
 
-      <!-- Meses 1er Semestre R (EDITABLE CON PLACEHOLDER 0) -->
+      <!-- Meses 1er Semestre R (EDITABLE CON PLACEHOLDER 0) -->dddddddd00
       ${item.r.map((val) => `
         <td>
           <input type="number" min="0" max="10" step="1" class="campo-mes seg-r-${id}" value="${val !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotalesSeguimiento(${id})">
