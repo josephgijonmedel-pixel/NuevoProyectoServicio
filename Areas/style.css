@@ -86,9 +86,9 @@ form {
   gap: 5px;
   background-color: var(--azul-boton);
   border: none;
-  border-radius: 0 0 8px 0; /* pegado al banner y al borde izquierdo */
+  border-radius: 0 0 0 0; /* pegado al banner y al borde izquierdo */
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
   margin: 0 0 14px 0;
 }
 
@@ -312,9 +312,9 @@ table.tabla-plan th.th-calendario {
 .th-seguimiento { background-color: #b4c6e7 !important; color: #000000 !important; }
 
 /* ANCHO DE COLUMNAS */
-.col-proyecto { width: 220px; }
-.col-linea { width: 220px; }
-.col-accion-est { width: 250px; }
+.col-proyecto { width: 230px; min-width: 230px; }
+.col-linea { width: 260px; min-width: 260px; }
+.col-accion-est { width: 270px; min-width: 270px; }
 .col-recursos { width: 150px; }
 .col-unidad { width: 120px; }
 .col-var { width: 45px; }
@@ -323,6 +323,14 @@ table.tabla-plan th.th-calendario {
 .col-complementaria { width: 200px; min-width: 200px; }
 .col-observaciones { width: 260px; min-width: 260px; }
 .celda-complementaria { vertical-align: top; white-space: pre-line; }
+
+/* Texto largo dentro de una celda (Línea de Acción): altura fija y barra para desplazarse,
+   así la fila queda delgada y se puede leer el texto completo */
+.texto-desplazable {
+  max-height: 94px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
 
 /* CELDAS DE TEXTO ESTÁTICO (PROYECTO, LÍNEA DE ACCIÓN, ACCIÓN ESTRATÉGICA) */
 .celda-texto {
@@ -835,7 +843,11 @@ table.tabla-areas tbody tr:hover {
 
 .periodo-cambiar input.campo-error { border-color: #dc3545; background-color: #fff5f5; }
 
-#btnEstablecerAnio:disabled { opacity: 0.6; cursor: wait; }
+#btnFinalizarPTA:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* "Finalizado el 2026-11-05" debajo del año */
+.periodo-estado { font-size: 0.8rem; font-weight: bold; color: #c82333; }
+.periodo-estado:empty { display: none; }
 
 /* Revisión del PTA en el detalle del área: estado + botones Aceptar / Rechazar */
 .barra-revision {
@@ -903,3 +915,20 @@ table.tabla-areas tbody tr:hover {
 .campo-motivo.campo-error { border-color: #dc3545; background-color: #fff5f5; }
 
 .col-revision { width: 130px; }
+
+/* Ventana "Nuevo PTA": campo del año, su error y una nota */
+.campo-anio-nuevo {
+  display: block;
+  width: 140px;
+  margin: 12px auto 0;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  text-align: center;
+}
+.campo-anio-nuevo.campo-error { border-color: #dc3545; background-color: #fff5f5; }
+.texto-error-anio { min-height: 1.2em; margin: 6px 0 0; color: #c82333; font-size: 0.85rem; font-weight: bold; }
+.ventana-nota { margin: 4px 0 0; color: #6c757d; font-size: 0.85rem; }
+#btnNuevoPTA[hidden], #btnFinalizarPTA[hidden] { display: none; }

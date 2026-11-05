@@ -34,6 +34,9 @@ try {
         $datos = json_decode(file_get_contents("php://input"), true);
         $plan = obtenerPlan($conexion, $unidadId, $anio);
 
+        if (ptaFinalizado($conexion, $anio)) {
+            responderJson(["error" => "Planeación finalizó el PTA $anio; ya no se puede modificar."], 409);
+        }
         if ($plan && !in_array($plan['estado'], ESTADOS_EDITABLES, true)) {
             $motivo = $plan['estado'] === 'APROBADO'
                 ? "Planeación ya aceptó tu PTA; no se puede modificar."
@@ -72,14 +75,16 @@ try {
 function armarRespuesta($conexion, $unidadId, $anio)
 {
     $plan = obtenerPlan($conexion, $unidadId, $anio);
+    $finalizado = ptaFinalizado($conexion, $anio);
 
     return [
         "unidad" => ["nombre" => nombreUnidad($conexion, $unidadId)],
         "anio" => $anio,
+        "finalizado" => $finalizado,   // Planeación cerró el PTA de este año: todo de solo lectura
         "plan" => $plan ? [
             "id" => (int) $plan['id'],
             "estado" => $plan['estado'],
-            "editable" => in_array($plan['estado'], ESTADOS_EDITABLES, true),
+            "editable" => !$finalizado && in_array($plan['estado'], ESTADOS_EDITABLES, true),
             "observaciones" => $plan['observaciones_planeacion'],   // motivo del rechazo
             "estado_final" => $plan['estado_final'],
         ] : null,
@@ -195,8 +200,9 @@ function validarAcciones($conexion, $acciones)
     if (!is_array($acciones) || count($acciones) === 0) {
         responderJson(["error" => "Agrega al menos una acción estratégica."], 422);
     }
-    if (count($acciones) > 200) {
-        responderJson(["error" => "Demasiadas acciones en un solo plan (máximo 200)."], 422);
+    // Máximo 4 proyectos estratégicos (filas) por PTA; la página revisa el mismo límite
+    if (count($acciones) > 4) {
+        responderJson(["error" => "Solo puedes tener un máximo de 4 proyectos estratégicos en tu PTA."], 422);
     }
 
     $idsDe = fn($sql) => array_map('intval', array_column(mysqli_fetch_all(mysqli_query($conexion, $sql)), 0));
@@ -219,14 +225,16 @@ function validarAcciones($conexion, $acciones)
             "p" => [],
         ];
 
-        // Texto libre opcional: vacío se guarda como NULL
+        // Texto libre obligatorio: Beneficiados, Responsable(s), Participantes y Observaciones Generales
         $nombresCampos = [
             'beneficiados' => 'Beneficiados', 'responsables' => 'Responsable(s)',
             'participantes' => 'Participantes', 'observaciones_generales' => 'Observaciones Generales',
         ];
         foreach (CAMPOS_COMPLEMENTARIOS as $campo) {
             $texto = trim((string) ($a[$campo] ?? ''));
-            if (mb_strlen($texto) > 2000) {
+            if ($texto === '') {
+                $errores[] = ["fila" => $fila, "campo" => $campo, "mensaje" => "Acción $fila: escribe {$nombresCampos[$campo]}."];
+            } elseif (mb_strlen($texto) > 2000) {
                 $errores[] = ["fila" => $fila, "campo" => $campo, "mensaje" => "Acción $fila: {$nombresCampos[$campo]} es muy largo (máximo 2000 caracteres)."];
             }
             $accion[$campo] = $texto === '' ? null : $texto;

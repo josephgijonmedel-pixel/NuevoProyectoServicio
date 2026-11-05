@@ -14,12 +14,14 @@
   --amarillo: #ffd965;
 }
 
+/* Para todos los elementos: el ancho incluye el relleno y el borde, y todos usan la misma letra */
 * {
   box-sizing: border-box;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 
+/* Fondo gris claro de toda la página, sin márgenes del navegador y con un espacio alrededor */
 body {
   background-color: #f8f9fa;
   margin: 0;
@@ -61,21 +63,25 @@ body {
   width: auto;
 }
 
+/* Posición de cada logo: el izquierdo pegado a la izquierda y el derecho (un poco más grande) a la derecha */
 .logo-izquierdo { left: 20px; }
 .logo-derecho { right: 20px; height: 120px; }
 
+/* Título principal del banner ("Coordinación General de la Zona Sur") en mayúsculas */
 .encabezado h1 {
   margin: 0 0 5px 0;
   font-size: 1.5rem;
   text-transform: uppercase;
 }
 
+/* Subtítulo del banner (nombre de la página y año del PTA) */
 .encabezado h2 {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 600;
 }
 
+/* Espacio interior del formulario, para que el contenido no quede pegado a los bordes */
 form {
   padding: 20px;
 }
@@ -94,12 +100,13 @@ form {
   gap: 5px;
   background-color: var(--azul-boton);
   border: none;
-  border-radius: 0 0 8px 0; /* pegado al banner y al borde izquierdo */
+  border-radius: 0 0 0 0; /* pegado al banner y al borde izquierdo */
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
   margin: 0 0 14px 0;
 }
 
+/* Cada una de las tres líneas blancas del botón del menú */
 .boton-menu .raya {
   width: 22px;
   height: 2.5px;
@@ -132,6 +139,7 @@ body.menu-abierto .boton-menu .raya:nth-child(3) {
   z-index: 1050;
 }
 
+/* Con el menú abierto, el fondo oscuro aparece y se puede hacer clic en él para cerrarlo */
 body.menu-abierto .menu-fondo {
   opacity: 1;
   pointer-events: auto;
@@ -153,6 +161,7 @@ body.menu-abierto .menu-fondo {
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
 }
 
+/* Con el menú abierto, el panel lateral entra a la pantalla */
 body.menu-abierto .menu-lateral {
   transform: translateX(0);
 }
@@ -174,12 +183,14 @@ body.menu-abierto .boton-menu {
   text-transform: uppercase;
 }
 
+/* Lista de opciones del menú, sin viñetas ni espacios */
 .menu-lista {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+/* Cada opción del menú: icono y texto en una fila, con una barrita a la izquierda (invisible hasta que está activa) */
 .menu-enlace {
   display: flex;
   align-items: center;
@@ -193,14 +204,17 @@ body.menu-abierto .boton-menu {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+/* El icono de cada opción no se encoge aunque el texto sea largo */
 .menu-enlace svg {
   flex-shrink: 0;
 }
 
+/* Al pasar el mouse por una opción del menú se aclara su fondo */
 .menu-enlace:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* La opción de la página en la que estás: fondo más claro y barrita amarilla a la izquierda */
 .menu-enlace.menu-enlace-activo {
   background-color: rgba(255, 255, 255, 0.12);
   border-left-color: var(--amarillo);
@@ -232,10 +246,12 @@ body.menu-abierto .boton-menu {
   margin-bottom: 25px;
 }
 
+/* Dentro de la caja de la unidad, el campo ocupa todo el ancho disponible */
 .caja-unidad .grupo-campo {
   flex: 1;
 }
 
+/* Grupo de etiqueta + campo, uno debajo del otro */
 .grupo-campo {
   display: flex;
   flex-direction: column;
@@ -243,18 +259,22 @@ body.menu-abierto .boton-menu {
 
 
 
+/* Texto de la etiqueta de cada campo (por ejemplo "Unidad Responsable") */
 .grupo-campo label {
   font-weight: 600;
   margin-bottom: 5px;
   font-size:0.9rem
 }
 
+/* Cuadro de texto de los campos del formulario */
 .grupo-campo input {
   padding: 8px 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  font-size: 1.1rem;
 }
 
+/* Campo de solo lectura: fondo gris y cursor de "no permitido" */
 .campo-bloqueado {
   background-color: #e9ecef !important;
   color: #495057 !important;
@@ -262,6 +282,7 @@ body.menu-abierto .boton-menu {
   border: 1px solid #ced4da !important;
 }
 
+/* Botón amarillo para ir a "Mi unidad" */
 .boton-ir-unidad {
   background-color: var(--amarillo);
   color: #333;
@@ -277,6 +298,7 @@ body.menu-abierto .boton-menu {
   white-space: nowrap;
 }
 
+/* El botón amarillo se oscurece un poco al pasar el mouse */
 .boton-ir-unidad:hover {
   background-color: #f7ca38;
 }
@@ -291,12 +313,14 @@ body.menu-abierto .boton-menu {
   background-color: #ffffff;
 }
 
+/* La tabla: tan ancha como su contenido (mínimo 2200px) y con bordes juntos */
 table.tabla-plan {
   width: max-content;
   border-collapse: collapse;
   min-width: 2200px;
 }
 
+/* Todas las celdas de la tabla: borde gris, texto centrado y letra pequeña */
 table.tabla-plan th, table.tabla-plan td {
   border: 1px solid var(--color-borde);
   padding: 6px;
@@ -305,12 +329,14 @@ table.tabla-plan th, table.tabla-plan td {
   text-align: center;
 }
 
+/* Encabezados de las columnas de texto (Proyecto, Línea de Acción, etc.): fondo azul oscuro y letra blanca */
 table.tabla-plan th.th-texto {
   background-color: var(--azul-oscuro);
   color: #ffffff;
   text-align: center;
 }
 
+/* Encabezados del calendario (semestres y meses): fondo azul claro y letra negra */
 table.tabla-plan th.th-calendario {
   background-color: var(--azul-calendario);
   color: #000000;
@@ -318,21 +344,25 @@ table.tabla-plan th.th-calendario {
   font-weight: bold;
 }
 
+/* Colores de encabezados especiales: Segundo Semestre, Seguimiento y Total Anual */
 .th-semestre2 { background-color: #8faadc !important; }
 .th-seguimiento { background-color: #b4c6e7 !important; color: #000000 !important; }
 .th-totales { background-color: #5b9bd5 !important; color: white !important; }
 
+/* Encabezados de cada mes (ENE, FEB...): azul más claro y letra más pequeña */
 .th-mes {
   background-color: var(--azul-calendario-claro) !important;
   font-size: 0.78rem;
 }
 
+/* Encabezados de "Abs" y "%" de cada semestre */
 .th-semestre {
   background-color: var(--fondo-semestre) !important;
   font-size: 0.78rem;
   font-weight: bold;
 }
 
+/* Encabezados de los totales del año */
 .th-total {
   background-color: var(--fondo-total) !important;
   font-size: 0.78rem;
@@ -352,6 +382,7 @@ table.tabla-plan th.th-calendario {
 .col-complementaria { width: 200px; min-width: 200px; }
 .col-observaciones { width: 260px; min-width: 260px; }
 
+/* Celdas de Beneficiados, Responsable(s), Participantes y Observaciones: fondo blanco y texto pegado arriba */
 .celda-complementaria {
   background-color: #ffffff;
   vertical-align: top;
@@ -381,12 +412,14 @@ textarea.campo-complementario {
   background-color: var(--fondo-programado, #8ea9db) !important;
 }
 
+/* Cuadritos de los meses en la fila "Programado": mismo azul que la fila */
 .fila-programado td:not([rowspan]) .campo-mes {
   background-color: var(--fondo-programado, #8ea9db);
   border: 1px solid #7592c7;
   color: #000000;
 }
 
+/* Al escribir en un mes de "Programado", el cuadrito se pone blanco con borde azul */
 .fila-programado td:not([rowspan]) .campo-mes:focus {
   background-color: #ffffff;
   border-color: var(--azul-boton);
@@ -399,17 +432,20 @@ textarea.campo-complementario {
   background-color: var(--fondo-fila-alterna);
 }
 
+/* Cuadritos de los meses en la fila "Realizado" que se pueden escribir: fondo blanco */
 .fila-realizado .campo-mes:not(.campo-bloqueado) {
   background-color: #ffffff;
   border: 1px solid #ced4da;
   color: #000000;
 }
 
+/* Al escribir en un mes de "Realizado", el borde se pone azul */
 .fila-realizado .campo-mes:not(.campo-bloqueado):focus {
   border-color: var(--azul-boton);
   outline: none;
 }
 
+/* Etiqueta "Programado" de la columna Variables: fondo azul oscuro y letra blanca */
 .etiqueta-programado {
   background-color: #1b365d;
   color: #ffffff;
@@ -418,6 +454,7 @@ textarea.campo-complementario {
   font-weight: bold;
 }
 
+/* Etiqueta "Realizado" de la columna Variables: fondo gris claro */
 .etiqueta-realizado {
   background-color: #e2e3e5;
   color: #383d41;
@@ -426,6 +463,7 @@ textarea.campo-complementario {
   font-weight: bold;
 }
 
+/* Cuadrito de cada mes: angosto, número centrado y en negritas (en Firefox sin flechitas) */
 .campo-mes {
   width: 48px;
   text-align: center;
@@ -437,12 +475,14 @@ textarea.campo-complementario {
   -moz-appearance: textfield;
 }
 
+/* Quita las flechitas de subir/bajar de los cuadritos de los meses (Chrome, Edge, Safari) */
 .campo-mes::-webkit-outer-spin-button,
 .campo-mes::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
+/* Cuadros de texto grandes de la tabla (Acción Estratégica y los 4 campos de texto): se pueden estirar hacia abajo */
 textarea.campo-tabla {
   width: 100%;
   min-height: 80px;
@@ -454,6 +494,7 @@ textarea.campo-tabla {
   text-align: left;
 }
 
+/* Listas desplegables de la tabla (Proyecto, Línea de Acción, Unidad de Medida) */
 select.campo-tabla {
   width: 100%;
   padding: 6px;
@@ -475,6 +516,7 @@ input.campo-bloqueado.pct-regular { background-color: #ffc71f !important; color:
 input.campo-bloqueado.pct-medio   { background-color: #ff8307 !important; color: #000000 !important; border-color: #d96d00 !important; }
 input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; color: #000000 !important; border-color: #c40014 !important; }
 
+/* Celdas de "Abs" (subtotal del semestre), del Total Anual y de los totales de "Realizado" */
 .celda-subtotal { background-color: #eef6fc; font-weight: bold; }
 .celda-total { background-color: #dcecfb; font-weight: bold; }
 .celda-realizado    { background-color: #e9ecef; font-weight: bold; }
@@ -487,6 +529,7 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   margin-top: 15px;
 }
 
+/* Estilo base de todos los botones */
 .boton {
   padding: 10px 20px;
   border: none;
@@ -495,9 +538,11 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   cursor: pointer;
 }
 
+/* Colores de los botones: "Agregar Nueva Acción" en gris y "Enviar PTA" en azul */
 .boton-agregar { background-color: var(--gris-medio); color: white; }
 .boton-guardar { background-color: var(--azul-boton); color: white; }
 
+/* Botón rojo "✕" para quitar una acción de la tabla */
 .boton-quitar {
   background-color: #dc3545;
   color: white;
@@ -522,6 +567,7 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   align-items: center;
 }
 
+/* La caja blanca de la ventana emergente, que aparece con una pequeña animación */
 .ventana-contenido {
   background-color: #ffffff;
   width: 90%;
@@ -532,6 +578,7 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   animation: modalFadeIn 0.2s ease-out;
 }
 
+/* Animación de la ventana: aparece de transparente y un poco más pequeña a su tamaño normal */
 @keyframes modalFadeIn {
   from {
     opacity: 0;
@@ -543,6 +590,7 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   }
 }
 
+/* Franja azul de arriba de la ventana, con el título y el botón "✕" */
 .ventana-confirmar-encabezado {
   background-color: var(--azul-boton);
   color: #ffffff;
@@ -552,12 +600,14 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   align-items: center;
 }
 
+/* Título de la ventana emergente */
 .ventana-confirmar-encabezado h3 {
   margin: 0;
   font-size: 1.1rem;
   color: #ffffff;
 }
 
+/* Botón "✕" para cerrar la ventana */
 .boton-cerrar-ventana {
   border: none;
   background: none;
@@ -567,6 +617,7 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   line-height: 1;
 }
 
+/* Parte central de la ventana: icono y texto centrados */
 .ventana-confirmar-cuerpo {
   padding: 24px 20px;
   display: flex;
@@ -576,11 +627,13 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   gap: 12px;
 }
 
+/* Icono grande de la ventana (por ejemplo ⚠️) */
 .ventana-icono {
   font-size: 2.5rem;
   line-height: 1;
 }
 
+/* Texto del mensaje de la ventana */
 .ventana-texto {
   font-size: 1.05rem;
   color: #333333;
@@ -588,6 +641,7 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   font-weight: 500;
 }
 
+/* Franja de abajo de la ventana, con los botones alineados a la derecha */
 .ventana-confirmar-pie {
   padding: 14px 20px;
   background-color: #f8f9fa;
@@ -597,73 +651,88 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   gap: 10px;
 }
 
+/* Variante para centrar los botones de la franja de abajo */
 .ventana-pie-centrado {
   justify-content: center !important;
 }
 
+/* Botón gris "Cancelar" */
 .boton-cancelar {
   background-color: #6c757d;
   color: #ffffff;
   transition: background-color 0.15s ease-in-out;
 }
 
+/* El botón "Cancelar" se oscurece al pasar el mouse */
 .boton-cancelar:hover {
   background-color: #5a6268;
 }
 
+/* Botón verde para confirmar */
 .boton-confirmar {
   background-color: #198754;
   color: #ffffff;
   transition: background-color 0.15s ease-in-out;
 }
 
+/* El botón de confirmar se oscurece al pasar el mouse */
 .boton-confirmar:hover {
   background-color: #157347;
 }
 
+/* Pantallas medianas (tabletas y celulares, hasta 760px): todo un poco más compacto */
 @media (max-width: 760px) {
+  /* Menos espacio alrededor de la página */
   body {
     padding: 10px;
   }
 
+  /* Banner más bajo, con espacio arriba para los logos */
   .encabezado {
     min-height: 0;
     padding: 92px 16px 18px;
   }
 
+  /* Logos más pequeños y arriba, en lugar de centrados */
   .logo {
     top: 12px;
     transform: none;
     height: 58px;
   }
 
+  /* Logo izquierdo en celular */
   .logo-izquierdo {
     left: 18px;
     height: 56px;
   }
 
+  /* Logo derecho en celular */
   .logo-derecho {
     right: 18px;
     height: 58px;
   }
 
+  /* Título del banner: el tamaño se ajusta al ancho de la pantalla */
   .encabezado h1 {
     font-size: clamp(1rem, 4vw, 1.35rem);
     line-height: 1.2;
     overflow-wrap: anywhere;
   }
 
+  /* Subtítulo del banner: el tamaño se ajusta al ancho de la pantalla */
   .encabezado h2 {
     font-size: clamp(0.9rem, 3.4vw, 1.1rem);
     line-height: 1.3;
   }
 
+  /* Botón del menú un poco más pequeño */
   .boton-menu {
     width: 54px;
     height: 54px;
     margin: 0 0 12px 0;
   }
 
+  /* En celular el menú ocupa toda la altura de la pantalla */
   .menu-lateral {
     top: 0;
     width: min(290px, 85vw);
@@ -671,15 +740,18 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
     height: 100dvh;
   }
 
+  /* Menos espacio dentro del formulario */
   form {
     padding: 14px;
   }
 
+  /* Caja de la unidad más compacta */
   .caja-unidad {
     align-items: stretch;
     padding: 12px;
   }
 
+  /* La tabla se desliza de lado con el dedo, sin mover toda la página */
   .tabla-desplazable {
     max-width: 100%;
     overflow-x: auto;
@@ -688,48 +760,59 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   }
 }
 
+/* Celulares pequeños (hasta 520px): todavía más compacto */
 @media (max-width: 520px) {
+  /* Casi sin espacio alrededor de la página */
   body {
     padding: 6px;
   }
 
+  /* Esquinas menos redondeadas en la caja blanca */
   .contenedor {
     border-radius: 6px;
   }
 
+  /* Banner con menos espacio */
   .encabezado {
     padding: 82px 12px 16px;
   }
 
+  /* Logos aún más pequeños */
   .logo-izquierdo,
   .logo-derecho {
     height: 48px;
   }
 
+  /* Título del banner más pequeño */
   .encabezado h1 {
     font-size: 1rem;
   }
 
+  /* Subtítulo del banner más pequeño */
   .encabezado h2 {
     font-size: 0.88rem;
   }
 
+  /* Formulario con poco espacio interior */
   form {
     padding: 10px;
   }
 
+  /* Títulos de sección más pequeños; las palabras largas se cortan para no salirse */
   .titulo-seccion {
     padding: 10px;
     font-size: 0.95rem;
     overflow-wrap: anywhere;
   }
 
+  /* Los botones de abajo se acomodan uno debajo del otro */
   .barra-botones {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
 
+  /* Cada botón ocupa todo el ancho y es más alto, para tocarlo fácil con el dedo */
   .barra-botones .boton {
     width: 100%;
     min-height: 44px;
@@ -748,6 +831,7 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   white-space: pre-line;
 }
 
+/* Aviso azul (informativo), por ejemplo "Tu PTA está en revisión" */
 .caja-aviso.aviso-info {
   background-color: #d1ecf1;
   color: #0c5460;
@@ -761,11 +845,13 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   background-color: #fff5f5;
 }
 
+/* Botón desactivado: se ve más claro y no se puede presionar */
 .boton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+/* Aviso verde (todo salió bien), por ejemplo "PTA aceptado" */
 .caja-aviso.aviso-exito {
   background-color: #d4edda;
   color: #155724;

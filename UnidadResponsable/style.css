@@ -73,8 +73,8 @@ body {
   position: sticky;
   top: 0;
   z-index: 1200;
-  width: 46px;
-  height: 46px;
+  width: 66px;
+  height: 66px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -82,9 +82,9 @@ body {
   gap: 5px;
   background-color: var(--azul-boton);
   border: none;
-  border-radius: 0 0 8px 0; /* pegado al banner y al borde izquierdo */
+  border-radius: 0 0 0 0; /* pegado al banner y al borde izquierdo */
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
   margin: 0 0 14px 0;
 }
 

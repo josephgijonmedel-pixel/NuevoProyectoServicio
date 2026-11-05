@@ -12,6 +12,10 @@ let contadorFilas = 0;
 // Cada nombre es igual a su columna en la tabla acciones_estrategicas.
 const CAMPOS_COMPLEMENTARIOS = ['beneficiados', 'responsables', 'participantes', 'observaciones_generales'];
 
+// Máximo de proyectos estratégicos (filas) que puede tener el PTA de un área.
+// El servidor revisa el mismo límite en php/programacion.php.
+const MAX_PROYECTOS = 4;
+
 // Esto se ejecuta apenas se abre la página
 document.addEventListener('DOMContentLoaded', () => {
   const btnAgregar = document.getElementById('btnAgregarAccion');
@@ -27,7 +31,15 @@ document.addEventListener('DOMContentLoaded', () => {
   btnGuardarProg.disabled = true;
   cargarProgramacion();
 
-  btnAgregar.addEventListener('click', () => agregarFilaAccion());
+  // Agregar otra fila solo si todavía no llega al máximo de proyectos estratégicos
+  btnAgregar.addEventListener('click', () => {
+    const filas = document.querySelectorAll('#cuerpoProgramacion .fila-programado').length;
+    if (filas >= MAX_PROYECTOS) {
+      mostrarMensaje(`Solo puedes tener un máximo de ${MAX_PROYECTOS} proyectos estratégicos en tu PTA.`, 'error');
+      return;
+    }
+    agregarFilaAccion();
+  });
 
   btnGuardarProg.addEventListener('click', (e) => {
     e.preventDefault();
@@ -70,7 +82,7 @@ function abrirModalConfirmacion(mensaje) {
   const texto = document.getElementById('ventanaTexto');
 
   if (titulo) titulo.innerText = 'Confirmación';
-  if (icono) icono.innerText = '⚠️';
+  if (icono) icono.innerText = ' ';
   if (texto) texto.innerText = mensaje;
 
   if (modal) modal.style.display = 'flex';
@@ -98,6 +110,12 @@ async function cargarProgramacion() {
     acciones.forEach(accion => agregarFilaAccion(accion));
 
     mostrarEstadoPlan(resultado.plan);
+
+    // Planeación finalizó el PTA del año: todo queda de solo lectura
+    if (resultado.finalizado) {
+      mostrarPTAFinalizado(resultado.anio);
+      return;
+    }
 
     // Planeación inició un PTA nuevo y esta área todavía no guarda su Programación de ese año.
     // Sale solo una vez por inicio de sesión, y deja de salir en cuanto el área guarda su Programación.
@@ -129,8 +147,7 @@ async function actualizarRealizado() {
 }
 
 // Cuándo se actualiza lo realizado:
-//  * al guardar un seguimiento en otra pestaña (aviso por BroadcastChannel)
-//  * al regresar a esta pestaña o a esta página con el botón "Atrás"
+//  al regresar a esta pestaña o a esta página con el botón "Atrás"
 document.addEventListener('DOMContentLoaded', () => {
   try {
     new BroadcastChannel('pta-realizado').addEventListener('message', actualizarRealizado);
@@ -272,7 +289,7 @@ function mostrarEstadoPlan(plan) {
     btnAgregar.style.display = 'none';
     btnGuardarProg.style.display = 'none';
     if (plan.estado === 'APROBADO') {
-      mostrarMensaje('Planeación aceptó tu PTA. Ya puedes capturar tus avances en Primer y Segundo seguimiento.', 'exito');
+      mostrarMensaje('PTA aceptado. Ya puedes avanzar con los seguimientos.', 'exito');
     } else {
       mostrarMensaje('Tu PTA se envió a Planeación y está en revisión. ' +
         'Podrás capturar tus avances cuando lo acepte.', 'info');
@@ -282,12 +299,20 @@ function mostrarEstadoPlan(plan) {
 
   // Rechazado: se puede corregir y volver a enviar
   if (plan && plan.estado === 'CON OBSERVACIONES') {
-    mostrarMensaje('Planeación rechazó tu PTA. Corrígelo y vuelve a guardarlo para enviarlo a revisión.\n' +
+    mostrarMensaje('PTA rechazado. Corrígelo y vuelve a guardarlo para enviarlo a revisión.\n' +
       'Motivo: ' + (plan.observaciones || 'sin motivo indicado'), 'error');
   }
 
   btnAgregar.disabled = false;
   btnGuardarProg.disabled = false;
+}
+
+// PTA finalizado por Planeación: se bloquea todo y se avisa
+function mostrarPTAFinalizado(anio) {
+  bloquearProgramacion();
+  document.getElementById('btnAgregarAccion').style.display = 'none';
+  document.getElementById('btnGuardarProgramacion').style.display = 'none';
+  mostrarMensaje(`Planeación finalizó el PTA ${anio}. Ya no se puede modificar.`, 'info');
 }
 
 // Deja toda la Programación de solo lectura: datos de cada acción, meses programados
@@ -312,7 +337,7 @@ function mostrarMensaje(texto, tipo, errores) {
   if (!cajaAvisos) return;
 
   const estilos = {
-    error: ['⚠️ ', 'caja-aviso'],
+    error: [' ', 'caja-aviso'],
     info: [' ', 'caja-aviso aviso-info'],
     exito: ['✔ ', 'caja-aviso aviso-exito']
   };
@@ -350,7 +375,12 @@ function validarFilas() {
     const requeridos = [
       ['select[name^="lineaAccion_"]', 'línea de acción'],
       ['textarea[name^="accionEstrategica_"]', 'acción estratégica'],
-      ['select[name^="unidadMedida_"]', 'unidad de medida']
+      ['select[name^="unidadMedida_"]', 'unidad de medida'],
+      // Obligatorios también: Beneficiados, Responsable(s), Participantes y Observaciones Generales
+      ['textarea[name^="beneficiados_"]', 'Beneficiados'],
+      ['textarea[name^="responsables_"]', 'Responsable(s)'],
+      ['textarea[name^="participantes_"]', 'Participantes'],
+      ['textarea[name^="observaciones_generales_"]', 'Observaciones Generales']
     ];
     requeridos.forEach(([selector, nombre]) => {
       const campo = trP.querySelector(selector);
@@ -472,6 +502,8 @@ function agregarFilaAccion(data = null) {
 
   const esPrimeraAccion = tbody.children.length === 0;
 
+  // Valores de los 12 meses (ENE a DIC) con los que se llenan los inputs de los meses:
+  // pVals = Programado (lo escribe el área) y rVals = Realizado (viene de los seguimientos)
   const pVals = data ? data.p : Array(12).fill('');
   const rVals = data ? data.r : Array(12).fill(0);
   const conRecursos = data ? data.con_recursos === 1 : true;
@@ -509,10 +541,10 @@ function agregarFilaAccion(data = null) {
     </td>
     <td style="text-align:center;"><span class="etiqueta-programado">Programado</span></td>
 
-    <!-- Meses 1er Semestre -->
+    <!-- Inputs de los meses ENE a JUN (Programado): se crea un input por mes; solo acepta enteros y recalcula los totales -->
     ${pVals.slice(0, 6).map((val, idx) => `
       <td>
-        <input type="number" min="0" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
+        <input type="number" min="0" max="10" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
       </td>
     `).join('')}
 
@@ -525,10 +557,10 @@ function agregarFilaAccion(data = null) {
       <input type="text" class="campo-mes campo-bloqueado" id="pct-p-sem-${id}" name="pct_p_sem_${id}" value="0%" readonly>
     </td>
 
-    <!-- Meses 2do Semestre -->
+    <!-- Inputs de los meses JUL a DIC (Programado): se crea un input por mes; idx + 6 para que JUL sea el mes 7 -->
     ${pVals.slice(6, 12).map((val, idx) => `
       <td>
-        <input type="number" min="0" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx + 6}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
+        <input type="number" min="0" max="10" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx + 6}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
       </td>
     `).join('')}
 
@@ -566,7 +598,7 @@ function agregarFilaAccion(data = null) {
   trR.innerHTML = `
     <td style="text-align:center;"><span class="etiqueta-realizado">Realizado</span></td>
 
-    <!-- Meses 1er Semestre R -->
+    <!-- Inputs de los meses ENE a JUN (Realizado): bloqueados, se llenan desde el Primer seguimiento -->
     ${rVals.slice(0, 6).map((val, idx) => `
       <td>
         <input type="number" min="0" step="1" class="campo-mes campo-bloqueado input-r-${id}" name="r_${id}_${idx}" value="${val !== '' ? val : 0}" readonly title="Se modifica en la hoja de Seguimiento">
@@ -582,7 +614,7 @@ function agregarFilaAccion(data = null) {
       <input type="text" class="campo-mes campo-bloqueado" id="pct-r-sem-${id}" name="pct_r_sem_${id}" value="0%" readonly title="Bloqueado: se calcula automáticamente (R x 100 / P)">
     </td>
 
-    <!-- Meses 2do Semestre R -->
+    <!-- Inputs de los meses JUL a DIC (Realizado): bloqueados, se llenan desde el Segundo seguimiento -->
     ${rVals.slice(6, 12).map((val, idx) => `
       <td>
         <input type="number" min="0" step="1" class="campo-mes campo-bloqueado input-r-${id}" name="r_${id}_${idx + 6}" value="${val !== '' ? val : 0}" readonly title="Se modifica en la hoja de Seguimiento">
@@ -722,7 +754,7 @@ function eliminarFila(id) {
 
   // Si la acción ya tiene avances capturados en los seguimientos, pedir confirmación
   const totalRealizado = parseInt(document.getElementById(`total-r-${id}`)?.innerText, 10) || 0;
-  if (totalRealizado > 0 && !confirm('Esta acción ya tiene avances capturados en los seguimientos. Al guardar se borrarán también. ¿Quitarla?')) {
+  if (totalRealizado > 0 && !confirm('Esta acción ya tiene avances capturados. Al guardar se borrarán también. ¿Quitarla?')) {
     return;
   }
 

@@ -86,9 +86,9 @@ form {
   gap: 5px;
   background-color: var(--azul-boton);
   border: none;
-  border-radius: 0 0 8px 0; /* pegado al banner y al borde izquierdo */
+  border-radius: 0 0 0 0; /* pegado al banner y al borde izquierdo */
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
   margin: 0 0 14px 0;
 }
 
@@ -242,6 +242,7 @@ body.menu-abierto .boton-menu {
   padding: 8px 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  font-size: 1.1rem;
 }
 
 .campo-bloqueado {
@@ -312,12 +313,20 @@ table.tabla-plan th.th-calendario {
 .th-seguimiento { background-color: #b4c6e7 !important; color: #000000 !important; }
 
 /* ANCHO DE COLUMNAS */
-.col-proyecto { width: 220px; }
-.col-linea { width: 220px; }
-.col-accion-est { width: 250px; }
+.col-proyecto { width: 230px; min-width: 230px; }
+.col-linea { width: 260px; min-width: 260px; }
+.col-accion-est { width: 270px; min-width: 270px; }
 .col-recursos { width: 150px; }
 .col-unidad { width: 120px; }
 .col-var { width: 45px; }
+
+/* Texto largo dentro de una celda (Línea de Acción): altura fija y barra para desplazarse,
+   así la fila queda delgada y se puede leer el texto completo (mismas medidas que Ver áreas) */
+.texto-desplazable {
+  max-height: 94px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
 
 /* CELDAS DE TEXTO ESTÁTICO (PROYECTO, LÍNEA DE ACCIÓN, ACCIÓN ESTRATÉGICA) */
 .celda-texto {

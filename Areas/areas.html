@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Áreas - Supervisión de Planes de Trabajo</title>
-  <link rel="stylesheet" href="../Areas/style.css?v=20261101c">
+  <link rel="stylesheet" href="../Areas/style.css?v=20261106b">
 </head>
 <body>
 
@@ -79,19 +79,18 @@
     <!-- Avisos: errores al cargar o falta de permisos -->
     <div id="cajaAvisos" class="caja-aviso" style="display: none;"></div>
 
-    <!-- Año del PTA y control para cambiarlo (solo Planeación llega a esta página) -->
+    <!-- Año del PTA y botón para finalizarlo (solo Planeación llega a esta página) -->
     <div class="barra-periodo" id="barraPeriodo" hidden>
       <div class="periodo-info">
         <span class="periodo-etiqueta">Año del PTA</span>
         <span class="periodo-anio" id="periodoActivo">–</span>
+        <span class="periodo-estado" id="periodoEstado"></span>
       </div>
-      <!-- "Nuevo PTA" muestra el campo del año. Solo se pueden crear años que no existan -->
+      <!-- "Finalizar PTA" cierra el PTA del año: después ya nadie lo puede modificar.
+           Ya finalizado, en su lugar aparece "Nuevo PTA" para abrir el PTA de otro año. -->
       <div class="periodo-cambiar">
-        <span class="periodo-campo" id="campoAnio" hidden>
-          <label for="anioNuevo">Cambiar a:</label>
-          <input type="text" id="anioNuevo" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Año">
-        </span>
-        <button type="button" class="boton boton-guardar" id="btnEstablecerAnio">Nuevo PTA</button>
+        <button type="button" class="boton boton-guardar" id="btnFinalizarPTA">Finalizar PTA</button>
+        <button type="button" class="boton boton-guardar" id="btnNuevoPTA" hidden>Nuevo PTA</button>
       </div>
     </div>
 
@@ -158,11 +157,11 @@
   </form>
 </div>
 
-<!-- Ventana que pide confirmar antes de crear un nuevo PTA -->
+<!-- Ventana que pide confirmar antes de finalizar el PTA -->
 <div class="ventana-fondo" id="ventanaConfirmar">
   <div class="ventana-contenido ventana-confirmar-contenido">
     <div class="ventana-encabezado ventana-confirmar-encabezado">
-      <h3>Crear nuevo PTA</h3>
+      <h3>Finalizar PTA</h3>
       <button type="button" class="boton-cerrar-ventana" id="btnCerrarVentana">✕</button>
     </div>
     <div class="ventana-cuerpo ventana-confirmar-cuerpo">
@@ -171,11 +170,31 @@
     </div>
     <div class="ventana-pie ventana-confirmar-pie">
       <button type="button" class="boton boton-cancelar" id="btnConfirmarNo">Cancelar</button>
-      <button type="button" class="boton boton-confirmar" id="btnConfirmarSi">Sí, crear PTA</button>
+      <button type="button" class="boton boton-confirmar" id="btnConfirmarSi">Sí, finalizar PTA</button>
     </div>
   </div>
 </div>
 
-<script src="../Areas/app.js?v=20261101c"></script>
+<!-- Ventana para crear un nuevo PTA: pide el año (sugiere el año siguiente) -->
+<div class="ventana-fondo" id="ventanaNuevoPTA">
+  <div class="ventana-contenido ventana-confirmar-contenido">
+    <div class="ventana-encabezado ventana-confirmar-encabezado">
+      <h3>Nuevo PTA</h3>
+      <button type="button" class="boton-cerrar-ventana" id="btnCerrarNuevoPTA">✕</button>
+    </div>
+    <div class="ventana-cuerpo ventana-confirmar-cuerpo">
+      <p class="ventana-texto">¿De qué año será el nuevo PTA?</p>
+      <input type="text" class="campo-anio-nuevo" id="anioNuevo" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Año">
+      <p class="texto-error-anio" id="errorAnioNuevo"></p>
+      <p class="ventana-nota">Todas las áreas empezarán a capturar su PTA de ese año.</p>
+    </div>
+    <div class="ventana-pie ventana-confirmar-pie">
+      <button type="button" class="boton boton-cancelar" id="btnCancelarNuevoPTA">Cancelar</button>
+      <button type="button" class="boton boton-confirmar" id="btnCrearNuevoPTA">Crear PTA</button>
+    </div>
+  </div>
+</div>
+
+<script src="../Areas/app.js?v=20261106b"></script>
 </body>
 </html>

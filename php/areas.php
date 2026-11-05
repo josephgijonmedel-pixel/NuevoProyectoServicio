@@ -103,6 +103,7 @@ function detalleArea($conexion, $unidadId, $anio)
 
     return [
         "anio" => $anio,
+        "finalizado" => ptaFinalizado($conexion, $anio),   // PTA cerrado: ya no se acepta ni rechaza
         "unidad" => $unidad,
         "plan" => $plan ? [
             "estado" => $plan['estado'],
@@ -135,6 +136,10 @@ function revisarPlan($conexion, $datos, $anio)
     }
     if (mb_strlen($motivo) > 2000) {
         responderJson(["error" => "El motivo es muy largo (máximo 2000 caracteres)."], 422);
+    }
+
+    if (ptaFinalizado($conexion, $anio)) {
+        responderJson(["error" => "El PTA $anio ya fue finalizado; no se puede revisar."], 409);
     }
 
     mysqli_begin_transaction($conexion);

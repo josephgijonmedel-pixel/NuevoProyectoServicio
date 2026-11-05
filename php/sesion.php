@@ -67,3 +67,15 @@ function anioActivo($conexion)
     $fila = mysqli_fetch_row(mysqli_query($conexion, "SELECT anio FROM periodos WHERE activo = 1 ORDER BY anio DESC LIMIT 1"));
     return $fila ? (int) $fila[0] : (int) date('Y');
 }
+
+// ¿Planeación ya finalizó el PTA de ese año? Un PTA finalizado ya no se puede modificar:
+// ni la Programación, ni los seguimientos, ni la revisión.
+function ptaFinalizado($conexion, $anio)
+{
+    $consulta = mysqli_prepare($conexion, "SELECT finalizado FROM periodos WHERE anio = ?");
+    mysqli_stmt_bind_param($consulta, "i", $anio);
+    mysqli_stmt_execute($consulta);
+    $fila = mysqli_fetch_row(mysqli_stmt_get_result($consulta));
+    mysqli_stmt_close($consulta);
+    return $fila && (int) $fila[0] === 1;
+}

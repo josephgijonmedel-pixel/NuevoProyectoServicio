@@ -224,10 +224,15 @@ CREATE TABLE `periodos` (
   `activo` tinyint(1) NOT NULL DEFAULT 0,
   `abierto_por` int(10) unsigned DEFAULT NULL,
   `fecha_apertura` timestamp NOT NULL DEFAULT current_timestamp(),
+  `finalizado` tinyint(1) NOT NULL DEFAULT 0,
+  `finalizado_por` int(10) unsigned DEFAULT NULL,
+  `fecha_finalizacion` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `periodos_anio` (`anio`),
   KEY `usuarios_abierto_por_periodos` (`abierto_por`),
-  CONSTRAINT `usuarios_abierto_por_periodos` FOREIGN KEY (`abierto_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
+  KEY `usuarios_finalizado_por_periodos` (`finalizado_por`),
+  CONSTRAINT `usuarios_abierto_por_periodos` FOREIGN KEY (`abierto_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `usuarios_finalizado_por_periodos` FOREIGN KEY (`finalizado_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

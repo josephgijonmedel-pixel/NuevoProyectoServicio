@@ -103,6 +103,8 @@ async function cargarSeguimiento() {
 async function guardarSeguimiento() {
   const btnGuardar = document.getElementById('btnGuardarSeguimiento');
   btnGuardar.disabled = true;
+  clearTimeout(temporizadorAutoguardado);
+  versionGuardada = versionCambios; // lo que sigue guarda todo; evita un envío doble al salir
 
   try {
     await leerRespuesta(await fetch(API_SEGUIMIENTO, {
@@ -120,6 +122,71 @@ async function guardarSeguimiento() {
 }
 
 
+
+// ---------------------------------------------------------------------
+// Guardado automático: lo realizado se guarda solo, un momento después
+// de dejar de escribir. No hace falta presionar el botón de guardar.
+// ---------------------------------------------------------------------
+const ESPERA_AUTOGUARDADO = 1000;   // milisegundos sin escribir antes de guardar
+let temporizadorAutoguardado = null;
+let versionCambios = 0;             // sube cada vez que el usuario cambia un mes
+let versionGuardada = 0;            // la última versión que ya está en el servidor
+let guardandoAhora = false;
+
+// Se llama al escribir en un mes de "Realizado": espera a que el usuario deje de escribir
+function programarAutoguardado() {
+  versionCambios++;
+  clearTimeout(temporizadorAutoguardado);
+  temporizadorAutoguardado = setTimeout(autoguardar, ESPERA_AUTOGUARDADO);
+}
+
+async function autoguardar() {
+  clearTimeout(temporizadorAutoguardado);
+  if (versionCambios === versionGuardada || guardandoAhora) return;
+
+  guardandoAhora = true;
+  const version = versionCambios;
+  let huboError = false;
+
+  try {
+    await leerRespuesta(await fetch(API_SEGUIMIENTO, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acciones: recolectarRealizado() })
+    }));
+    versionGuardada = version;
+    marcarErrores(null);
+    ocultarAvisoDeError();
+    avisarRealizadoGuardado();
+  } catch (error) {
+    huboError = true;
+    marcarErrores(error.errores);
+    mostrarMensaje(error.message, 'error', error.errores);
+  } finally {
+    guardandoAhora = false;
+    // Si el usuario siguió escribiendo mientras se guardaba, guardar también eso
+    if (!huboError && versionCambios !== versionGuardada) autoguardar();
+  }
+}
+
+// Si el usuario sale de la página antes de que se guarde, enviar lo pendiente
+window.addEventListener('pagehide', () => {
+  if (versionCambios === versionGuardada) return;
+  try {
+    fetch(API_SEGUIMIENTO, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acciones: recolectarRealizado() }),
+      keepalive: true   // permite que el envío termine aunque la página se cierre
+    });
+  } catch (e) { /* sin conexión: no hay nada más que hacer */ }
+});
+
+// Quita el aviso rojo de un error anterior cuando ya se pudo guardar
+function ocultarAvisoDeError() {
+  const cajaAvisos = document.getElementById('cajaAvisos');
+  if (cajaAvisos && cajaAvisos.className === 'caja-aviso') cajaAvisos.style.display = 'none';
+}
 
 // Convierte la respuesta del servidor en datos, o lanza un error con su mensaje
 async function leerRespuesta(respuesta) {
@@ -186,6 +253,11 @@ function mostrarEstadoSeguimiento(seguimiento) {
   }
 
   btnGuardar.disabled = false;
+
+  // Guardado automático: cualquier cambio en un mes de Realizado se guarda solo
+  document.getElementById('cuerpoSeguimiento').addEventListener('input', (e) => {
+    if (e.target.matches('input.campo-mes:not([readonly])')) programarAutoguardado();
+  });
 }
 
 // Muestra un aviso arriba de la tabla. tipo: 'error' (rojo) o 'info' (azul)
@@ -228,9 +300,7 @@ function filasDeAcciones() {
   return Array.from(document.querySelectorAll('#cuerpoSeguimiento tr.fila-programado'));
 }
 
-// ---------------------------------------------------------------------
 // Construcción de la tabla
-// ---------------------------------------------------------------------
 
 // FUNCIONES AUXILIARES DE VALIDACIÓN (solo números enteros)
 function soloEnteros(event) {
@@ -276,7 +346,8 @@ function pintarTabla(acciones) {
 
     trP.innerHTML = `
       <td rowspan="2" class="col-proyecto celda-texto">${escaparHtml(item.proyecto)}</td>
-      <td rowspan="2" class="col-linea celda-texto">${escaparHtml(item.linea)}</td>
+      <!-- La línea de acción es un texto largo: va en una caja con desplazamiento para que la fila no se estire -->
+      <td rowspan="2" class="col-linea celda-texto"><div class="texto-desplazable">${escaparHtml(item.linea)}</div></td>
       <td rowspan="2" class="col-accion-est celda-texto">${escaparHtml(item.descripcion)}</td>
       <td rowspan="2" class="col-recursos celda-texto">${txtRecursos}</td>
       <td rowspan="2" class="col-unidad celda-texto">${escaparHtml(item.unidad_medida)}</td>
@@ -304,7 +375,7 @@ function pintarTabla(acciones) {
       <!-- Meses 1er Semestre R (EDITABLE CON PLACEHOLDER 0) -->
       ${item.r.map((val) => `
         <td>
-          <input type="number" min="0" step="1" class="campo-mes seg-r-${id}" value="${val !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotalesSeguimiento(${id})">
+          <input type="number" min="0" max="10" step="1" class="campo-mes seg-r-${id}" value="${val !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotalesSeguimiento(${id})">
         </td>
       `).join('')}
 

@@ -33,8 +33,9 @@ try {
         if (!$plan) {
             responderJson(["error" => "Primero guarda tu Programación."], 409);
         }
-        if (!seguimientoEditable($plan)) {
-            responderJson(["error" => motivoBloqueo($plan)], 409);
+        $finalizado = ptaFinalizado($conexion, $anio);
+        if (!seguimientoEditable($plan, $finalizado)) {
+            responderJson(["error" => motivoBloqueo($plan, $finalizado, $anio)], 409);
         }
         $planId = (int) $plan['id'];
 
@@ -73,6 +74,7 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
 {
     $plan = obtenerPlan($conexion, $unidadId, $anio);
     $seguimiento = $plan ? obtenerSeguimiento($conexion, (int) $plan['id'], $periodo) : null;
+    $finalizado = ptaFinalizado($conexion, $anio);
 
     return [
         "unidad" => ["nombre" => nombreUnidad($conexion, $unidadId)],
@@ -80,8 +82,8 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
         "periodo" => $periodo,
         "hayPlan" => (bool) $plan,
         "seguimiento" => [
-            "editable" => $plan ? seguimientoEditable($plan) : false,
-            "motivo_bloqueo" => $plan && !seguimientoEditable($plan) ? motivoBloqueo($plan) : null,
+            "editable" => $plan ? seguimientoEditable($plan, $finalizado) : false,
+            "motivo_bloqueo" => $plan && !seguimientoEditable($plan, $finalizado) ? motivoBloqueo($plan, $finalizado, $anio) : null,
             "guardado" => (bool) $seguimiento,
             "estado_programacion" => $plan['estado'] ?? null,
             "estado_final" => $plan['estado_final'] ?? null,
@@ -261,15 +263,18 @@ function guardarRealizado($conexion, $acciones, $primerMes)
 }
 
 // ¿Se puede capturar lo realizado? Solo cuando Planeación ya aceptó el PTA
-// (y el PTA final no se ha cerrado)
-function seguimientoEditable($plan)
+// (y Planeación no ha finalizado el PTA del año)
+function seguimientoEditable($plan, $finalizado)
 {
-    return $plan['estado'] === 'APROBADO' && $plan['estado_final'] === 'BORRADOR';
+    return !$finalizado && $plan['estado'] === 'APROBADO' && $plan['estado_final'] === 'BORRADOR';
 }
 
 // Explicación de por qué no se puede capturar lo realizado
-function motivoBloqueo($plan)
+function motivoBloqueo($plan, $finalizado, $anio)
 {
+    if ($finalizado) {
+        return "Planeación finalizó el PTA $anio; ya no se pueden capturar avances.";
+    }
     switch ($plan['estado']) {
         case 'ENVIADO':
             return "Tu PTA está en revisión por Planeación. Podrás capturar tus avances cuando lo acepte.";

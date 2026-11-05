@@ -1,8 +1,9 @@
-// "Ver áreas" de Planeación: lo usan la lista de áreas (areas.html) y el detalle de un área (detalleArea.html).
-// Todo es de solo lectura: Planeación consulta los planes de las demás áreas, pero no los modifica ni los revisa.
-const API_AREAS = '../php/areas.php';
-const API_USUARIO = '../php/usuario.php';
-const PAGINA_LOGIN = '../InicioSesion/inicioSesion.html';
+
+// Direcciones que usa esta página. Se guardan en constantes para escribirlas una sola vez
+// y, si un archivo cambia de lugar, solo se corrige aquí.
+const API_AREAS = '../php/areas.php';                       // Servidor: lista de áreas, detalle de un área y aceptar/rechazar PTA
+const API_USUARIO = '../php/usuario.php';                   // Servidor: datos del usuario con sesión (su nombre, su unidad y si es Planeación)
+const PAGINA_LOGIN = '../InicioSesion/inicioSesion.html';   // Página a la que se manda al usuario si no ha iniciado sesión
 
 // Texto y color de cada estado. null = todavía no existe
 const ESTADOS = {
@@ -138,69 +139,118 @@ function filtrarAreas() {
 }
 
 // ---------------------------------------------------------------------
-// Nuevo PTA: Planeación crea el PTA de un año que todavía no existe (areas.html)
+// Finalizar PTA: Planeación cierra el PTA del año activo (areas.html).
+// Después ya nadie puede modificar la Programación, los seguimientos ni la revisión.
 // ---------------------------------------------------------------------
 
 const API_PERIODO = '../php/periodo.php';
 let anioActual = null;
 let aniosExistentes = [];   // años que ya tienen PTA: no se pueden volver a crear
 
+// Dónde quedan los datos de las áreas al finalizar. Por ahora se quedan en la base de datos;
+// cuando exista la sección para consultarlos (historial / página del administrador), cambiar este texto.
+const DESTINO_DATOS_PTA = 'la base de datos';
+
 document.addEventListener('DOMContentLoaded', () => {
-  const btnEstablecer = document.getElementById('btnEstablecerAnio');
-  if (!btnEstablecer) return; // no estamos en areas.html
+  const btnFinalizar = document.getElementById('btnFinalizarPTA');
+  if (!btnFinalizar) return; // no estamos en areas.html
 
   const ventana = document.getElementById('ventanaConfirmar');
-  const inputAnio = document.getElementById('anioNuevo');
   const cerrar = () => { ventana.style.display = 'none'; };
 
-  btnEstablecer.addEventListener('click', () => {
-    // Primer clic en "Nuevo PTA": solo muestra el campo del año
-    if (document.getElementById('campoAnio').hidden) {
-      mostrarCampoAnio();
-      return;
-    }
-    const anio = Number(inputAnio.value);
-    if (!Number.isInteger(anio) || anio < 2020 || anio > 2100) {
-      inputAnio.classList.add('campo-error');
-      mostrarMensaje('Escribe un año válido.', 'error');
-      return;
-    }
-    inputAnio.classList.remove('campo-error');
-    if (aniosExistentes.includes(anio)) {
-      inputAnio.classList.add('campo-error');
-      mostrarMensaje(`Ya existe un PTA ${anio}. Vuelve a intentar con otro año`, 'error');
-      return;
-    }
+  // "Finalizar PTA": primero pide confirmar
+  btnFinalizar.addEventListener('click', () => {
     document.getElementById('ventanaTexto').innerText =
-      `¿Crear el PTA ${anio}?\n\n` +
-      `Todas las áreas empezarán a capturar su PTA ${anio}. ` +
-      `El PTA ${anioActual} quedará guardado y ya no se podrá modificar.`;
+      `¿Seguro de finalizar el PTA ${anioActual}?\n\n` +
+      `Los datos de las áreas se guardarán en ${DESTINO_DATOS_PTA}. ` +
+      `Después de finalizarlo, ninguna área podrá modificar su PTA ni sus seguimientos.`;
     ventana.style.display = 'flex';
-  });
-  // Solo números: borra cualquier otro carácter (escrito o pegado) y deja máximo 4 dígitos
-  inputAnio.addEventListener('input', () => {
-    const limpio = inputAnio.value.replace(/\D/g, '').slice(0, 4);
-    if (inputAnio.value !== limpio) inputAnio.value = limpio;
-  });
-  inputAnio.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); btnEstablecer.click(); }
   });
 
   document.getElementById('btnConfirmarNo').addEventListener('click', cerrar);
   document.getElementById('btnCerrarVentana').addEventListener('click', cerrar);
   ventana.addEventListener('click', (e) => { if (e.target === ventana) cerrar(); });
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    if (ventana.style.display === 'flex') cerrar();
-    else ocultarCampoAnio();
+    if (e.key === 'Escape' && ventana.style.display === 'flex') cerrar();
   });
   document.getElementById('btnConfirmarSi').addEventListener('click', () => {
     cerrar();
-    crearPTA(Number(inputAnio.value));
+    finalizarPTA();
+  });
+
+  // "Nuevo PTA" (solo aparece con el PTA finalizado): ventana que pide el año
+  const ventanaNuevo = document.getElementById('ventanaNuevoPTA');
+  const inputAnio = document.getElementById('anioNuevo');
+  const cerrarNuevo = () => { ventanaNuevo.style.display = 'none'; };
+
+  document.getElementById('btnNuevoPTA').addEventListener('click', abrirVentanaNuevoPTA);
+  document.getElementById('btnCancelarNuevoPTA').addEventListener('click', cerrarNuevo);
+  document.getElementById('btnCerrarNuevoPTA').addEventListener('click', cerrarNuevo);
+  ventanaNuevo.addEventListener('click', (e) => { if (e.target === ventanaNuevo) cerrarNuevo(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && ventanaNuevo.style.display === 'flex') cerrarNuevo();
+  });
+  document.getElementById('btnCrearNuevoPTA').addEventListener('click', crearNuevoPTA);
+
+  // Solo números: borra cualquier otro carácter (escrito o pegado) y deja máximo 4 dígitos
+  inputAnio.addEventListener('input', () => {
+    const limpio = inputAnio.value.replace(/\D/g, '').slice(0, 4);
+    if (inputAnio.value !== limpio) inputAnio.value = limpio;
+    marcarErrorAnio('');
+  });
+  inputAnio.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); crearNuevoPTA(); }
   });
 
   cargarPeriodo();
 });
+
+// Abre la ventana del nuevo PTA con el año siguiente como sugerencia
+function abrirVentanaNuevoPTA() {
+  const inputAnio = document.getElementById('anioNuevo');
+  inputAnio.value = Math.max(anioActual, ...aniosExistentes) + 1;   // el siguiente año que todavía no existe
+  marcarErrorAnio('');
+  document.getElementById('ventanaNuevoPTA').style.display = 'flex';
+  inputAnio.focus();
+  inputAnio.select();
+}
+
+// Muestra (o quita, con texto vacío) el error debajo del campo del año
+function marcarErrorAnio(texto) {
+  document.getElementById('anioNuevo').classList.toggle('campo-error', texto !== '');
+  document.getElementById('errorAnioNuevo').textContent = texto;
+}
+
+// Revisa el año escrito y crea el nuevo PTA en el servidor
+async function crearNuevoPTA() {
+  const anio = Number(document.getElementById('anioNuevo').value);
+  if (!Number.isInteger(anio) || anio < 2020 || anio > 2100) {
+    marcarErrorAnio('Escribe un año válido (entre 2020 y 2100).');
+    return;
+  }
+  if (aniosExistentes.includes(anio)) {
+    marcarErrorAnio(`Ya existe un PTA ${anio}. Escribe otro año.`);
+    return;
+  }
+
+  const btnCrear = document.getElementById('btnCrearNuevoPTA');
+  btnCrear.disabled = true;
+  try {
+    const datos = await leerRespuesta(await fetch(API_PERIODO + '?accion=crear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anio })
+    }));
+    document.getElementById('ventanaNuevoPTA').style.display = 'none';
+    pintarPeriodo(datos);
+    await cargarLista();          // la lista ahora muestra las áreas del nuevo año
+    mostrarMensaje(datos.mensaje, 'exito');
+  } catch (error) {
+    marcarErrorAnio(error.message);
+  } finally {
+    btnCrear.disabled = false;
+  }
+}
 
 // Pide el año activo y lo muestra en la barra
 async function cargarPeriodo() {
@@ -215,50 +265,36 @@ function mostrarAnioEncabezado(anio) {
   if (span) span.textContent = anio;
 }
 
-// Muestra "Cambiar a:" con el campo del año (sugiere el año siguiente)
-function mostrarCampoAnio() {
-  const inputAnio = document.getElementById('anioNuevo');
-  document.getElementById('campoAnio').hidden = false;
-  document.getElementById('btnEstablecerAnio').textContent = 'Establecer año';
-  inputAnio.value = Math.max(anioActual, ...aniosExistentes) + 1;   // el siguiente año que no existe
-  inputAnio.focus();
-  inputAnio.select();
-}
-
-// Vuelve a dejar solo el botón "Nuevo PTA"
-function ocultarCampoAnio() {
-  document.getElementById('campoAnio').hidden = true;
-  document.getElementById('anioNuevo').classList.remove('campo-error');
-  document.getElementById('btnEstablecerAnio').textContent = 'Nuevo PTA';
-}
-
-// datos = {anio, anios: [años que ya existen]}
+// datos = {anio, finalizado, fecha_finalizacion, anios: [años que ya existen]}
 function pintarPeriodo(datos) {
   anioActual = datos.anio;
+  aniosExistentes = datos.anios || [];
   document.getElementById('periodoActivo').textContent = datos.anio;
   mostrarAnioEncabezado(datos.anio);
-  document.getElementById('anioNuevo').value = datos.anio;
-  aniosExistentes = datos.anios || [];
+
+  // Ya finalizado: se avisa y en lugar de "Finalizar PTA" aparece "Nuevo PTA" (mismo lugar)
+  const btnFinalizar = document.getElementById('btnFinalizarPTA');
+  const btnNuevo = document.getElementById('btnNuevoPTA');
+  const estado = document.getElementById('periodoEstado');
+  estado.textContent = datos.finalizado
+    ? 'Finalizado' + (datos.fecha_finalizacion ? ' el ' + datos.fecha_finalizacion.slice(0, 10) : '')
+    : '';
+  btnFinalizar.hidden = datos.finalizado;
+  btnFinalizar.disabled = false;
+  btnNuevo.hidden = !datos.finalizado;
   document.getElementById('barraPeriodo').hidden = false;
 }
 
-async function crearPTA(anio) {
-  const btnEstablecer = document.getElementById('btnEstablecerAnio');
-  btnEstablecer.disabled = true;
+async function finalizarPTA() {
+  const btnFinalizar = document.getElementById('btnFinalizarPTA');
+  btnFinalizar.disabled = true;
   try {
-    const datos = await leerRespuesta(await fetch(API_PERIODO + '?accion=crear', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ anio })
-    }));
+    const datos = await leerRespuesta(await fetch(API_PERIODO + '?accion=finalizar', { method: 'POST' }));
     pintarPeriodo(datos);
-    ocultarCampoAnio();
-    await cargarLista();          // la lista muestra los planes del año elegido
     mostrarMensaje(datos.mensaje, 'exito');
   } catch (error) {
     mostrarMensaje(error.message, 'error');
-  } finally {
-    btnEstablecer.disabled = false;
+    btnFinalizar.disabled = false;
   }
 }
 
@@ -278,7 +314,7 @@ async function cargarDetalle() {
     const resultado = await leerRespuesta(await fetch(`${API_AREAS}?id=${id}`));
     pintarFicha(resultado.unidad);
     mostrarAnioEncabezado(resultado.anio);
-    pintarRevision(resultado.plan, id);
+    pintarRevision(resultado.plan, id, resultado.finalizado);
 
     if (!resultado.plan) {
       mostrarMensaje('Esta área todavía no ha capturado su Plan de Trabajo de este año.', 'info');
@@ -310,7 +346,7 @@ let areaEnRevision = null;   // id de la unidad del detalle abierto
 let decisionPendiente = null; // 'aceptar' o 'rechazar'
 
 // Muestra el estado del PTA y, si está en revisión, los botones Aceptar / Rechazar
-function pintarRevision(plan, unidadId) {
+function pintarRevision(plan, unidadId, finalizado) {
   areaEnRevision = unidadId;
   const barra = document.getElementById('barraRevision');
   if (!barra) return;
@@ -328,7 +364,10 @@ function pintarRevision(plan, unidadId) {
   else if (plan.estado === 'APROBADO' && plan.fecha_revision) detalle = 'Aceptado el ' + plan.fecha_revision.slice(0, 10);
   document.getElementById('detalleRevision').textContent = detalle;
 
-  document.getElementById('botonesRevision').hidden = plan.estado !== 'ENVIADO';
+  // Solo se acepta o rechaza un PTA en revisión, y mientras el PTA del año no esté finalizado
+  document.getElementById('botonesRevision').hidden = plan.estado !== 'ENVIADO' || finalizado;
+  if (finalizado) detalle += (detalle ? '\n' : '') + 'El PTA de este año ya fue finalizado por Planeación.';
+  document.getElementById('detalleRevision').textContent = detalle;
   barra.hidden = false;
 }
 
@@ -444,7 +483,8 @@ function pintarTablaAnual(acciones) {
     filaP.className = 'fila-programado';
     filaP.innerHTML = `
       <td rowspan="2" class="col-proyecto celda-texto">${escaparHtml(accion.proyecto)}</td>
-      <td rowspan="2" class="col-linea celda-texto">${escaparHtml(accion.linea)}</td>
+      <!-- La línea de acción es un texto largo: va en una caja con desplazamiento para que la fila no se estire -->
+      <td rowspan="2" class="col-linea celda-texto"><div class="texto-desplazable">${escaparHtml(accion.linea)}</div></td>
       <td rowspan="2" class="col-accion-est celda-texto">${escaparHtml(accion.descripcion)}</td>
       <td rowspan="2" class="col-recursos celda-texto">${recursos}</td>
       <td rowspan="2" class="col-unidad celda-texto">${escaparHtml(accion.unidad_medida)}</td>
