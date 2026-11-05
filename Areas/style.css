@@ -932,3 +932,12 @@ table.tabla-areas tbody tr:hover {
 .texto-error-anio { min-height: 1.2em; margin: 6px 0 0; color: #c82333; font-size: 0.85rem; font-weight: bold; }
 .ventana-nota { margin: 4px 0 0; color: #6c757d; font-size: 0.85rem; }
 #btnNuevoPTA[hidden], #btnFinalizarPTA[hidden] { display: none; }
+
+/* Botón temporal "Habilitar todos los meses" / "Solo el mes en curso" (naranja para que se note) */
+.boton-meses { background-color: #1fe852; color: #ffffff; }
+.boton-meses:hover { background-color: #1fe852; }
+.boton-meses[hidden] { display: none; }
+
+/* Aviso naranja debajo del año cuando todos los meses están habilitados */
+.periodo-meses { font-size: 0.8rem; font-weight: bold; color: #1fe852; }
+.periodo-meses:empty { display: none; }

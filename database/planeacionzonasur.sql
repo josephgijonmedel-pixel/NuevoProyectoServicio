@@ -227,6 +227,7 @@ CREATE TABLE `periodos` (
   `finalizado` tinyint(1) NOT NULL DEFAULT 0,
   `finalizado_por` int(10) unsigned DEFAULT NULL,
   `fecha_finalizacion` datetime DEFAULT NULL,
+  `todos_los_meses` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `periodos_anio` (`anio`),
   KEY `usuarios_abierto_por_periodos` (`abierto_por`),

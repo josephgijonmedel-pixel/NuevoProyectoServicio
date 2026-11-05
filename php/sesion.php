@@ -68,6 +68,18 @@ function anioActivo($conexion)
     return $fila ? (int) $fila[0] : (int) date('Y');
 }
 
+// ¿Planeación habilitó todos los meses de los seguimientos? (botón temporal mientras se termina el proyecto)
+// Normalmente solo se captura el mes en curso.
+function todosLosMesesHabilitados($conexion, $anio)
+{
+    $consulta = mysqli_prepare($conexion, "SELECT todos_los_meses FROM periodos WHERE anio = ?");
+    mysqli_stmt_bind_param($consulta, "i", $anio);
+    mysqli_stmt_execute($consulta);
+    $fila = mysqli_fetch_row(mysqli_stmt_get_result($consulta));
+    mysqli_stmt_close($consulta);
+    return $fila && (int) $fila[0] === 1;
+}
+
 // ¿Planeación ya finalizó el PTA de ese año? Un PTA finalizado ya no se puede modificar:
 // ni la Programación, ni los seguimientos, ni la revisión.
 function ptaFinalizado($conexion, $anio)

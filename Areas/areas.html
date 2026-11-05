@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Áreas - Supervisión de Planes de Trabajo</title>
-  <link rel="stylesheet" href="../Areas/style.css?v=20261106c">
+  <link rel="stylesheet" href="../Areas/style.css?v=20261106g">
 </head>
 <body>
 
@@ -85,10 +85,14 @@
         <span class="periodo-etiqueta">Año del PTA</span>
         <span class="periodo-anio" id="periodoActivo">–</span>
         <span class="periodo-estado" id="periodoEstado"></span>
+        <!-- Aviso cuando Planeación habilitó todos los meses de los seguimientos -->
+        <span class="periodo-meses" id="periodoMeses"></span>
       </div>
       <!-- "Finalizar PTA" cierra el PTA del año: después ya nadie lo puede modificar.
            Ya finalizado, en su lugar aparece "Nuevo PTA" para abrir el PTA de otro año. -->
       <div class="periodo-cambiar">
+        <!-- Temporal (mientras se termina el proyecto): deja capturar todos los meses en los seguimientos -->
+        <button type="button" class="boton boton-meses" id="btnTodosLosMeses">Habilitar todos los meses</button>
         <button type="button" class="boton boton-guardar" id="btnFinalizarPTA">Finalizar PTA</button>
         <button type="button" class="boton boton-guardar" id="btnNuevoPTA" hidden>Nuevo PTA</button>
       </div>
@@ -195,6 +199,6 @@
   </div>
 </div>
 
-<script src="../Areas/app.js?v=20261106c"></script>
+<script src="../Areas/app.js?v=20261106g"></script>
 </body>
 </html>

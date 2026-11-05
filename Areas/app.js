@@ -146,6 +146,7 @@ function filtrarAreas() {
 const API_PERIODO = '../php/periodo.php';
 let anioActual = null;
 let aniosExistentes = [];   // años que ya tienen PTA: no se pueden volver a crear
+let todosLosMeses = false;  // ¿Planeación habilitó todos los meses de los seguimientos?
 
 // Dónde quedan los datos de las áreas al finalizar. Por ahora se quedan en la base de datos;
 // cuando exista la sección para consultarlos (historial / página del administrador), cambiar este texto.
@@ -184,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cerrarNuevo = () => { ventanaNuevo.style.display = 'none'; };
 
   document.getElementById('btnNuevoPTA').addEventListener('click', abrirVentanaNuevoPTA);
+  document.getElementById('btnTodosLosMeses').addEventListener('click', cambiarTodosLosMeses);
   document.getElementById('btnCancelarNuevoPTA').addEventListener('click', cerrarNuevo);
   document.getElementById('btnCerrarNuevoPTA').addEventListener('click', cerrarNuevo);
   ventanaNuevo.addEventListener('click', (e) => { if (e.target === ventanaNuevo) cerrarNuevo(); });
@@ -204,6 +206,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   cargarPeriodo();
 });
+
+// Habilita todos los meses de los seguimientos, o regresa a capturar solo el mes en curso
+async function cambiarTodosLosMeses() {
+  const boton = document.getElementById('btnTodosLosMeses');
+  boton.disabled = true;
+  try {
+    const datos = await leerRespuesta(await fetch(API_PERIODO + '?accion=meses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ todos: !todosLosMeses })
+    }));
+    pintarPeriodo(datos);
+    mostrarMensaje(datos.mensaje, 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  } finally {
+    boton.disabled = false;
+  }
+}
 
 // Abre la ventana del nuevo PTA con el año siguiente como sugerencia
 function abrirVentanaNuevoPTA() {
@@ -269,6 +290,16 @@ function mostrarAnioEncabezado(anio) {
 function pintarPeriodo(datos) {
   anioActual = datos.anio;
   aniosExistentes = datos.anios || [];
+
+  // Botón temporal de los meses: el texto dice lo que hará al presionarlo
+  todosLosMeses = !!datos.todos_los_meses;
+  document.getElementById('btnTodosLosMeses').textContent = todosLosMeses
+    ? 'Solo el mes en curso'
+    : 'Habilitar todos los meses';
+  document.getElementById('btnTodosLosMeses').hidden = !!datos.finalizado;
+  document.getElementById('periodoMeses').textContent = todosLosMeses
+    ? 'Seguimientos: todos los meses habilitados'
+    : '';
   document.getElementById('periodoActivo').textContent = datos.anio;
   mostrarAnioEncabezado(datos.anio);
 

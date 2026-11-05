@@ -1,6 +1,8 @@
 <?php
 // Año del PTA (periodo activo).
 //   GET  periodo.php               → {anio, anios: [años que ya existen], periodos: [{anio, activo, fecha_apertura}]}
+//   POST periodo.php?accion=meses     → Planeación habilita (o vuelve a bloquear) todos los meses de los
+//                                    seguimientos. Recibe JSON {todos: true|false}. Es temporal, para pruebas.
 //   POST periodo.php?accion=finalizar → Planeación finaliza (cierra) el PTA del año activo. Ya nadie lo puede modificar.
 //   POST periodo.php?accion=crear  → Planeación crea un PTA de un año NUEVO y lo deja activo. Recibe JSON {anio: 2030}
 //                                    Solo se puede después de finalizar el PTA actual (botón "Nuevo PTA").
@@ -18,6 +20,25 @@ const ANIO_MAXIMO = 2100;
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         responderJson(datosPeriodo($conexion));
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['accion'] ?? '') === 'meses') {
+        requerirPlaneacion("Solo la Coordinación de Planeación puede cambiar los meses de captura.");
+        $datos = json_decode(file_get_contents("php://input"), true);
+        $todos = !empty($datos['todos']);
+        $anio = anioActivo($conexion);
+        $consulta = mysqli_prepare($conexion, "UPDATE periodos SET todos_los_meses = ? WHERE anio = ?");
+        $valor = $todos ? 1 : 0;
+        mysqli_stmt_bind_param($consulta, "ii", $valor, $anio);
+        mysqli_stmt_execute($consulta);
+        mysqli_stmt_close($consulta);
+        registrarBitacora($conexion, "periodos", null, "EDITAR",
+            $todos ? "Habilitó todos los meses de los seguimientos ($anio)" : "Volvió a capturar solo el mes en curso ($anio)");
+        $respuesta = datosPeriodo($conexion);
+        $respuesta["mensaje"] = $todos
+            ? "Todos los meses de los seguimientos están habilitados."
+            : "Los seguimientos vuelven a capturar solo el mes en curso.";
+        responderJson($respuesta);
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['accion'] ?? '') === 'finalizar') {
@@ -83,6 +104,7 @@ function datosPeriodo($conexion)
         "anio" => $anio,
         "finalizado" => $actual && (int) $actual['finalizado'] === 1,
         "fecha_finalizacion" => $actual['fecha_finalizacion'] ?? null,
+        "todos_los_meses" => todosLosMesesHabilitados($conexion, $anio),
         "anios" => $anios,
         "periodos" => $periodos,
     ];

@@ -251,7 +251,8 @@ function mostrarEstadoSeguimiento(seguimiento) {
   }
 
   // Solo el mes en curso se puede escribir; si no es de este semestre, no hay nada que capturar
-  if (!bloquearMesesCerrados(seguimiento.mes_captura, seguimiento.primer_mes)) {
+  // (Planeación puede habilitar todos los meses mientras se termina el proyecto)
+  if (!seguimiento.todos_los_meses && !bloquearMesesCerrados(seguimiento.mes_captura, seguimiento.primer_mes)) {
     btnGuardar.style.display = 'none';
     return;
   }
@@ -404,7 +405,7 @@ function pintarTabla(acciones) {
       ${item.r.map((val) => `
         
         <td>
-          <input type="number" min="0" max="10" step="1" class="campo-mes seg2-r-${id}" value="${val !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotalesSeguimiento2(${id})">
+          <input type="number" min="0" step="1" class="campo-mes seg2-r-${id}" value="${val !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotalesSeguimiento2(${id})">
         </td>
       `).join('')}
 

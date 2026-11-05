@@ -544,7 +544,7 @@ function agregarFilaAccion(data = null) {
     <!-- Inputs de los meses ENE a JUN (Programado): se crea un input por mes; solo acepta enteros y recalcula los totales -->
     ${pVals.slice(0, 6).map((val, idx) => `
       <td>
-        <input type="number" min="0" max="10" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
+        <input type="number" min="0" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
       </td>
     `).join('')}
 
@@ -560,7 +560,7 @@ function agregarFilaAccion(data = null) {
     <!-- Inputs de los meses JUL a DIC (Programado): se crea un input por mes; idx + 6 para que JUL sea el mes 7 -->
     ${pVals.slice(6, 12).map((val, idx) => `
       <td>
-        <input type="number" min="0" max="10" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx + 6}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
+        <input type="number" min="0" step="1" class="campo-mes input-p-${id}" name="p_${id}_${idx + 6}" value="${val !== '' && Number(val) !== 0 ? val : ''}" placeholder="0" onkeypress="return soloEnteros(event)" onpaste="return validarPegadoEnteros(event)" oninput="calcularTotales(${id})">
       </td>
     `).join('')}
 
