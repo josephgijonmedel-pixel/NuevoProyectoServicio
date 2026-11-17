@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (formSeg) {
     formSeg.addEventListener('submit', (e) => {
       e.preventDefault();
-      abrirModalConfirmacion('¿Estás seguro que desea guardar?');
+      abrirModalConfirmacion('¿Subir tu avance a Planeación? Planeación verá lo que capturaste hasta ahora.');
     });
   }
 
@@ -62,7 +62,7 @@ function abrirModalConfirmacion(mensaje) {
   const texto = document.getElementById('ventanaTexto');
 
   if (titulo) titulo.innerText = 'Confirmación';
-  if (icono) icono.innerText = '⚠️';
+  if (icono) icono.innerText = '';
   if (texto) texto.innerText = mensaje;
 
   if (modal) modal.style.display = 'flex';
@@ -107,7 +107,8 @@ async function guardarSeguimiento() {
   versionGuardada = versionCambios; // lo que sigue guarda todo; evita un envío doble al salir
 
   try {
-    await leerRespuesta(await fetch(API_SEGUIMIENTO, {
+    // "Subir avance": guarda y además deja que Planeación vea lo capturado
+    await leerRespuesta(await fetch(API_SEGUIMIENTO + '&accion=subir', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ acciones: recolectarRealizado() })
@@ -214,7 +215,10 @@ async function leerRespuesta(respuesta) {
 function recolectarRealizado() {
   return filasDeAcciones().map(trP => ({
     id: trP.dataset.accionId,
-    r: Array.from(document.querySelectorAll(`.seg-r-${trP.dataset.fila}`)).map(inp => parseInt(inp.value, 10) || 0)
+    r: Array.from(document.querySelectorAll(`.seg-r-${trP.dataset.fila}`)).map(inp => parseInt(inp.value, 10) || 0),
+    // Evidencias, Causas y Acuerdos (solo se guardan cuando ya terminó el semestre)
+    ...Object.fromEntries(Array.from(trP.querySelectorAll('textarea.campo-cierre'))
+      .map(campo => [campo.dataset.campo, campo.value]))
   }));
 }
 
@@ -240,6 +244,9 @@ function mostrarAvisoSinProgramacion() {
 function mostrarEstadoSeguimiento(seguimiento) {
   const btnGuardar = document.getElementById('btnGuardarSeguimiento');
 
+  // Campos de cierre: aparecen al terminar el semestre (se ven aunque el seguimiento esté bloqueado)
+  mostrarCamposCierre(seguimiento);
+
   if (!seguimiento.editable) {
     document.querySelectorAll('#cuerpoSeguimiento input').forEach(input => {
       input.readOnly = true;
@@ -252,10 +259,14 @@ function mostrarEstadoSeguimiento(seguimiento) {
     return;
   }
 
-  // Solo el mes en curso se puede escribir; si no es de este semestre, no hay nada que capturar
-  // (Planeación puede habilitar todos los meses mientras se termina el proyecto)
-  if (!seguimiento.todos_los_meses && !bloquearMesesCerrados(seguimiento.mes_captura, seguimiento.primer_mes)) {
+  // Solo se escriben los meses que manda el servidor: el mes en curso (o todos, si Planeación
+  // los habilitó), menos los que el área ya subió. Si no queda ninguno, no hay nada que capturar.
+  const hayMesesAbiertos = bloquearMesesCerrados(seguimiento.meses_abiertos, seguimiento.primer_mes, seguimiento.aviso_meses);
+  // Sin meses abiertos todavía se puede capturar si ya están los campos de cierre
+  if (!hayMesesAbiertos && !seguimiento.cierre_editable) {
     btnGuardar.style.display = 'none';
+    // Si ya subió sus evidencias, ese es el aviso que importa
+    if (seguimiento.aviso_cierre) mostrarMensaje(seguimiento.aviso_cierre, 'aviso');
     return;
   }
 
@@ -263,30 +274,37 @@ function mostrarEstadoSeguimiento(seguimiento) {
 
   // Guardado automático: cualquier cambio en un mes de Realizado se guarda solo
   document.getElementById('cuerpoSeguimiento').addEventListener('input', (e) => {
-    if (e.target.matches('input.campo-mes:not([readonly])')) programarAutoguardado();
+    if (e.target.matches('input.campo-mes:not([readonly]), textarea.campo-cierre:not([readonly])')) programarAutoguardado();
   });
 }
 
-// Bloquea los meses de "Realizado" que no son el mes en curso (los que ya pasaron y los que no llegan).
-// mesCaptura = mes que se puede escribir (1-12, 0 = ninguno); primerMes = 1 (enero) o 7 (julio).
-// Devuelve true si en este seguimiento hay un mes abierto.
-function bloquearMesesCerrados(mesCaptura, primerMes) {
-  const NOMBRES_MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+// Muestra las columnas de cierre (Evidencias, Causas, Acuerdos y Observaciones de Planeación)
+// cuando ya terminó el semestre. Si no se pueden modificar, quedan de solo lectura.
+function mostrarCamposCierre(seguimiento) {
+  if (!seguimiento.cierre_visible) return;
+  document.querySelectorAll('#cuerpoSeguimiento .col-cierre, table .col-cierre').forEach(celda => { celda.hidden = false; });
+  if (!seguimiento.cierre_editable) {
+    document.querySelectorAll('#cuerpoSeguimiento textarea.campo-cierre').forEach(campo => { campo.readOnly = true; });
+  }
+}
+
+// Bloquea los meses de "Realizado" que no se pueden escribir (ya pasaron, no llegan o ya se subieron).
+// mesesAbiertos = meses que sí se pueden escribir (ej. [11]); primerMes = 1 (enero) o 7 (julio);
+// aviso = texto que se muestra si no queda ningún mes abierto. Devuelve true si hay alguno abierto.
+function bloquearMesesCerrados(mesesAbiertos, primerMes, aviso) {
   document.querySelectorAll('#cuerpoSeguimiento tr.fila-realizado').forEach(fila => {
     fila.querySelectorAll('input[class*="seg-r-"]').forEach((input, indice) => {
-      if (primerMes + indice === mesCaptura) return; // el mes en curso se queda abierto
+      if (mesesAbiertos.includes(primerMes + indice)) return; // este mes se puede escribir
       input.readOnly = true;
       input.classList.add('campo-bloqueado');
-      input.title = 'Solo se captura el mes en curso';
+      input.title = 'Este mes no se puede modificar';
     });
   });
 
-  const hayMesAbierto = mesCaptura >= primerMes && mesCaptura <= primerMes + 5;
-  if (!hayMesAbierto) {
-    const actual = mesCaptura ? ` (estamos en ${NOMBRES_MES[mesCaptura - 1]})` : '';
-    mostrarMensaje(`Solo se captura lo realizado del mes en curso${actual}. En este seguimiento no hay un mes abierto.`, 'info');
+  if (mesesAbiertos.length === 0) {
+    mostrarMensaje(aviso || 'No hay meses abiertos para capturar.', 'aviso');
   }
-  return hayMesAbierto;
+  return mesesAbiertos.length > 0;
 }
 
 // Muestra un aviso arriba de la tabla. tipo: 'error' (rojo) o 'info' (azul)
@@ -295,9 +313,10 @@ function mostrarMensaje(texto, tipo, errores) {
   if (!cajaAvisos) return;
 
   const estilos = {
-    error: ['⚠️ ', 'caja-aviso'],
-    info: ['ℹ️ ', 'caja-aviso aviso-info'],
-    exito: ['✔ ', 'caja-aviso aviso-exito']
+    error: ['', 'caja-aviso'],
+    info: ['', 'caja-aviso aviso-info'],
+    aviso: ['', 'caja-aviso aviso-info'],   // azul, sin icono
+    exito: ['', 'caja-aviso aviso-exito']
   };
   const [icono, clase] = estilos[tipo] || estilos.info;
 
@@ -392,6 +411,12 @@ function pintarTabla(acciones) {
       <!-- Seguimiento: Abs y % de Programado -->
       <td class="celda-subtotal" id="seg-absP-${id}">0</td>
       <td class="celda-subtotal" id="seg-pctP-${id}">0%</td>
+
+      <!-- Campos de cierre: el área escribe los 3 primeros; el último lo escribe Planeación -->
+      <td rowspan="2" class="col-cierre" hidden><textarea class="campo-cierre" data-campo="evidencias" maxlength="2000">${escaparHtml(item.cierre?.evidencias)}</textarea></td>
+      <td rowspan="2" class="col-cierre" hidden><textarea class="campo-cierre" data-campo="causas" maxlength="2000">${escaparHtml(item.cierre?.causas)}</textarea></td>
+      <td rowspan="2" class="col-cierre" hidden><textarea class="campo-cierre" data-campo="acuerdos" maxlength="2000">${escaparHtml(item.cierre?.acuerdos)}</textarea></td>
+      <td rowspan="2" class="col-cierre" hidden><div class="texto-planeacion">${escaparHtml(item.cierre?.observaciones_planeacion)}</div></td>
     `;
 
     const trR = document.createElement('tr');
@@ -416,7 +441,7 @@ function pintarTabla(acciones) {
     if (index > 0) {
       const trEspaciador = document.createElement('tr');
       trEspaciador.className = 'fila-separador';
-      trEspaciador.innerHTML = `<td colspan="14"></td>`;
+      trEspaciador.innerHTML = `<td colspan="18"></td>`;
       tbody.appendChild(trEspaciador);
     }
 
@@ -514,7 +539,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!opcion) return;
   try {
     const respuesta = await fetch('../php/usuario.php');
-    if (respuesta.ok && (await respuesta.json()).esPlaneacion) opcion.hidden = false;
+    if (respuesta.ok && (await respuesta.json()).esPlaneacion) {
+      opcion.hidden = false;
+      // "Mis Planes de trabajo" (historial de PTA): también solo para Planeación
+      const misPlanes = document.getElementById('menuMisPlanes');
+      if (misPlanes) misPlanes.hidden = false;
+    }
   } catch (e) { /* si falla, la opción simplemente queda oculta */ }
 });
 

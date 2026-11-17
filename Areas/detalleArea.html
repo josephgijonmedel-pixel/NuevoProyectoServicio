@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalle del Área - Plan de Trabajo Anual</title>
-  <link rel="stylesheet" href="../Areas/style.css?v=20261106g">
+  <link rel="stylesheet" href="../Areas/style.css?v=20261117j">
 </head>
 <body>
 
@@ -54,6 +54,13 @@
         <a href="../Areas/areas.html" class="menu-enlace menu-enlace-activo-padre">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span>Ver áreas</span>
+        </a>
+      </li>
+      <!-- Historial de PTA de años anteriores (solo Planeación). Todavía sin función: se hará después -->
+      <li id="menuMisPlanes">
+        <a class="menu-enlace" aria-disabled="true" title="Próximamente">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+          <span>Mis Planes de trabajo</span>
         </a>
       </li>
       <li>
@@ -114,6 +121,11 @@
         <span class="ficha-etiqueta">Correo personal</span>
         <span class="ficha-valor" id="fichaCorreoPers"></span>
       </div>
+      <!-- Solo aparece cuando Planeación ya aceptó el PTA del área -->
+      <div class="ficha-dato" id="fichaDatoAceptado" hidden>
+        <span class="ficha-etiqueta">PTA aceptado el</span>
+        <span class="ficha-valor" id="fichaAceptado"></span>
+      </div>
       </div>
     </div>
 
@@ -123,6 +135,16 @@
         <span class="revision-etiqueta">Estado del PTA</span>
         <span id="estadoRevision"></span>
         <span class="revision-detalle" id="detalleRevision"></span>
+      </div>
+      <!-- Más opciones de Planeación: el botón "…" muestra u oculta los botones de abajo -->
+      <div class="revision-opciones">
+        <button type="button" class="boton-mas-datos" id="btnMasRevision" aria-expanded="false" aria-controls="revisionMas" title="Mostrar más opciones" hidden>…</button>
+        <div class="revision-mas" id="revisionMas" hidden>
+          <!-- Aparece cuando el área ya subió el avance del mes: Planeación puede dejar que lo modifique -->
+          <button type="button" class="boton boton-meses" id="btnPermitirAvance" hidden>Permitir modificar avance</button>
+          <!-- Planeación muestra Evidencias, Causas y Acuerdos cuando quiera (ya no se muestran solos por fecha) -->
+          <button type="button" class="boton boton-meses" id="btnHabilitarCierre" hidden>Mostrar evidencias</button>
+        </div>
       </div>
       <div class="revision-botones" id="botonesRevision" hidden>
         <button type="button" class="boton boton-rechazar" id="btnRechazarPTA">Rechazar</button>
@@ -134,7 +156,23 @@
       <span>Alineación y Programación de Acciones Estratégicas</span>
     </div>
 
-    <!-- Tabla anual en solo lectura: misma estructura que Programación, sin columna de Acción -->
+    <!-- Pestañas: el seguimiento de cada semestre (como lo ve el área) y la programación completa.
+         Se abre en el semestre en el que va el área. -->
+    <div class="pestanas-detalle" id="pestanasDetalle">
+      <button type="button" class="pestana" data-vista="anual" data-texto="Programación completa">Programación completa</button>
+      <button type="button" class="pestana" data-vista="1" data-texto="Primer seguimiento (Ene - Jun)">Primer seguimiento (Ene - Jun)</button>
+      <button type="button" class="pestana" data-vista="2" data-texto="Segundo seguimiento (Jul - Dic)">Segundo seguimiento (Jul - Dic)</button>
+    </div>
+
+    <!-- Vista de un seguimiento: sus 6 meses, Abs / % y Evidencias, Causas, Acuerdos y Observaciones -->
+    <div id="vistaSeguimiento">
+      <div class="tabla-desplazable">
+        <table class="tabla-plan" id="tablaSeguimiento"></table>
+      </div>
+    </div>
+
+    <!-- Programación completa: tabla anual en solo lectura (misma estructura que Programación, sin columna de Acción) -->
+    <div id="vistaAnual" hidden>
     <div class="tabla-desplazable">
       <table class="tabla-plan" id="tablaDetalle">
         <thead>
@@ -181,15 +219,29 @@
         </tbody>
       </table>
     </div>
-
-    <!-- Barra de Acciones -->
-    <div class="barra-botones">
-      <a href="../Areas/areas.html" class="boton boton-secundario"> Volver a Ver áreas</a>
     </div>
   </form>
 </div>
 
 <!-- Ventana para confirmar la revisión. Al rechazar pide el motivo -->
+<!-- Ventana para elegir en qué semestre mostrar Evidencias, Causas y Acuerdos (solo uno a la vez) -->
+<div class="ventana-fondo" id="ventanaCierre">
+  <div class="ventana-contenido ventana-confirmar-contenido">
+    <div class="ventana-encabezado ventana-confirmar-encabezado">
+      <h3>Mostrar evidencias</h3>
+      <button type="button" class="boton-cerrar-ventana" id="btnCerrarCierre">✕</button>
+    </div>
+    <div class="ventana-cuerpo ventana-confirmar-cuerpo">
+      <p class="ventana-texto">¿En qué semestre quieres mostrar Evidencias?</p>
+      <p class="ventana-nota">El área podrá llenarlos desde ahora en ese seguimiento.</p>
+    </div>
+    <div class="ventana-pie ventana-confirmar-pie ventana-pie-centrado">
+      <button type="button" class="boton boton-confirmar" data-periodo="1">Primer semestre</button>
+      <button type="button" class="boton boton-confirmar" data-periodo="2">Segundo semestre</button>
+    </div>
+  </div>
+</div>
+
 <div class="ventana-fondo" id="ventanaRevision">
   <div class="ventana-contenido ventana-confirmar-contenido">
     <div class="ventana-encabezado ventana-confirmar-encabezado">
@@ -208,6 +260,6 @@
   </div>
 </div>
 
-<script src="../Areas/app.js?v=20261106g"></script>
+<script src="../Areas/app.js?v=20261117j"></script>
 </body>
 </html>

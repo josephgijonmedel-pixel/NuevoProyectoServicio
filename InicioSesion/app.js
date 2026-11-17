@@ -10,3 +10,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cajaAvisos) cajaAvisos.style.display = 'block';
   }
 });
+
+
+const btnMostrarContrasena = document.querySelector('.bx-show-alt');
+const inputContrasena = document.getElementById('contrasenaLogin');
+
+btnMostrarContrasena.addEventListener("click", e => {
+  if (inputContrasena.type === 'password') {
+    inputContrasena.type = 'text';
+    btnMostrarContrasena.classList.remove('bx-show-alt');
+    btnMostrarContrasena.classList.add('bx-hide');
+  } else {
+    inputContrasena.type = 'password';
+    btnMostrarContrasena.classList.remove('bx-hide');
+    btnMostrarContrasena.classList.add('bx-show-alt');
+  }
+});

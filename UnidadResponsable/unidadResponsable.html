@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Unidad Responsable</title>
-  <link rel="stylesheet" href="../UnidadResponsable/style.css?v=20261106g">
+  <link rel="stylesheet" href="../UnidadResponsable/style.css?v=20261117j">
 </head>
 <body>
 
@@ -52,6 +52,13 @@
         <a href="../Areas/areas.html" class="menu-enlace">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span>Ver áreas</span>
+        </a>
+      </li>
+      <!-- Historial de PTA de años anteriores (solo Planeación). Todavía sin función: se hará después -->
+      <li id="menuMisPlanes" hidden>
+        <a class="menu-enlace" aria-disabled="true" title="Próximamente">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+          <span>Mis Planes de trabajo</span>
         </a>
       </li>
       <li>
@@ -136,7 +143,7 @@
       <button type="button" class="boton-cerrar-ventana" id="btnCerrarVentana">✕</button>
     </div>
     <div class="ventana-cuerpo ventana-confirmar-cuerpo">
-      <div class="ventana-icono" id="ventanaIcono">⚠️</div>
+      <div class="ventana-icono" id="ventanaIcono"></div>
       <p class="ventana-texto" id="ventanaTexto">¿Estás seguro que desea guardar?</p>
     </div>
     <div class="ventana-pie ventana-confirmar-pie" id="ventanaBotones">
@@ -146,6 +153,6 @@
   </div>
 </div>
 
-<script src="../UnidadResponsable/app.js?v=20261106g"></script>
+<script src="../UnidadResponsable/app.js?v=20261117j"></script>
 </body>
 </html>

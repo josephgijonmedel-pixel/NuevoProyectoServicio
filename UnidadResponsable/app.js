@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       mostrarDatos(resultado.unidad);
       bloquearFormulario();
-      cajaExito.innerText = '✔ ' + resultado.mensaje;
+      cajaExito.innerText = resultado.mensaje;
       cajaExito.style.display = 'block';
     } catch (error) {
       mostrarError(error.message, error.campos);
@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function mostrarError(mensaje, erroresPorCampo) {
     cajaExito.style.display = 'none';
-    let texto = '⚠️ ' + mensaje;
+    let texto = mensaje;
 
     if (erroresPorCampo) {
       for (const [nombre, detalle] of Object.entries(erroresPorCampo)) {
@@ -234,7 +234,7 @@ function abrirModalConfirmacion() {
   const texto = document.getElementById('ventanaTexto');
 
   if (titulo) titulo.innerText = 'Confirmación';
-  if (icono) icono.innerText = '⚠️';
+  if (icono) icono.innerText = '';
   if (texto) texto.innerText = '¿Estás seguro que desea guardar?';
 
   if (modal) modal.style.display = 'flex';
@@ -294,6 +294,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!opcion) return;
   try {
     const respuesta = await fetch('../php/usuario.php');
-    if (respuesta.ok && (await respuesta.json()).esPlaneacion) opcion.hidden = false;
+    if (respuesta.ok && (await respuesta.json()).esPlaneacion) {
+      opcion.hidden = false;
+      // "Mis Planes de trabajo" (historial de PTA): también solo para Planeación
+      const misPlanes = document.getElementById('menuMisPlanes');
+      if (misPlanes) misPlanes.hidden = false;
+    }
   } catch (e) { /* si falla, la opción simplemente queda oculta */ }
 });

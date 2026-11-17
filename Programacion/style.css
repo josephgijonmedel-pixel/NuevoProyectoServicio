@@ -861,3 +861,6 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
 
 /* "Guardar" siempre a la derecha, aunque "Agregar Nueva Acción" esté oculto */
 #btnGuardarProgramacion { margin-left: auto; }
+
+/* Las ventanas ya no llevan icono: si el espacio del icono está vacío, no ocupa lugar */
+.ventana-icono:empty { display: none; }

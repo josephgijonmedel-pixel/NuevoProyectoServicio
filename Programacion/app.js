@@ -82,7 +82,7 @@ function abrirModalConfirmacion(mensaje) {
   const texto = document.getElementById('ventanaTexto');
 
   if (titulo) titulo.innerText = 'Confirmación';
-  if (icono) icono.innerText = ' ';
+  if (icono) icono.innerText = '';
   if (texto) texto.innerText = mensaje;
 
   if (modal) modal.style.display = 'flex';
@@ -278,6 +278,16 @@ function mostrarNombreUnidad(nombre) {
   if (menuNombreUnidad) menuNombreUnidad.textContent = nombre;
 }
 
+// ¿Ya se mostró el aviso "PTA aceptado" de este plan? Se recuerda en el navegador (localStorage).
+// Si el navegador no deja guardarlo, el aviso simplemente vuelve a salir.
+const CLAVE_AVISO_ACEPTADO = 'avisoPTAAceptadoVisto';
+function avisoAceptadoYaVisto(planId) {
+  try { return localStorage.getItem(`${CLAVE_AVISO_ACEPTADO}_${planId}`) === '1'; } catch (e) { return false; }
+}
+function marcarAvisoAceptadoVisto(planId) {
+  try { localStorage.setItem(`${CLAVE_AVISO_ACEPTADO}_${planId}`, '1'); } catch (e) { /* sin almacenamiento: no pasa nada */ }
+}
+
 // Habilita los botones, o bloquea la tabla si el PTA final ya se envió a Planeación
 function mostrarEstadoPlan(plan) {
   const btnAgregar = document.getElementById('btnAgregarAccion');
@@ -289,7 +299,11 @@ function mostrarEstadoPlan(plan) {
     btnAgregar.style.display = 'none';
     btnGuardarProg.style.display = 'none';
     if (plan.estado === 'APROBADO') {
-      mostrarMensaje('PTA aceptado. Ya puedes avanzar con los seguimientos.', 'exito');
+      // El aviso de "aceptado" sale solo la primera vez que el área ve su PTA aceptado
+      if (!avisoAceptadoYaVisto(plan.id)) {
+        mostrarMensaje('PTA aceptado. Ya puedes avanzar con los seguimientos.', 'exito');
+        marcarAvisoAceptadoVisto(plan.id);
+      }
     } else {
       mostrarMensaje('Tu PTA se envió a Planeación y está en revisión. ' +
         'Podrás capturar tus avances cuando lo acepte.', 'info');
@@ -337,9 +351,9 @@ function mostrarMensaje(texto, tipo, errores) {
   if (!cajaAvisos) return;
 
   const estilos = {
-    error: [' ', 'caja-aviso'],
-    info: [' ', 'caja-aviso aviso-info'],
-    exito: ['✔ ', 'caja-aviso aviso-exito']
+    error: ['', 'caja-aviso'],
+    info: ['', 'caja-aviso aviso-info'],
+    exito: ['', 'caja-aviso aviso-exito']
   };
   const [icono, clase] = estilos[tipo] || estilos.info;
 
@@ -820,7 +834,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!opcion) return;
   try {
     const respuesta = await fetch('../php/usuario.php');
-    if (respuesta.ok && (await respuesta.json()).esPlaneacion) opcion.hidden = false;
+    if (respuesta.ok && (await respuesta.json()).esPlaneacion) {
+      opcion.hidden = false;
+      // "Mis Planes de trabajo" (historial de PTA): también solo para Planeación
+      const misPlanes = document.getElementById('menuMisPlanes');
+      if (misPlanes) misPlanes.hidden = false;
+    }
   } catch (e) { /* si falla, la opción simplemente queda oculta */ }
 });
 

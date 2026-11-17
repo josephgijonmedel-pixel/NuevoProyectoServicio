@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Segundo Seguimiento Jul-Dic</title>
-  <link rel="stylesheet" href="../SegundoSeguimiento/style.css?v=20261106g">
+  <link rel="stylesheet" href="../SegundoSeguimiento/style.css?v=20261117j">
 </head>
 <body>
 
@@ -56,6 +56,13 @@
           <span>Ver áreas</span>
         </a>
       </li>
+      <!-- Historial de PTA de años anteriores (solo Planeación). Todavía sin función: se hará después -->
+      <li id="menuMisPlanes" hidden>
+        <a class="menu-enlace" aria-disabled="true" title="Próximamente">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+          <span>Mis Planes de trabajo</span>
+        </a>
+      </li>
       <li>
         <a href="../UnidadResponsable/unidadResponsable.html" class="menu-enlace">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M2.5 21h19"/><path d="M9 21v-5h6v5"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg>
@@ -100,6 +107,11 @@
             <th rowspan="2" class="th-texto col-var">Variables</th>
             <th colspan="6" class="th-calendario" id="encabezadoSemestre">SEGUNDO SEMESTRE</th>
             <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
+            <!-- Al terminar el semestre (Primer seguimiento: desde julio; Segundo: en diciembre) -->
+            <th rowspan="2" class="th-texto col-cierre" hidden>Evidencias de los resultados obtenidos: Fuente de información, donde se encuentran alojados los archivos (minutas, listas de asistencia, fotos, etc.)</th>
+            <th rowspan="2" class="th-texto col-cierre" hidden>Observaciones: Causas por las que no se logró el cumplimiento del 100% de la meta programada. En caso de lograr el 100% (no escribir nada)</th>
+            <th rowspan="2" class="th-texto col-cierre" hidden>Acuerdos y compromisos para atender las metas que no se lograron o se lograron parcialmente</th>
+            <th rowspan="2" class="th-texto col-cierre" hidden>Observaciones por parte de la Coordinación de Planeación</th>
           </tr>
           <tr>
             <th class="th-mes">Julio</th>
@@ -120,9 +132,8 @@
 
     <!-- Barra de Acciones -->
     <div class="barra-botones">
-      <a href="../Seguimiento/seguimiento.html" class="boton boton-secundario">← Primer seguimiento</a>
       <div>
-        <button type="submit" class="boton boton-guardar" id="btnGuardarSeguimiento" disabled> Guardar Segundo Seguimiento</button>
+        <button type="submit" class="boton boton-guardar" id="btnGuardarSeguimiento" disabled>Subir avance</button>
       </div>
     </div>
   </form>
@@ -137,7 +148,7 @@
     </div>
     <div class="ventana-cuerpo ventana-confirmar-cuerpo">
       <div class="ventana-icono" id="ventanaIcono"></div>
-      <p class="ventana-texto" id="ventanaTexto">¿Estás seguro que desea guardar?</p>
+      <p class="ventana-texto" id="ventanaTexto">¿Subir tu avance a Planeación?</p>
     </div>
     <div class="ventana-pie ventana-confirmar-pie" id="ventanaBotones">
       <button type="button" class="boton boton-cancelar" id="btnConfirmarNo">No</button>
@@ -146,6 +157,6 @@
   </div>
 </div>
 
-<script src="../SegundoSeguimiento/app.js?v=20261106g"></script>
+<script src="../SegundoSeguimiento/app.js?v=20261117j"></script>
 </body>
 </html>

@@ -436,3 +436,6 @@ body.menu-abierto .boton-menu {
   color: #155724;
   border-color: #c3e6cb;
 }
+
+/* Las ventanas ya no llevan icono: si el espacio del icono está vacío, no ocupa lugar */
+.ventana-icono:empty { display: none; }

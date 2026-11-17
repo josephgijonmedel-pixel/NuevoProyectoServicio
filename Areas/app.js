@@ -44,6 +44,8 @@ async function mostrarNombreUnidadPropia() {
     // Si no es Planeación, quitar la opción del menú (la página mostrará el aviso)
     const opcion = document.getElementById('menuVerAreas');
     if (opcion && !usuario.esPlaneacion) opcion.hidden = true;
+    const misPlanes = document.getElementById('menuMisPlanes');
+    if (misPlanes && !usuario.esPlaneacion) misPlanes.hidden = true;
   } catch (e) { /* el aviso de error lo muestra la carga principal */ }
 }
 
@@ -58,6 +60,7 @@ async function cargarLista() {
     mostrarAnioEncabezado(resultado.anio);
     pintarLista(resultado.areas);
     pintarResumen(resultado.areas);
+    filtrarAreas(); // aplica la tarjeta seleccionada (al inicio, "Áreas con PTA")
   } catch (error) {
     mostrarMensaje(error.message, 'error');
   }
@@ -70,36 +73,47 @@ function pintarLista(areas) {
 
   areas.forEach(area => {
     const fila = document.createElement('tr');
+    // Datos para las tarjetas del resumen (filtro por tarjeta en filtrarAreas)
+    fila.dataset.pta = area.tiene_pta ? '1' : '0';
+    fila.dataset.avance = area.avance_mes ? '1' : '0';
     fila.innerHTML = `
       <td class="celda-texto">${escaparHtml(area.nombre)}</td>
       <td>${escaparHtml(area.tipo || '—')}</td>
       <td class="celda-texto">${escaparHtml(area.responsable || '—')}</td>
       <td class="oculto">${etiquetaEstado(area.estado_plan, 'SIN PLAN')}</td>
       <td class="oculto">${etiquetaFinal(area.estado_plan, area.estado_final)}</td>
-      <td>${etiquetaRevision(area.estado_plan)}</td>
+      <td>${area.tiene_pta ? etiquetaRevision(area.estado_plan) : '<span class="estado estado-sin-plan">Sin PTA</span>'}</td>
       <td><a href="../Areas/detalleArea.html?id=${area.id}" class="boton-ver">Ver</a></td>
     `;
     tbody.appendChild(fila);
   });
-
-  const listaVacia = document.getElementById('listaVacia');
-  if (areas.length === 0) {
-    listaVacia.textContent = 'Ninguna área ha guardado todavía su PTA de este año.';
-    listaVacia.style.display = 'block';
-  } else {
-    listaVacia.style.display = 'none';
-  }
 }
 
-// Tarjetas de arriba: cuántas áreas hay en cada estado
+// Tarjetas de arriba: cuántas áreas hay en cada estado.
+// "areas" trae todas las áreas activas; las de Programación/PTA solo cuentan las que tienen PTA.
 function pintarResumen(areas) {
-  document.getElementById('totalAreas').textContent = areas.length;
-  document.getElementById('totalSinEnviar').textContent = areas.filter(a => a.estado_plan !== 'ENVIADO').length;
-  document.getElementById('totalProgramacion').textContent = areas.filter(a => a.estado_plan === 'ENVIADO').length;
-  document.getElementById('totalFinal').textContent = areas.filter(a => a.estado_final === 'ENVIADO').length;
+  const conPta = areas.filter(a => a.tiene_pta);
+  document.getElementById('totalUnidades').textContent = areas.length;
+  document.getElementById('totalAvances').textContent = areas.filter(a => a.avance_mes).length;
+  document.getElementById('totalAreas').textContent = conPta.length;
+  document.getElementById('totalSinPta').textContent = areas.length - conPta.length;
+  document.getElementById('totalSinEnviar').textContent = conPta.filter(a => a.estado_plan !== 'ENVIADO').length;
+  document.getElementById('totalProgramacion').textContent = conPta.filter(a => a.estado_plan === 'ENVIADO').length;
+  document.getElementById('totalFinal').textContent = conPta.filter(a => a.estado_final === 'ENVIADO').length;
 }
 
-// Búsqueda y filtros de la lista (solo existen en areas.html)
+// Tarjeta seleccionada del resumen: 'todas', 'avance', 'pta' o 'sinpta' (al abrir la página, "Áreas con PTA")
+let filtroTarjeta = 'pta';
+
+// Mensaje cuando la tabla queda vacía, según la tarjeta seleccionada
+const SIN_AREAS_POR_TARJETA = {
+  todas: 'No hay áreas registradas.',
+  avance: 'Ninguna área ha enviado todavía el avance de este mes.',
+  pta: 'Ninguna área ha guardado todavía su PTA de este año.',
+  sinpta: 'Todas las áreas ya guardaron su PTA de este año.',
+};
+
+// Búsqueda, filtros y tarjetas clicables de la lista (solo existen en areas.html)
 document.addEventListener('DOMContentLoaded', () => {
   const buscar = document.getElementById('buscarArea');
   if (!buscar) return; // no estamos en areas.html
@@ -109,6 +123,16 @@ document.addEventListener('DOMContentLoaded', () => {
   controles.filter(Boolean).forEach(control => {
     control.addEventListener('input', filtrarAreas);
     control.addEventListener('change', filtrarAreas);
+  });
+
+  // Clic en una tarjeta del resumen → la tabla muestra solo esas áreas
+  document.querySelectorAll('.resumen-card[data-filtro]').forEach(tarjeta => {
+    tarjeta.addEventListener('click', () => {
+      filtroTarjeta = tarjeta.dataset.filtro;
+      document.querySelectorAll('.resumen-card[data-filtro]').forEach(t =>
+        t.setAttribute('aria-pressed', t === tarjeta ? 'true' : 'false'));
+      filtrarAreas();
+    });
   });
 });
 
@@ -120,21 +144,29 @@ function filtrarAreas() {
   const filas = Array.from(document.querySelectorAll('#cuerpoAreas tr'));
 
   let visibles = 0;
+  let deLaTarjeta = 0; // áreas de la tarjeta seleccionada, sin contar la búsqueda
   filas.forEach(fila => {
     const celdas = fila.cells;
+    const coincideTarjeta = filtroTarjeta === 'todas'
+      || (filtroTarjeta === 'pta' && fila.dataset.pta === '1')
+      || (filtroTarjeta === 'sinpta' && fila.dataset.pta === '0')
+      || (filtroTarjeta === 'avance' && fila.dataset.avance === '1');
     const coincideTexto = !texto
       || normalizar(celdas[0].innerText).includes(texto)
       || normalizar(celdas[2].innerText).includes(texto);
     const coincideTipo = !tipo || celdas[1].innerText.trim() === tipo;
     const coincideEstado = !estado || celdas[3].innerText.trim() === estado;
 
-    const mostrar = coincideTexto && coincideTipo && coincideEstado;
+    if (coincideTarjeta) deLaTarjeta++;
+    const mostrar = coincideTarjeta && coincideTexto && coincideTipo && coincideEstado;
     fila.style.display = mostrar ? '' : 'none';
     if (mostrar) visibles++;
   });
 
   const listaVacia = document.getElementById('listaVacia');
-  listaVacia.textContent = 'No hay áreas que coincidan con la búsqueda.';
+  listaVacia.textContent = deLaTarjeta === 0
+    ? SIN_AREAS_POR_TARJETA[filtroTarjeta]
+    : 'No hay áreas que coincidan con la búsqueda.';
   listaVacia.style.display = visibles === 0 ? 'block' : 'none';
 }
 
@@ -350,7 +382,7 @@ async function cargarDetalle() {
     if (!resultado.plan) {
       mostrarMensaje('Esta área todavía no ha capturado su Plan de Trabajo de este año.', 'info');
     }
-    pintarTablaAnual(resultado.acciones);
+    mostrarDetalle(resultado);
   } catch (error) {
     document.getElementById('tituloArea').textContent = 'Área no disponible';
     mostrarMensaje(error.message, 'error');
@@ -392,14 +424,123 @@ function pintarRevision(plan, unidadId, finalizado) {
     // Si viene de un rechazo, recordar qué se le pidió corregir
     if (plan.observaciones) detalle += '\nCorregido después del rechazo. Motivo anterior: ' + plan.observaciones;
   }
-  else if (plan.estado === 'APROBADO' && plan.fecha_revision) detalle = 'Aceptado el ' + plan.fecha_revision.slice(0, 10);
+
+  // La fecha de aceptación ya no va aquí: se ve en los datos del área (botón "…")
+  const aceptado = plan.estado === 'APROBADO' && plan.fecha_revision;
+  document.getElementById('fichaDatoAceptado').hidden = !aceptado;
+  document.getElementById('fichaAceptado').textContent = aceptado ? plan.fecha_revision.slice(0, 10) : '';
   document.getElementById('detalleRevision').textContent = detalle;
 
   // Solo se acepta o rechaza un PTA en revisión, y mientras el PTA del año no esté finalizado
   document.getElementById('botonesRevision').hidden = plan.estado !== 'ENVIADO' || finalizado;
   if (finalizado) detalle += (detalle ? '\n' : '') + 'El PTA de este año ya fue finalizado por Planeación.';
+  // Avances: Planeación solo ve lo que el área subió con "Subir avance"
+  // Solo se avisa cuando el área ya subió algún avance: "Avance de noviembre enviado"
+  const NOMBRES_MES_AVANCE = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  if (plan.estado === 'APROBADO' && plan.ultimo_mes_subido) {
+    detalle += (detalle ? '\n' : '') + `Avance de ${NOMBRES_MES_AVANCE[plan.ultimo_mes_subido - 1]} enviado`;
+  }
   document.getElementById('detalleRevision').textContent = detalle;
+
+  // El área ya subió el avance del mes (y quedó bloqueado): Planeación puede habilitarlo otra vez
+  const NOMBRES_MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const meses = plan.meses_para_habilitar || [];
+  // Botón para habilitar (o quitar) Evidencias, Causas y Acuerdos: solo con el PTA aceptado y sin finalizar
+  const btnCierre = document.getElementById('btnHabilitarCierre');
+  btnCierre.hidden = plan.estado !== 'APROBADO' || finalizado;
+  // cierre_habilitado: 0 = ninguno, 1 = Primer seguimiento, 2 = Segundo seguimiento
+  const SEMESTRES = { 1: 'primer semestre', 2: 'segundo semestre' };
+  btnCierre.textContent = plan.cierre_habilitado
+    ? `Ocultar evidencias (${SEMESTRES[plan.cierre_habilitado]})`
+    : 'Mostrar evidencias';
+  btnCierre.dataset.habilitado = String(plan.cierre_habilitado || 0);
+  // Semestres cuyas evidencias ya se muestran (por fecha o "Habilitar todos los meses"): en la ventana quedan bloqueados
+  btnCierre.dataset.visible1 = plan.cierre?.[1]?.visible ? '1' : '0';
+  btnCierre.dataset.visible2 = plan.cierre?.[2]?.visible ? '1' : '0';
+
+  // ¿Hay observaciones escritas que el área todavía no ve? (el botón va debajo de la tabla)
+  marcarObservacionesPendientes(!!plan.observaciones_pendientes);
+
+  const btnPermitir = document.getElementById('btnPermitirAvance');
+  // También aparece cuando el área ya subió sus evidencias (Evidencias, Causas y Acuerdos)
+  const evidenciasBloqueadas = (plan.cierres_bloqueados || []).length > 0;
+  btnPermitir.hidden = meses.length === 0 && !evidenciasBloqueadas;
+  btnPermitir.textContent = meses.length === 0
+    ? 'Permitir modificar evidencias'
+    : meses.length === 1
+      ? `Permitir modificar avance de ${NOMBRES_MES[meses[0] - 1]}`
+      : 'Permitir modificar avances';
+
+  // El botón "…" solo aparece si hay alguna opción que mostrar (Permitir modificar / Mostrar evidencias)
+  const hayOpciones = !document.getElementById('btnPermitirAvance').hidden || !document.getElementById('btnHabilitarCierre').hidden;
+  document.getElementById('btnMasRevision').hidden = !hayOpciones;
+  if (!hayOpciones) mostrarOpcionesRevision(false);
   barra.hidden = false;
+}
+
+// Planeación deja que el área vuelva a modificar el avance que ya subió
+async function permitirModificarAvance() {
+  const boton = document.getElementById('btnPermitirAvance');
+  if (!confirm(`${boton.textContent}?\n\nEl área podrá corregirlo y tendrá que volver a subirlo.`)) return;
+  boton.disabled = true;
+  try {
+    const resultado = await leerRespuesta(await fetch(API_AREAS + '?accion=permitir_avance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: areaEnRevision })
+    }));
+    pintarRevision(resultado.plan, areaEnRevision, resultado.finalizado);
+    mostrarMensaje(resultado.mensaje, 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  } finally {
+    boton.disabled = false;
+  }
+}
+
+// Botón "Mostrar evidencias": si no hay ninguno habilitado, pregunta el semestre (ventana);
+// si ya hay uno, lo oculta.
+function clicBotonCierre() {
+  const boton = document.getElementById('btnHabilitarCierre');
+  if (boton.dataset.habilitado === '0') {
+    // Si las evidencias de un semestre ya se muestran (ej. el primero, porque ya pasó junio),
+    // su botón queda bloqueado y en gris
+    document.querySelectorAll('#ventanaCierre [data-periodo]').forEach(b => {
+      const yaVisible = boton.dataset['visible' + b.dataset.periodo] === '1';
+      b.disabled = yaVisible;
+      b.title = yaVisible ? 'Las evidencias de este semestre ya se muestran' : '';
+    });
+    document.getElementById('ventanaCierre').style.display = 'flex';
+    return;
+  }
+  if (confirm('¿Ocultar las evidencias?\n\nEl área ya no las verá hasta que las vuelvas a mostrar.')) {
+    cambiarCierreHabilitado(0);
+  }
+}
+
+function cerrarVentanaCierre() {
+  document.getElementById('ventanaCierre').style.display = 'none';
+}
+
+// Planeación muestra Evidencias, Causas y Acuerdos de UN seguimiento (periodo 1 o 2), o los oculta (0)
+async function cambiarCierreHabilitado(periodo) {
+  cerrarVentanaCierre();
+  const boton = document.getElementById('btnHabilitarCierre');
+  boton.disabled = true;
+  try {
+    const resultado = await leerRespuesta(await fetch(API_AREAS + '?accion=cierre', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: areaEnRevision, periodo })
+    }));
+    pintarRevision(resultado.plan, areaEnRevision, resultado.finalizado);
+    mostrarDetalle(resultado);   // vuelve a pintar las tablas (muestra u oculta las columnas)
+    mostrarMensaje(resultado.mensaje, 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  } finally {
+    boton.disabled = false;
+  }
 }
 
 // Abre la ventana para confirmar. Al rechazar también pide el motivo.
@@ -443,7 +584,8 @@ async function enviarRevision() {
       body: JSON.stringify({ id: areaEnRevision, decision: decisionPendiente, motivo: motivo.value.trim() })
     }));
     cerrarVentanaRevision();
-    pintarRevision(resultado.plan, areaEnRevision);
+    pintarRevision(resultado.plan, areaEnRevision, resultado.finalizado);
+    mostrarDetalle(resultado);   // al aceptarlo aparecen las pestañas de los seguimientos
     mostrarMensaje(resultado.mensaje, 'exito');
   } catch (error) {
     cerrarVentanaRevision();
@@ -459,6 +601,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btnAceptarPTA').addEventListener('click', () => abrirVentanaRevision('aceptar'));
   document.getElementById('btnRechazarPTA').addEventListener('click', () => abrirVentanaRevision('rechazar'));
+  document.getElementById('btnPermitirAvance').addEventListener('click', permitirModificarAvance);
+  document.getElementById('btnHabilitarCierre').addEventListener('click', clicBotonCierre);
+  document.querySelectorAll('#pestanasDetalle .pestana').forEach(b =>
+    b.addEventListener('click', () => mostrarVista(b.dataset.vista)));
+  // Ventana del semestre: cada botón trae su periodo en data-periodo
+  const ventanaCierre = document.getElementById('ventanaCierre');
+  ventanaCierre.querySelectorAll('[data-periodo]').forEach(b =>
+    b.addEventListener('click', () => cambiarCierreHabilitado(Number(b.dataset.periodo))));
+  document.getElementById('btnCerrarCierre').addEventListener('click', cerrarVentanaCierre);
+  ventanaCierre.addEventListener('click', (e) => { if (e.target === ventanaCierre) cerrarVentanaCierre(); });
   document.getElementById('btnConfirmarRevision').addEventListener('click', enviarRevision);
   document.getElementById('btnCancelarRevision').addEventListener('click', cerrarVentanaRevision);
   document.getElementById('btnCerrarRevision').addEventListener('click', cerrarVentanaRevision);
@@ -485,7 +637,7 @@ function pintarFicha(unidad) {
 
 // acciones = [{proyecto, linea, descripcion, con_recursos, unidad_medida,
 //              beneficiados, responsables, participantes, observaciones_generales, p[12], r[12]}]
-function pintarTablaAnual(acciones) {
+function pintarTablaAnual(acciones, plan) {
   const tbody = document.getElementById('cuerpoDetalle');
   tbody.innerHTML = '';
 
@@ -542,6 +694,130 @@ function pintarTablaAnual(acciones) {
     tbody.appendChild(filaP);
     tbody.appendChild(filaR);
   });
+
+}
+
+// ---------------------------------------------------------------------
+// Pestañas del detalle: Primer seguimiento, Segundo seguimiento y Programación completa
+// ---------------------------------------------------------------------
+
+let detalleActual = null;   // la última respuesta del servidor (para cambiar de pestaña sin volver a pedirla)
+let vistaDetalle = null;    // '1', '2' o 'anual'
+
+// Pinta el detalle; la primera vez abre la pestaña del semestre en el que va el área
+function mostrarDetalle(resultado) {
+  detalleActual = resultado;
+
+  // Mientras el PTA no esté aceptado (en revisión o rechazado), Planeación solo ve el PTA:
+  // sin pestañas de seguimiento, solo la programación completa
+  const soloPTA = !resultado.plan || resultado.plan.estado !== 'APROBADO';
+  document.getElementById('pestanasDetalle').hidden = soloPTA;
+  if (soloPTA) {
+    vistaDetalle = null;   // al aceptarlo, abre en el semestre en curso
+    pintarTablaAnual(resultado.acciones, resultado.plan);
+    document.getElementById('vistaAnual').hidden = false;
+    document.getElementById('vistaSeguimiento').hidden = true;
+    return;
+  }
+
+  const actual = String(resultado.semestre_actual || 1);
+  if (!vistaDetalle) vistaDetalle = actual;   // abre en la pestaña del semestre en curso
+  pintarTablaAnual(resultado.acciones, resultado.plan);
+  mostrarVista(vistaDetalle);
+}
+
+function mostrarVista(vista) {
+  vistaDetalle = vista;
+  document.querySelectorAll('#pestanasDetalle .pestana').forEach(b => {
+    b.classList.toggle('pestana-activa', b.dataset.vista === vista);
+  });
+  const anual = vista === 'anual';
+  document.getElementById('vistaAnual').hidden = !anual;
+  document.getElementById('vistaSeguimiento').hidden = anual;
+  if (!anual && detalleActual) {
+    pintarTablaSeguimiento(detalleActual.acciones, detalleActual.plan, Number(vista));
+  }
+}
+
+// Tabla de UN seguimiento, como la ve el área: sus 6 meses, Abs / % y, al terminar el semestre,
+// Evidencias, Causas, Acuerdos y Observaciones de Planeación
+function pintarTablaSeguimiento(acciones, plan, periodo) {
+  const tabla = document.getElementById('tablaSeguimiento');
+  const desde = periodo === 1 ? 0 : 6;
+  const meses = periodo === 1
+    ? ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN']
+    : ['JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+  const conCierre = !!plan?.cierre?.[periodo]?.visible;
+  const totalColumnas = 6 + 6 + 2 + (conCierre ? 4 : 0);
+
+  let html = `<thead>
+    <tr>
+      <th rowspan="2" class="th-texto col-proyecto">Proyecto Estratégico</th>
+      <th rowspan="2" class="th-texto col-linea">Línea de Acción</th>
+      <th rowspan="2" class="th-texto col-accion-est">Acción Estratégica</th>
+      <th rowspan="2" class="th-texto col-recursos">Recursos</th>
+      <th rowspan="2" class="th-texto col-unidad">Unidad de Medida</th>
+      <th rowspan="2" class="th-texto col-var">Variables</th>
+      <th colspan="6" class="th-calendario ${periodo === 2 ? 'th-semestre2' : ''}">${periodo === 1 ? 'Primer Semestre (Ene - Jun)' : 'Segundo Semestre (Jul - Dic)'}</th>
+      <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
+      ${conCierre ? '<th colspan="4" class="th-calendario th-seguimiento">Cierre del seguimiento</th>' : ''}
+    </tr>
+    <tr>
+      ${meses.map(m => `<th class="th-calendario th-mes">${m}</th>`).join('')}
+      <th class="th-calendario th-semestre">Abs</th>
+      <th class="th-calendario th-semestre">%</th>
+      ${conCierre ? `
+      <th class="th-texto col-cierre">Evidencias de los resultados obtenidos</th>
+      <th class="th-texto col-cierre">Causas por las que no se logró el 100% de la meta</th>
+      <th class="th-texto col-cierre">Acuerdos y compromisos</th>
+      <th class="th-texto col-cierre">Observaciones de la Coordinación de Planeación</th>` : ''}
+    </tr>
+  </thead><tbody>`;
+
+  if (acciones.length === 0) {
+    html += `<tr><td colspan="${totalColumnas}" class="lista-vacia">Sin acciones programadas.</td></tr>`;
+  }
+  acciones.forEach((accion, indice) => {
+    if (indice > 0) html += `<tr class="fila-separador"><td colspan="${totalColumnas}"></td></tr>`;
+    const p = accion.p.slice(desde, desde + 6);
+    const r = accion.r.slice(desde, desde + 6);
+    const sumaP = p.reduce((a, b) => a + b, 0);
+    const sumaR = r.reduce((a, b) => a + b, 0);
+    const celdas = valores => valores.map(v => `<td>${v || ''}</td>`).join('');
+    const recursos = accion.con_recursos ? 'CON RECURSOS ECONÓMICOS' : 'SIN RECURSOS ECONÓMICOS';
+    html += `<tr class="fila-programado">
+      <td rowspan="2" class="col-proyecto celda-texto">${escaparHtml(accion.proyecto)}</td>
+      <td rowspan="2" class="col-linea celda-texto"><div class="texto-desplazable">${escaparHtml(accion.linea)}</div></td>
+      <td rowspan="2" class="col-accion-est celda-texto">${escaparHtml(accion.descripcion)}</td>
+      <td rowspan="2" class="col-recursos celda-texto">${recursos}</td>
+      <td rowspan="2" class="col-unidad celda-texto">${escaparHtml(accion.unidad_medida)}</td>
+      <td class="col-var"><span class="etiqueta-programado">Programado</span></td>
+      ${celdas(p)}
+      <td class="celda-subtotal">${sumaP}</td>${celdaCumplimiento(sumaP, sumaP)}
+      ${celdasCierre(accion, plan, periodo)}
+    </tr>
+    <tr class="fila-realizado">
+      <td class="col-var"><span class="etiqueta-realizado">Realizado</span></td>
+      ${celdas(r)}
+      <td class="celda-realizado">${sumaR}</td>${celdaCumplimiento(sumaR, sumaP)}
+    </tr>`;
+  });
+  html += '</tbody>';
+
+  // Botón "Enviar observaciones" debajo de la columna de Observaciones (si Planeación puede escribir)
+  if (plan?.cierre?.[periodo]?.editable && acciones.length > 0) {
+    html += `<tfoot class="pie-observaciones"><tr>
+      <td colspan="${6 + 6 + 2 + 3}"></td>
+      <td><button type="button" class="boton boton-meses" id="btnEnviarObservaciones">Enviar observaciones</button></td>
+    </tr></tfoot>`;
+  }
+  tabla.innerHTML = html;
+
+  const boton = document.getElementById('btnEnviarObservaciones');
+  if (boton) {
+    boton.addEventListener('click', enviarObservaciones);
+    marcarObservacionesPendientes(observacionesPendientes);
+  }
 }
 
 // Sumas por semestre y del año
@@ -570,6 +846,14 @@ function celdaCumplimiento(realizado, programado) {
 
 // Botón "…" de la ficha de la unidad: muestra u oculta los datos
 document.addEventListener('DOMContentLoaded', () => {
+  // Botón "…" de la barra del estado del PTA: muestra u oculta "Permitir modificar avance" y "Mostrar evidencias"
+  const btnMasRevision = document.getElementById('btnMasRevision');
+  if (btnMasRevision) {
+    btnMasRevision.addEventListener('click', () => {
+      mostrarOpcionesRevision(document.getElementById('revisionMas').hidden);
+    });
+  }
+
   const btnMasDatos = document.getElementById('btnMasDatos');
   const fichaDetalles = document.getElementById('fichaDetalles');
   if (!btnMasDatos || !fichaDetalles) return;
@@ -608,9 +892,9 @@ function mostrarMensaje(texto, tipo) {
   const caja = document.getElementById('cajaAvisos');
   if (!caja) return;
   const estilos = {
-    error: ['⚠️ ', 'caja-aviso'],
-    info: ['ℹ️ ', 'caja-aviso aviso-info'],
-    exito: ['✔ ', 'caja-aviso aviso-exito']
+    error: ['', 'caja-aviso'],
+    info: ['', 'caja-aviso aviso-info'],
+    exito: ['', 'caja-aviso aviso-exito']
   };
   const [icono, clase] = estilos[tipo] || estilos.info;
   caja.innerText = icono + texto;
@@ -673,3 +957,99 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') cerrarMenu();
   });
 });
+
+// ---------------------------------------------------------------------
+// Cierre de los seguimientos en el detalle (Planeación)
+// ---------------------------------------------------------------------
+
+// Las 4 celdas de cierre de una acción en un seguimiento (abarcan las 2 filas).
+// Evidencias, Causas y Acuerdos los escribe el área; las Observaciones las escribe Planeación aquí.
+function celdasCierre(accion, plan, periodo) {
+  const estado = plan?.cierre?.[periodo];
+  if (!estado?.visible) return '';   // al área todavía no se le muestran: aquí tampoco
+  const datos = accion.cierre?.[periodo];
+  if (!estado.subido || !datos) {
+    return `<td rowspan="2" colspan="4" class="celda-texto col-cierre cierre-${periodo} cierre-sin-subir">El área todavía no sube este seguimiento.</td>`;
+  }
+  const texto = valor => `<td rowspan="2" class="celda-texto celda-complementaria col-cierre cierre-${periodo}">${escaparHtml(valor || '')}</td>`;
+  const observacion = estado.editable
+    ? `<textarea class="campo-observacion" data-periodo="${periodo}" data-accion="${accion.id}" maxlength="2000"
+         placeholder="Escribe tus observaciones">${escaparHtml(datos.observaciones_planeacion || '')}</textarea>`
+    : escaparHtml(datos.observaciones_planeacion || '');
+  return texto(datos.evidencias) + texto(datos.causas) + texto(datos.acuerdos) +
+    `<td rowspan="2" class="celda-texto celda-complementaria col-cierre cierre-${periodo}">${observacion}</td>`;
+}
+
+// Guarda la observación de Planeación como BORRADOR al salir del cuadro de texto (si cambió).
+// El área no la ve hasta que Planeación presiona "Enviar observaciones".
+let guardandoObservacion = Promise.resolve();
+document.addEventListener('change', (e) => {
+  const campo = e.target;
+  if (!campo.matches('textarea.campo-observacion')) return;
+  guardandoObservacion = guardarObservacion(campo);
+});
+
+async function guardarObservacion(campo) {
+  campo.classList.remove('observacion-guardada', 'campo-error');
+  try {
+    await leerRespuesta(await fetch(API_AREAS + '?accion=observacion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: areaEnRevision,
+        periodo: Number(campo.dataset.periodo),
+        accion_id: Number(campo.dataset.accion),
+        texto: campo.value
+      })
+    }));
+    campo.classList.add('observacion-guardada');   // borde verde: borrador guardado
+    marcarObservacionesPendientes(true);            // hay algo nuevo que enviar
+  } catch (error) {
+    campo.classList.add('campo-error');
+    mostrarMensaje(error.message, 'error');
+  }
+}
+
+// Botón "Enviar observaciones": activo si hay algo nuevo que enviar; si no, gris y bloqueado
+let observacionesPendientes = false;
+function marcarObservacionesPendientes(pendientes) {
+  observacionesPendientes = pendientes;
+  const boton = document.getElementById('btnEnviarObservaciones');
+  if (!boton) return;
+  boton.disabled = !pendientes;
+  boton.textContent = pendientes ? 'Enviar observaciones' : 'Observaciones enviadas';
+}
+
+// Envía al área las observaciones escritas (primero termina de guardar la última que se escribió)
+async function enviarObservaciones() {
+  const boton = document.getElementById('btnEnviarObservaciones');
+  boton.disabled = true;
+  await guardandoObservacion;
+  if (!confirm('¿Enviar tus observaciones al área?\n\nEl área las verá en sus seguimientos.')) {
+    boton.disabled = false;
+    return;
+  }
+  try {
+    const resultado = await leerRespuesta(await fetch(API_AREAS + '?accion=enviar_observaciones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: areaEnRevision })
+    }));
+    pintarRevision(resultado.plan, areaEnRevision, resultado.finalizado);
+    mostrarDetalle(resultado);
+    mostrarMensaje(resultado.mensaje, 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+    boton.disabled = false;
+  }
+}
+
+// Abre (true) o cierra (false) las opciones de Planeación que esconde el botón "…" de la barra del estado
+function mostrarOpcionesRevision(abrir) {
+  const opciones = document.getElementById('revisionMas');
+  const boton = document.getElementById('btnMasRevision');
+  if (!opciones || !boton) return;
+  opciones.hidden = !abrir;
+  boton.setAttribute('aria-expanded', String(abrir));
+  boton.title = abrir ? 'Ocultar opciones' : 'Mostrar más opciones';
+}

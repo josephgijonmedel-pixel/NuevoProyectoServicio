@@ -587,6 +587,24 @@ input[type=number] {
   background: #ffffff;
 }
 
+/* Tarjetas clicables (son <button>): filtran la tabla de áreas */
+button.resumen-card {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+button.resumen-card:hover {
+  background-color: #f4f7fb;
+}
+
+/* Tarjeta seleccionada: fondo azul claro y contorno */
+button.resumen-card[aria-pressed="true"] {
+  background-color: #eaf1fb;
+  box-shadow: 0 0 0 2px var(--azul-oscuro);
+}
+
 .resumen-card .resumen-numero {
   display: block;
   font-size: 1.8rem;
@@ -603,6 +621,9 @@ input[type=number] {
 .resumen-card.tarjeta-pendiente { border-left-color: #fd7e14; }
 .resumen-card.tarjeta-enviado { border-left-color: #0d6efd; }
 .resumen-card.tarjeta-final { border-left-color: #198754; }
+.resumen-card.tarjeta-cantidad { border-left-color: #6c757d; } /* Cantidad de áreas */
+.resumen-card.tarjeta-avances { border-left-color: #198754; }  /* Avances enviados */
+.resumen-card.tarjeta-sin-pta { border-left-color: #dc3545; }  /* Áreas sin PTA */
 
 /* Barra de búsqueda y filtros */
 .barra-filtros {
@@ -934,10 +955,81 @@ table.tabla-areas tbody tr:hover {
 #btnNuevoPTA[hidden], #btnFinalizarPTA[hidden] { display: none; }
 
 /* Botón temporal "Habilitar todos los meses" / "Solo el mes en curso" (naranja para que se note) */
-.boton-meses { background-color: #1fe852; color: #ffffff; }
-.boton-meses:hover { background-color: #1fe852; }
+.boton-meses { background-color: #32b954; color: #ffffff; }
+.boton-meses:hover { background-color: #32b954; }
 .boton-meses[hidden] { display: none; }
 
 /* Aviso naranja debajo del año cuando todos los meses están habilitados */
-.periodo-meses { font-size: 0.8rem; font-weight: bold; color: #1fe852; }
+.periodo-meses { font-size: 0.8rem; font-weight: bold; color: #32b954; }
 .periodo-meses:empty { display: none; }
+
+/* Las ventanas ya no llevan icono: si el espacio del icono está vacío, no ocupa lugar */
+.ventana-icono:empty { display: none; }
+
+/* Botón de Planeación para habilitar un avance ya subido (solo aparece cuando hay uno) */
+#btnPermitirAvance[hidden], #btnHabilitarCierre[hidden] { display: none; }
+
+/* "PTA aceptado el" en los datos del área: solo se ve cuando el PTA ya fue aceptado */
+#fichaDatoAceptado[hidden] { display: none; }
+
+/* Cierre de los seguimientos en el detalle: Evidencias, Causas, Acuerdos y Observaciones de Planeación */
+.col-cierre { width: 220px; min-width: 220px; vertical-align: top; }
+#tablaDetalle th.col-cierre[hidden], #tablaDetalle th.cierre-1[hidden], #tablaDetalle th.cierre-2[hidden] { display: none; }
+.cierre-sin-subir { color: #999; font-style: italic; text-align: center !important; vertical-align: middle; }
+textarea.campo-observacion {
+  width: 100%;
+  min-height: 90px;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+textarea.campo-observacion.observacion-guardada { border-color: #28a745; }
+textarea.campo-observacion.campo-error { border-color: #dc3545; background-color: #fff5f5; }
+
+/* Ventana "Mostrar evidencias": el semestre que ya se muestra queda bloqueado y en gris */
+#ventanaCierre .boton[disabled] { background-color: #adb5bd; color: #ffffff; opacity: 1; cursor: not-allowed; }
+
+/* "Observaciones enviadas": no hay nada nuevo que enviar (gris y bloqueado) */
+#btnEnviarObservaciones:disabled { background-color: #adb5bd; opacity: 1; cursor: not-allowed; }
+
+/* Fila de abajo de la tabla con "Enviar observaciones" (debajo de la columna de Observaciones):
+   sin bordes ni fondo, el botón ocupa el ancho de la columna */
+.pie-observaciones td { border: none !important; background: transparent !important; padding: 10px 0 0 !important; }
+.pie-observaciones .boton { width: 100%; }
+
+/* Pestañas del detalle del área: Primer seguimiento, Segundo seguimiento y Programación completa */
+.pestanas-detalle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--color-borde);
+}
+.pestana {
+  padding: 9px 16px;
+  border: 1px solid var(--color-borde);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background-color: #f1f3f5;
+  color: #495057;
+  font-weight: bold;
+  cursor: pointer;
+}
+.pestana:hover { background-color: #e2e6ea; }
+.pestana.pestana-activa { background-color: var(--azul-boton); color: #ffffff; border-color: var(--azul-boton); }
+#vistaAnual[hidden], #vistaSeguimiento[hidden] { display: none; }
+#tablaSeguimiento { min-width: 0; }
+
+/* Sin pestañas mientras el PTA está en revisión o rechazado (solo se ve el PTA) */
+#pestanasDetalle[hidden] { display: none; }
+
+/* Botones centrados en el pie de una ventana (ej. "Mostrar evidencias": Primer y Segundo semestre) */
+.ventana-pie-centrado { justify-content: center !important; }
+
+/* Barra del estado del PTA: botón "…" y las opciones que muestra (Permitir modificar / Mostrar evidencias) */
+.revision-opciones { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-left: auto; }
+.revision-mas { display: flex; flex-wrap: wrap; gap: 10px; }
+.revision-mas[hidden], #btnMasRevision[hidden] { display: none; }

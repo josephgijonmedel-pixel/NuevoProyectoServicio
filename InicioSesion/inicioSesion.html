@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inicio de Sesión</title>
-  <link rel="stylesheet" href="../InicioSesion/style.css?v=20261106g">
+  <link rel="stylesheet" href="../InicioSesion/style.css?v=20261117j">
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
 </head>
 <body>
 
@@ -31,7 +33,11 @@
 
     <div class="grupo-campo">
       <label for="contrasenaLogin">Contraseña <span class="obligatorio">*</span></label>
-      <input type="password" id="contrasenaLogin" name="password" placeholder="••••••••" required>
+      <!-- Contenedor para que el ojo quede dentro del campo, a la derecha -->
+      <div class="campo-con-icono">
+        <input type="password" id="contrasenaLogin" class="campoContrasena" name="password" placeholder="••••••••" required>
+        <i class='bx bx-show-alt' title="Mostrar contraseña"></i>
+      </div>
       <a href="#" class="enlace-olvide-contrasena">Olvidé mi contraseña</a>
     </div>
 
@@ -41,6 +47,6 @@
   </form>
 </div>
 
-<script src="../InicioSesion/app.js?v=20261106g"></script>
+<script src="../InicioSesion/app.js?v=20261117j"></script>
 </body>
 </html>

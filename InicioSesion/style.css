@@ -126,6 +126,30 @@ body {
   border-color: var(--azul-boton);
   box-shadow: 0 0 4px rgba(27, 54, 93, 0.3);
 }
+/* Campo de contraseña con el ojo dentro, a la derecha */
+.campo-con-icono {
+  position: relative;
+  display: flex;
+}
+
+.campo-con-icono input {
+  width: 100%;
+  padding-right: 44px; /* espacio para que el texto no quede debajo del ojo */
+}
+
+.campo-con-icono .bx {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 22px;
+  color: #666;
+  cursor: pointer;
+}
+
+.campo-con-icono .bx:hover {
+  color: var(--azul-boton);
+}
 
 .campo-error {
   border-color: #dc3545 !important;

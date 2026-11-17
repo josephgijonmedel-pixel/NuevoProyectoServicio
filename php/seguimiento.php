@@ -16,6 +16,9 @@ require "conexion.php";
 
 $anio = anioActivo($conexion);
 
+// Aviso cuando el área ya subió Evidencias, Causas y Acuerdos
+const AVISO_CIERRE_BLOQUEADO = "Ya subiste tus evidencias de este seguimiento. Si necesitas modificarlas, pide a Planeación que lo habilite.";
+
 $periodo = (int) ($_GET['periodo'] ?? 0);
 if ($periodo !== 1 && $periodo !== 2) {
     responderJson(["error" => "Periodo no válido (debe ser 1 o 2)."], 400);
@@ -39,12 +42,16 @@ try {
         }
         $planId = (int) $plan['id'];
 
-        // Solo se captura el mes en curso; los demás meses están bloqueados
-        // (salvo que Planeación haya habilitado todos los meses)
-        $mesCaptura = mesDeCaptura($anio);
-        $todosLosMeses = todosLosMesesHabilitados($conexion, $anio);
-        if (!$todosLosMeses && ($mesCaptura < $primerMes || $mesCaptura > $primerMes + 5)) {
-            responderJson(["error" => "En este seguimiento no hay un mes abierto para capturar. Solo se captura lo realizado del mes en curso."], 409);
+        // Meses que se pueden escribir: el mes en curso (o todos, si Planeación los habilitó),
+        // menos los que el área ya subió (esos solo se modifican si Planeación lo permite)
+        $mesesAbiertos = mesesAbiertos($conexion, $anio, $planId, $primerMes);
+        // Al terminar el semestre también se escriben Evidencias, Causas y Acuerdos,
+        // hasta que el área los sube (después solo se modifican si Planeación lo permite)
+        $seguimientoActual = obtenerSeguimiento($conexion, $planId, $periodo);
+        $cierreBloqueado = $seguimientoActual && (int) $seguimientoActual['cierre_bloqueado'] === 1;
+        $cierreEditable = cierreVisible($conexion, $anio, $periodo, $planId) && !$cierreBloqueado;
+        if (!$mesesAbiertos && !$cierreEditable) {
+            responderJson(["error" => $cierreBloqueado ? AVISO_CIERRE_BLOQUEADO : avisoMeses($conexion, $anio, $planId, $primerMes)], 409);
         }
 
         $datos = json_decode(file_get_contents("php://input"), true);
@@ -57,14 +64,32 @@ try {
             $seguimiento = crearSeguimiento($conexion, $planId, $periodo);
         }
 
-        guardarRealizado($conexion, $acciones, $primerMes, $todosLosMeses ? null : $mesCaptura);
+        guardarRealizado($conexion, $acciones, $primerMes, $mesesAbiertos);
+        if ($cierreEditable) {
+            guardarCierre($conexion, (int) $seguimiento['id'], $acciones);
+        }
         // Actualiza la fecha de modificación del seguimiento aunque no cambie otro campo
         mysqli_query($conexion, "UPDATE seguimientos SET fecha_modificacion = NOW() WHERE id = " . (int) $seguimiento['id']);
-        registrarBitacora($conexion, "seguimientos", (int) $seguimiento['id'], $esNuevo ? "CREAR" : "EDITAR", "periodo $periodo");
+
+        // "Subir avance": lo capturado (borrador del área) pasa a ser lo que ve Planeación.
+        // El guardado automático NO sube nada: solo guarda el borrador.
+        $subir = ($_GET['accion'] ?? '') === 'subir';
+        if ($subir) {
+            subirAvance($conexion, $planId, $mesesAbiertos, (int) $seguimiento['id']);
+            if ($cierreEditable) {
+                // Evidencias, Causas y Acuerdos subidos: ya no se modifican (salvo que Planeación lo permita)
+                mysqli_query($conexion, "UPDATE seguimientos SET cierre_bloqueado = 1 WHERE id = " . (int) $seguimiento['id']);
+            }
+            registrarBitacora($conexion, "seguimientos", (int) $seguimiento['id'], "ENVIAR", "Subió su avance (periodo $periodo)");
+        } else {
+            registrarBitacora($conexion, "seguimientos", (int) $seguimiento['id'], $esNuevo ? "CREAR" : "EDITAR", "periodo $periodo");
+        }
         mysqli_commit($conexion);
 
         $respuesta = armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes);
-        $respuesta["mensaje"] = "Seguimiento guardado correctamente.";
+        $respuesta["mensaje"] = $subir
+            ? "Tu avance se subió. Planeación ya lo puede ver y ya no se puede modificar."
+            : "Seguimiento guardado correctamente.";
         responderJson($respuesta);
     }
 
@@ -83,6 +108,9 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
     $plan = obtenerPlan($conexion, $unidadId, $anio);
     $seguimiento = $plan ? obtenerSeguimiento($conexion, (int) $plan['id'], $periodo) : null;
     $finalizado = ptaFinalizado($conexion, $anio);
+    $editable = $plan ? seguimientoEditable($plan, $finalizado) : false;
+    $cierreVisible = $plan && cierreVisible($conexion, $anio, $periodo, (int) $plan['id']);
+    $cierreBloqueado = $seguimiento && (int) $seguimiento['cierre_bloqueado'] === 1;
 
     return [
         "unidad" => ["nombre" => nombreUnidad($conexion, $unidadId)],
@@ -93,13 +121,22 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
             "editable" => $plan ? seguimientoEditable($plan, $finalizado) : false,
             "motivo_bloqueo" => $plan && !seguimientoEditable($plan, $finalizado) ? motivoBloqueo($plan, $finalizado, $anio) : null,
             "guardado" => (bool) $seguimiento,
-            "mes_captura" => mesDeCaptura($anio),   // único mes que se puede escribir (1-12); 0 = ninguno
-            "primer_mes" => $primerMes,             // 1 = enero (Primer seguimiento), 7 = julio (Segundo)
-            "todos_los_meses" => todosLosMesesHabilitados($conexion, $anio), // Planeación habilitó todos los meses
+            "fecha_subido" => $seguimiento['fecha_envio'] ?? null,   // última vez que subió su avance
+            "primer_mes" => $primerMes,   // 1 = enero (Primer seguimiento), 7 = julio (Segundo)
+            // Meses de este semestre que se pueden escribir, y por qué no hay ninguno (si es el caso)
+            "meses_abiertos" => $plan ? mesesAbiertos($conexion, $anio, (int) $plan['id'], $primerMes) : [],
+            "aviso_meses" => $plan && !mesesAbiertos($conexion, $anio, (int) $plan['id'], $primerMes)
+                ? avisoMeses($conexion, $anio, (int) $plan['id'], $primerMes) : null,
             "estado_programacion" => $plan['estado'] ?? null,
             "estado_final" => $plan['estado_final'] ?? null,
+            // Evidencias, Causas, Acuerdos y Observaciones de Planeación (al terminar el semestre)
+            "cierre_visible" => $cierreVisible,
+            "cierre_editable" => $editable && $cierreVisible && !$cierreBloqueado,
+            // Ya los subió: quedan bloqueados hasta que Planeación los habilite
+            "cierre_bloqueado" => $cierreBloqueado,
+            "aviso_cierre" => $cierreVisible && $cierreBloqueado ? AVISO_CIERRE_BLOQUEADO : null,
         ],
-        "acciones" => $plan ? obtenerAcciones($conexion, (int) $plan['id'], $primerMes) : [],
+        "acciones" => $plan ? obtenerAcciones($conexion, (int) $plan['id'], $primerMes, $seguimiento ? (int) $seguimiento['id'] : null) : [],
     ];
 }
 
@@ -128,7 +165,7 @@ function obtenerPlan($conexion, $unidadId, $anio)
 
 function obtenerSeguimiento($conexion, $planId, $periodo)
 {
-    $consulta = mysqli_prepare($conexion, "SELECT id, estado FROM seguimientos WHERE plan_id = ? AND periodo = ?");
+    $consulta = mysqli_prepare($conexion, "SELECT id, estado, fecha_envio, cierre_bloqueado FROM seguimientos WHERE plan_id = ? AND periodo = ?");
     mysqli_stmt_bind_param($consulta, "ii", $planId, $periodo);
     mysqli_stmt_execute($consulta);
     $seguimiento = mysqli_fetch_assoc(mysqli_stmt_get_result($consulta));
@@ -136,8 +173,9 @@ function obtenerSeguimiento($conexion, $planId, $periodo)
     return $seguimiento;
 }
 
-// Acciones del plan con sus textos y los 6 meses del semestre: programado (p) y realizado (r)
-function obtenerAcciones($conexion, $planId, $primerMes)
+// Acciones del plan con sus textos, los 6 meses del semestre: programado (p) y realizado (r),
+// y los campos de cierre del seguimiento (cierre)
+function obtenerAcciones($conexion, $planId, $primerMes, $seguimientoId = null)
 {
     $consulta = mysqli_prepare(
         $conexion,
@@ -168,9 +206,34 @@ function obtenerAcciones($conexion, $planId, $primerMes)
             "unidad_medida" => $fila['unidad_medida'],
             "p" => array_fill(0, 6, 0),
             "r" => array_fill(0, 6, 0),
+            "cierre" => ["evidencias" => "", "causas" => "", "acuerdos" => "", "observaciones_planeacion" => ""],
         ];
     }
     mysqli_stmt_close($consulta);
+
+    // Campos de cierre ya escritos en este seguimiento
+    if ($acciones && $seguimientoId) {
+        $consulta = mysqli_prepare(
+            $conexion,
+            // El área solo ve las observaciones que Planeación ya envió (no su borrador)
+            "SELECT accion_id, evidencias, causas_incumplimiento, acuerdos_compromisos,
+                    observaciones_enviadas AS observaciones_planeacion
+             FROM seguimientos_acciones WHERE seguimiento_id = ?"
+        );
+        mysqli_stmt_bind_param($consulta, "i", $seguimientoId);
+        mysqli_stmt_execute($consulta);
+        $resultado = mysqli_stmt_get_result($consulta);
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            if (!isset($acciones[(int) $fila['accion_id']])) continue;
+            $acciones[(int) $fila['accion_id']]['cierre'] = [
+                "evidencias" => $fila['evidencias'] ?? '',
+                "causas" => $fila['causas_incumplimiento'] ?? '',
+                "acuerdos" => $fila['acuerdos_compromisos'] ?? '',
+                "observaciones_planeacion" => $fila['observaciones_planeacion'] ?? '',
+            ];
+        }
+        mysqli_stmt_close($consulta);
+    }
 
     if ($acciones) {
         $ultimoMes = $primerMes + 5;
@@ -237,13 +300,43 @@ function validarAcciones($conexion, $planId, $acciones)
             $errores[] = ["fila" => $fila, "mensaje" => "Acción $fila: lo realizado debe ser un número entero de 0 en adelante."];
         }
 
-        $limpias[] = ["id" => $id, "r" => $valores];
+        // Campos de cierre (texto libre, opcionales)
+        $cierre = [];
+        foreach (CAMPOS_CIERRE_AREA as $columna => $nombre) {
+            $texto = trim((string) ($a[$nombre] ?? ''));
+            if (mb_strlen($texto) > 2000) {
+                $errores[] = ["fila" => $fila, "mensaje" => "Acción $fila: el texto es muy largo (máximo 2000 caracteres)."];
+            }
+            $cierre[$columna] = $texto === '' ? null : $texto;
+        }
+
+        $limpias[] = ["id" => $id, "r" => $valores, "cierre" => $cierre];
     }
 
     if ($errores) {
         responderJson(["error" => "Revisa las acciones marcadas.", "errores" => $errores], 422);
     }
     return $limpias;
+}
+
+// Guarda Evidencias, Causas y Acuerdos de cada acción (las Observaciones las escribe Planeación)
+function guardarCierre($conexion, $seguimientoId, $acciones)
+{
+    $consulta = mysqli_prepare(
+        $conexion,
+        "INSERT INTO seguimientos_acciones (seguimiento_id, accion_id, evidencias, causas_incumplimiento, acuerdos_compromisos)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE evidencias = VALUES(evidencias),
+                                 causas_incumplimiento = VALUES(causas_incumplimiento),
+                                 acuerdos_compromisos = VALUES(acuerdos_compromisos)"
+    );
+    foreach ($acciones as $a) {
+        $c = $a['cierre'];
+        mysqli_stmt_bind_param($consulta, "iisss", $seguimientoId, $a['id'],
+            $c['evidencias'], $c['causas_incumplimiento'], $c['acuerdos_compromisos']);
+        mysqli_stmt_execute($consulta);
+    }
+    mysqli_stmt_close($consulta);
 }
 
 function crearSeguimiento($conexion, $planId, $periodo)
@@ -256,9 +349,35 @@ function crearSeguimiento($conexion, $planId, $periodo)
 }
 
 // Solo cambia lo realizado; lo programado se conserva
-// Guarda solo el mes en curso ($mesCaptura); lo que llegue de los demás meses se ignora.
-// Con $mesCaptura = null (Planeación habilitó todos los meses) se guardan los 6 meses.
-function guardarRealizado($conexion, $acciones, $primerMes, $mesCaptura)
+// Copia lo capturado en los meses abiertos (realizado) a lo que ve Planeación (realizado_enviado),
+// anota la fecha y deja esos meses bloqueados para el área (avances_subidos).
+function subirAvance($conexion, $planId, $meses, $seguimientoId)
+{
+    $copiar = mysqli_prepare(
+        $conexion,
+        "UPDATE metas_mensuales m JOIN acciones_estrategicas a ON a.id = m.accion_id
+         SET m.realizado_enviado = m.realizado
+         WHERE a.plan_id = ? AND m.mes = ?"
+    );
+    $bloquear = mysqli_prepare(
+        $conexion,
+        "INSERT INTO avances_subidos (plan_id, mes) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE fecha_subido = NOW()"
+    );
+    foreach ($meses as $mes) {
+        mysqli_stmt_bind_param($copiar, "ii", $planId, $mes);
+        mysqli_stmt_execute($copiar);
+        mysqli_stmt_bind_param($bloquear, "ii", $planId, $mes);
+        mysqli_stmt_execute($bloquear);
+    }
+    mysqli_stmt_close($copiar);
+    mysqli_stmt_close($bloquear);
+
+    mysqli_query($conexion, "UPDATE seguimientos SET estado = 'ENVIADO', fecha_envio = NOW() WHERE id = " . (int) $seguimientoId);
+}
+
+// Guarda solo los meses abiertos ($meses); lo que llegue de los demás meses se ignora
+function guardarRealizado($conexion, $acciones, $primerMes, $meses)
 {
     $guardarMes = mysqli_prepare(
         $conexion,
@@ -268,8 +387,8 @@ function guardarRealizado($conexion, $acciones, $primerMes, $mesCaptura)
     foreach ($acciones as $a) {
         foreach ($a['r'] as $indice => $realizado) {
             $mes = $primerMes + $indice;
-            if ($mesCaptura !== null && $mes !== $mesCaptura) {
-                continue; // mes bloqueado: ya pasó o todavía no llega
+            if (!in_array($mes, $meses, true)) {
+                continue; // mes bloqueado: ya pasó, no llega o ya se subió
             }
             mysqli_stmt_bind_param($guardarMes, "iii", $a['id'], $mes, $realizado);
             mysqli_stmt_execute($guardarMes);
@@ -278,11 +397,31 @@ function guardarRealizado($conexion, $acciones, $primerMes, $mesCaptura)
     mysqli_stmt_close($guardarMes);
 }
 
-// Único mes en el que se puede capturar lo realizado: el mes en curso (1-12),
-// y solo si el PTA activo es del año en curso. 0 = ningún mes.
-function mesDeCaptura($anio)
+// Meses de este semestre que el área puede escribir: los que deja la regla (mes en curso,
+// o todos si Planeación los habilitó) menos los que ya subió.
+function mesesAbiertos($conexion, $anio, $planId, $primerMes)
 {
-    return (int) date('Y') === (int) $anio ? (int) date('n') : 0;
+    $delSemestre = array_filter(mesesDeCaptura($conexion, $anio), fn($mes) => $mes >= $primerMes && $mes <= $primerMes + 5);
+    return array_values(array_diff($delSemestre, mesesSubidos($conexion, $planId)));
+}
+
+// Por qué no hay ningún mes abierto en este seguimiento
+function avisoMeses($conexion, $anio, $planId, $primerMes)
+{
+    $delSemestre = array_values(array_filter(mesesDeCaptura($conexion, $anio), fn($mes) => $mes >= $primerMes && $mes <= $primerMes + 5));
+    if ($delSemestre) {
+        // Había meses abiertos, pero el área ya los subió
+        return count($delSemestre) === 1
+            ? "Ya subiste tu avance de " . nombreMes($delSemestre[0]) . ". Si necesitas modificarlo, pide a Planeación que lo habilite."
+            : "Ya subiste tus avances de este semestre. Si necesitas modificarlos, pide a Planeación que los habilite.";
+    }
+    $mes = mesDeCaptura($anio);
+    if ($mes === 0) {
+        return "No hay meses abiertos para capturar en este PTA.";
+    }
+    return $mes > $primerMes + 5
+        ? "Avances del primer semestre concluidos."
+        : "Los avances del segundo semestre se capturan a partir de julio.";
 }
 
 // ¿Se puede capturar lo realizado? Solo cuando Planeación ya aceptó el PTA

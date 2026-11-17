@@ -71,6 +71,23 @@ CREATE TABLE `acciones_recursos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `avances_subidos`
+-- (meses cuyo avance ya subió el área: quedan bloqueados hasta que Planeación los habilite)
+--
+
+DROP TABLE IF EXISTS `avances_subidos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `avances_subidos` (
+  `plan_id` int(10) unsigned NOT NULL,
+  `mes` tinyint(4) NOT NULL,
+  `fecha_subido` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`plan_id`,`mes`),
+  CONSTRAINT `fk_avances_plan` FOREIGN KEY (`plan_id`) REFERENCES `planes_trabajo` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `bitacora`
 --
 
@@ -186,6 +203,7 @@ CREATE TABLE `metas_mensuales` (
   `mes` tinyint(4) NOT NULL,
   `programado` int(10) unsigned NOT NULL DEFAULT 0,
   `realizado` int(10) unsigned NOT NULL DEFAULT 0,
+  `realizado_enviado` int(10) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_metas_accion_mes` (`accion_id`,`mes`),
   CONSTRAINT `fk_metas_accion` FOREIGN KEY (`accion_id`) REFERENCES `acciones_estrategicas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -259,6 +277,7 @@ CREATE TABLE `planes_trabajo` (
   `fecha_envio_final` datetime DEFAULT NULL,
   `creacion_fecha` timestamp NOT NULL DEFAULT current_timestamp(),
   `modificacion_fecha` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `cierre_habilitado` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_plan_unidad_anio` (`unidad_responsable_id`,`anio`),
   KEY `usuarios_revisado_por_planes_trabajo` (`revisado_por`),
@@ -300,6 +319,7 @@ CREATE TABLE `seguimientos` (
   `fecha_revision` datetime DEFAULT NULL,
   `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
   `fecha_modificacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `cierre_bloqueado` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_seguimiento_plan_periodo` (`plan_id`,`periodo`),
   KEY `usuarios_plan_id_seguimiento` (`revisado_por`),
@@ -324,6 +344,7 @@ CREATE TABLE `seguimientos_acciones` (
   `causas_incumplimiento` text DEFAULT NULL,
   `acuerdos_compromisos` text DEFAULT NULL,
   `observaciones_planeacion` text DEFAULT NULL,
+  `observaciones_enviadas` text DEFAULT NULL,
   `fecha_modificacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_seg_accion` (`seguimiento_id`,`accion_id`),

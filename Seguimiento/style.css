@@ -565,3 +565,25 @@ input[type=number] {
   border-color: #c3e6cb; 
 }
 
+
+/* Las ventanas ya no llevan icono: si el espacio del icono está vacío, no ocupa lugar */
+.ventana-icono:empty { display: none; }
+
+/* Campos de cierre del seguimiento (Evidencias, Causas, Acuerdos y Observaciones de Planeación):
+   solo aparecen al terminar el semestre */
+.col-cierre { width: 230px; min-width: 230px; vertical-align: top; }
+.col-cierre[hidden] { display: none; }
+textarea.campo-cierre {
+  width: 100%;
+  min-height: 90px;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+}
+textarea.campo-cierre[readonly] { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
+.texto-planeacion { text-align: left; font-size: 0.82rem; white-space: pre-line; color: #333; }
+.texto-planeacion:empty::before { content: "Sin observaciones"; color: #999; font-style: italic; }
