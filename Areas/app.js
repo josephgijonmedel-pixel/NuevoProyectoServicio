@@ -459,7 +459,7 @@ function pintarRevision(plan, unidadId, finalizado) {
   btnCierre.dataset.visible2 = plan.cierre?.[2]?.visible ? '1' : '0';
 
   // ¿Hay observaciones escritas que el área todavía no ve? (el botón va debajo de la tabla)
-  marcarObservacionesPendientes(!!plan.observaciones_pendientes);
+  marcarObservacionesPendientes(!!plan.observaciones_pendientes?.[vistaDetalle]);
 
   const btnPermitir = document.getElementById('btnPermitirAvance');
   // También aparece cuando el área ya subió sus evidencias (Evidencias, Causas y Acuerdos)
@@ -656,6 +656,9 @@ function pintarTablaAnual(acciones, plan) {
 
     const t = calcularTotales(accion.p, accion.r);
     const meses = (valores, desde) => valores.slice(desde, desde + 6).map(v => `<td>${v || ''}</td>`).join('');
+    // Realizado: los meses que ya terminaron (o ya subidos) sin nada enviado se muestran como 0
+    const mesesR = desde => accion.r.slice(desde, desde + 6)
+      .map((v, i) => `<td>${textoRealizado(v, desde + i + 1, plan)}</td>`).join('');
     const recursos = accion.con_recursos ? 'CON RECURSOS ECONÓMICOS' : 'SIN RECURSOS ECONÓMICOS';
     // Beneficiados, Responsable(s), Participantes y Observaciones Generales (abarcan las 2 filas)
     const complementarios = ['beneficiados', 'responsables', 'participantes', 'observaciones_generales']
@@ -684,9 +687,9 @@ function pintarTablaAnual(acciones, plan) {
     filaR.className = 'fila-realizado';
     filaR.innerHTML = `
       <td class="col-var"><span class="etiqueta-realizado">Realizado</span></td>
-      ${meses(accion.r, 0)}
+      ${mesesR(0)}
       <td class="celda-realizado">${t.r1}</td>${celdaCumplimiento(t.r1, t.p1)}
-      ${meses(accion.r, 6)}
+      ${mesesR(6)}
       <td class="celda-realizado">${t.r2}</td>${celdaCumplimiento(t.r2, t.p2)}
       <td class="celda-realizado">${t.rAnual}</td>${celdaCumplimiento(t.rAnual, t.pAnual)}
     `;
@@ -760,17 +763,17 @@ function pintarTablaSeguimiento(acciones, plan, periodo) {
       <th rowspan="2" class="th-texto col-var">Variables</th>
       <th colspan="6" class="th-calendario ${periodo === 2 ? 'th-semestre2' : ''}">${periodo === 1 ? 'Primer Semestre (Ene - Jun)' : 'Segundo Semestre (Jul - Dic)'}</th>
       <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
-      ${conCierre ? '<th colspan="4" class="th-calendario th-seguimiento">Cierre del seguimiento</th>' : ''}
+      ${conCierre ? `
+      <!-- Encabezados completos, iguales a los que ve el área en su seguimiento (ocupan las 2 filas del encabezado) -->
+      <th rowspan="2" class="th-texto col-cierre">Evidencias de los resultados obtenidos: Fuente de información, donde se encuentran alojados los archivos (minutas, listas de asistencia, fotos, etc.)</th>
+      <th rowspan="2" class="th-texto col-cierre">Observaciones: Causas por las que no se logró el cumplimiento del 100% de la meta programada. En caso de lograr el 100% (no escribir nada)</th>
+      <th rowspan="2" class="th-texto col-cierre">Acuerdos y compromisos para atender las metas que no se lograron o se lograron parcialmente</th>
+      <th rowspan="2" class="th-texto col-cierre">Observaciones por parte de la Coordinación de Planeación</th>` : ''}
     </tr>
     <tr>
       ${meses.map(m => `<th class="th-calendario th-mes">${m}</th>`).join('')}
       <th class="th-calendario th-semestre">Abs</th>
       <th class="th-calendario th-semestre">%</th>
-      ${conCierre ? `
-      <th class="th-texto col-cierre">Evidencias de los resultados obtenidos</th>
-      <th class="th-texto col-cierre">Causas por las que no se logró el 100% de la meta</th>
-      <th class="th-texto col-cierre">Acuerdos y compromisos</th>
-      <th class="th-texto col-cierre">Observaciones de la Coordinación de Planeación</th>` : ''}
     </tr>
   </thead><tbody>`;
 
@@ -798,7 +801,7 @@ function pintarTablaSeguimiento(acciones, plan, periodo) {
     </tr>
     <tr class="fila-realizado">
       <td class="col-var"><span class="etiqueta-realizado">Realizado</span></td>
-      ${celdas(r)}
+      ${r.map((v, i) => `<td>${textoRealizado(v, desde + i + 1, plan)}</td>`).join('')}
       <td class="celda-realizado">${sumaR}</td>${celdaCumplimiento(sumaR, sumaP)}
     </tr>`;
   });
@@ -810,14 +813,28 @@ function pintarTablaSeguimiento(acciones, plan, periodo) {
       <td colspan="${6 + 6 + 2 + 3}"></td>
       <td><button type="button" class="boton boton-meses" id="btnEnviarObservaciones">Enviar observaciones</button></td>
     </tr></tfoot>`;
+  } else if (plan?.cierre?.[periodo]?.observaciones_enviadas && acciones.length > 0) {
+    // Ya se enviaron: quedan fijas, solo se avisa cuándo
+    const fecha = String(plan.cierre[periodo].observaciones_enviadas).slice(0, 10);
+    html += `<tfoot class="pie-observaciones"><tr>
+      <td colspan="${6 + 6 + 2 + 3}"></td>
+      <td class="observaciones-enviadas">Observaciones enviadas el ${escaparHtml(fecha)}</td>
+    </tr></tfoot>`;
   }
   tabla.innerHTML = html;
 
   const boton = document.getElementById('btnEnviarObservaciones');
   if (boton) {
     boton.addEventListener('click', enviarObservaciones);
-    marcarObservacionesPendientes(observacionesPendientes);
+    marcarObservacionesPendientes(!!plan?.observaciones_pendientes?.[periodo]);   // del seguimiento que se ve
   }
+}
+
+// Texto de un mes de Realizado (mes = 1 a 12). Si el área no envió nada en un mes que ya terminó
+// (o que ya subió), se toma como 0; los meses que todavía no terminan se quedan vacíos.
+function textoRealizado(valor, mes, plan) {
+  if (valor) return valor;
+  return (plan?.meses_realizado_cerrados || []).includes(mes) ? 0 : '';
 }
 
 // Sumas por semestre y del año
@@ -910,6 +927,19 @@ function escaparHtml(texto) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Texto seguro para la página en el que los enlaces (http://, https:// o www.) se pueden abrir con un clic.
+// Se abren en otra pestaña para no perder la página en la que se está.
+const PATRON_ENLACE = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+function textoConEnlaces(texto) {
+  return String(texto ?? '').split(PATRON_ENLACE).map((parte, i) => {
+    if (i % 2 === 0) return escaparHtml(parte);            // texto normal
+    const limpio = parte.replace(/[.,;:)\]]+$/, '');        // sin el punto o paréntesis final de la oración
+    const resto = parte.slice(limpio.length);
+    const destino = /^https?:\/\//i.test(limpio) ? limpio : 'https://' + limpio;
+    return `<a href="${escaparHtml(destino)}" target="_blank" rel="noopener noreferrer" class="enlace-evidencia">${escaparHtml(limpio)}</a>${escaparHtml(resto)}`;
+  }).join('');
+}
+
 // Minúsculas y sin acentos, para que "atencion" encuentre "ATENCIÓN"
 function normalizar(texto) {
   return String(texto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
@@ -971,11 +1001,12 @@ function celdasCierre(accion, plan, periodo) {
   if (!estado.subido || !datos) {
     return `<td rowspan="2" colspan="4" class="celda-texto col-cierre cierre-${periodo} cierre-sin-subir">El área todavía no sube este seguimiento.</td>`;
   }
-  const texto = valor => `<td rowspan="2" class="celda-texto celda-complementaria col-cierre cierre-${periodo}">${escaparHtml(valor || '')}</td>`;
+  // Los enlaces que escribió el área (Drive, OneDrive, etc.) se pueden abrir con un clic
+  const texto = valor => `<td rowspan="2" class="celda-texto celda-complementaria col-cierre cierre-${periodo}">${textoConEnlaces(valor)}</td>`;
   const observacion = estado.editable
     ? `<textarea class="campo-observacion" data-periodo="${periodo}" data-accion="${accion.id}" maxlength="2000"
          placeholder="Escribe tus observaciones">${escaparHtml(datos.observaciones_planeacion || '')}</textarea>`
-    : escaparHtml(datos.observaciones_planeacion || '');
+    : textoConEnlaces(datos.observaciones_planeacion);
   return texto(datos.evidencias) + texto(datos.causas) + texto(datos.acuerdos) +
     `<td rowspan="2" class="celda-texto celda-complementaria col-cierre cierre-${periodo}">${observacion}</td>`;
 }
@@ -1025,7 +1056,7 @@ async function enviarObservaciones() {
   const boton = document.getElementById('btnEnviarObservaciones');
   boton.disabled = true;
   await guardandoObservacion;
-  if (!confirm('¿Enviar tus observaciones al área?\n\nEl área las verá en sus seguimientos.')) {
+  if (!confirm('¿Enviar tus observaciones al área?\n\nEl área las verá en su seguimiento. Solo se envían una vez: después ya no se podrán modificar.')) {
     boton.disabled = false;
     return;
   }
@@ -1033,7 +1064,7 @@ async function enviarObservaciones() {
     const resultado = await leerRespuesta(await fetch(API_AREAS + '?accion=enviar_observaciones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: areaEnRevision })
+      body: JSON.stringify({ id: areaEnRevision, periodo: Number(vistaDetalle) })   // el seguimiento que se está viendo
     }));
     pintarRevision(resultado.plan, areaEnRevision, resultado.finalizado);
     mostrarDetalle(resultado);

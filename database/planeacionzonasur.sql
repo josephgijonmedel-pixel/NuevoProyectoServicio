@@ -320,6 +320,7 @@ CREATE TABLE `seguimientos` (
   `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
   `fecha_modificacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `cierre_bloqueado` tinyint(1) NOT NULL DEFAULT 0,
+  `fecha_observaciones` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_seguimiento_plan_periodo` (`plan_id`,`periodo`),
   KEY `usuarios_plan_id_seguimiento` (`revisado_por`),

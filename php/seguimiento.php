@@ -125,6 +125,8 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
             "primer_mes" => $primerMes,   // 1 = enero (Primer seguimiento), 7 = julio (Segundo)
             // Meses de este semestre que se pueden escribir, y por qué no hay ninguno (si es el caso)
             "meses_abiertos" => $plan ? mesesAbiertos($conexion, $anio, (int) $plan['id'], $primerMes) : [],
+            // Meses que ya terminaron (o ya subidos): si el área no envió nada, se muestran como 0
+            "meses_cerrados" => $plan ? mesesRealizadoCerrados($conexion, $anio, (int) $plan['id']) : [],
             "aviso_meses" => $plan && !mesesAbiertos($conexion, $anio, (int) $plan['id'], $primerMes)
                 ? avisoMeses($conexion, $anio, (int) $plan['id'], $primerMes) : null,
             "estado_programacion" => $plan['estado'] ?? null,
@@ -441,7 +443,7 @@ function motivoBloqueo($plan, $finalizado, $anio)
         case 'ENVIADO':
             return "Tu PTA está en revisión por Planeación. Podrás capturar tus avances cuando lo acepte.";
         case 'CON OBSERVACIONES':
-            return "Planeación rechazó tu PTA. Corrígelo en Inicio y vuelve a guardarlo; podrás capturar tus avances cuando lo acepte.";
+            return "Planeación rechazó tu PTA. Podrás capturar tus avances cuando lo acepte.";
         case 'APROBADO':
             return "Tu PTA final ya se envió a Planeación; ya no se puede modificar.";
         default:

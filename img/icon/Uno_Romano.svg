@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" width="120" height="180">
+  <!-- Fondo transparente (opcional: puedes añadir un <rect> si deseas color de fondo) -->
+  
+  <!-- Número romano I con estilo clásico -->
+  <path d="M 30 20 
+           H 90 
+           V 32 
+           C 72 32, 68 36, 68 48 
+           V 132 
+           C 68 144, 72 148, 90 148 
+           V 160 
+           H 30 
+           V 148 
+           C 48 148, 52 144, 52 132 
+           V 48 
+           C 52 36, 48 32, 30 32 
+           Z" fill="#1a1a1a" />
+</svg>

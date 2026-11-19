@@ -25,7 +25,6 @@
 body {
   background-color: #f8f9fa;
   margin: 0;
-  padding: 20px;
   color: #333;
 }
 
@@ -34,7 +33,7 @@ body {
   max-width: 100%;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: none;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   overflow: hidden;
 }
@@ -50,6 +49,10 @@ body {
   background-color: var(--azul-oscuro);
   color: #fffefe;
   padding: 20px;
+  /* Espacio reservado a cada lado para los logos (crece y se encoge con la pantalla),
+     así el texto nunca pasa por debajo de ellos y se parte en renglones si no cabe */
+  padding-left: calc(16.3vw + 35px);   /* ancho del logo izquierdo + 35px */
+  padding-right: calc(26.2vw + 35px);  /* ancho del logo derecho + 35px */
   text-align: center;
   border-bottom: 3px solid var(--azul-oscuro);
 }
@@ -64,20 +67,22 @@ body {
 }
 
 /* Posición de cada logo: el izquierdo pegado a la izquierda y el derecho (un poco más grande) a la derecha */
-.logo-izquierdo { left: 20px; }
-.logo-derecho { right: 20px; height: 120px; }
+/* El alto se ajusta al ancho de la pantalla (mínimo, según la pantalla, máximo) */
+.logo-izquierdo { left: 20px; height: clamp(50px, 7vw, 90px); }
+.logo-derecho { right: 20px; height: clamp(60px, 9vw, 120px); }
 
 /* Título principal del banner ("Coordinación General de la Zona Sur") en mayúsculas */
 .encabezado h1 {
   margin: 0 0 5px 0;
-  font-size: 1.5rem;
+  font-size: clamp(1rem, 2.2vw, 1.5rem); /* se reduce en pantallas angostas */
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
 /* Subtítulo del banner (nombre de la página y año del PTA) */
 .encabezado h2 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: clamp(0.85rem, 1.6vw, 1.2rem); /* se reduce en pantallas angostas */
   font-weight: 600;
 }
 
@@ -207,6 +212,17 @@ body.menu-abierto .boton-menu {
 /* El icono de cada opción no se encoge aunque el texto sea largo */
 .menu-enlace svg {
   flex-shrink: 0;
+}
+
+/* Íconos del menú hechos con los SVG de img/icon: el archivo se usa como "molde" (máscara)
+   y se pinta con el color del texto del enlace (currentColor), así se ve blanco sobre el menú azul */
+.icono-menu {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  background-color: currentColor;
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
 }
 
 /* Al pasar el mouse por una opción del menú se aclara su fondo */
@@ -371,8 +387,8 @@ table.tabla-plan th.th-calendario {
 
 /* Qué tan ancha es cada columna de la tabla */
 .col-proyecto { width: 230px; }
-.col-linea { width: 270px; }
-.col-accion-est { width: 290px; }
+.col-linea { width: 350px; }
+.col-accion-est { width: 350px; }
 .col-recursos { width: 160px; }
 .col-unidad { width: 140px; }
 .col-var { width: 40px; }
@@ -417,6 +433,12 @@ textarea.campo-complementario {
   background-color: var(--fondo-programado, #8ea9db);
   border: 1px solid #7592c7;
   color: #000000;
+}
+
+/* Meses de "Programado" (ENE a DIC) que el área puede escribir: fondo blanco como pista de dónde capturar.
+   No incluye Abs ni % (son .campo-bloqueado) ni los meses deshabilitados cuando el PTA ya se envió */
+.fila-programado td:not([rowspan]) .campo-mes:not(.campo-bloqueado):not(:disabled) {
+  background-color: #ffffff;
 }
 
 /* Al escribir en un mes de "Programado", el cuadrito se pone blanco con borde azul */
@@ -486,22 +508,34 @@ textarea.campo-complementario {
 textarea.campo-tabla {
   width: 100%;
   min-height: 80px;
-  padding: 6px;
+  padding: 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
   resize: vertical;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   text-align: left;
 }
 
 /* Listas desplegables de la tabla (Proyecto, Línea de Acción, Unidad de Medida) */
 select.campo-tabla {
-  width: 100%;
+  width: 99%;
   padding: 6px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   text-align: left;
+}
+.texto-linea-completa{
+  margin-top : 6px;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: #444;
+  white-space: normal;  /*Permite varias lineas de textpo*/
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.texto-linea-completa:empty{
+  display: none;
 }
 
 /* Colores del semáforo: verde si va bien, amarillo si va a medias, rojo si va mal */

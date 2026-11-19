@@ -38,7 +38,7 @@ try {
     }
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['accion'] ?? '') === 'enviar_observaciones') {
         $datos = json_decode(file_get_contents("php://input"), true);
-        $mensaje = enviarObservaciones($conexion, (int) ($datos['id'] ?? 0), $anio);
+        $mensaje = enviarObservaciones($conexion, (int) ($datos['id'] ?? 0), (int) ($datos['periodo'] ?? 0), $anio);
         $respuesta = detalleArea($conexion, (int) ($datos['id'] ?? 0), $anio);
         $respuesta["mensaje"] = $mensaje;
         responderJson($respuesta);
@@ -162,12 +162,20 @@ function detalleArea($conexion, $unidadId, $anio)
                 ? cierresBloqueados($conexion, (int) $plan['id']) : [],
             // Mes del último avance que subió el área (para "Avance de noviembre enviado"); null si no hay
             "ultimo_mes_subido" => ultimoMesSubido($conexion, (int) $plan['id']),
+            // Meses (1-12) cuyo Realizado ya cuenta: los que ya terminaron y los que el área ya subió.
+            // Si el área no envió nada en ellos, se muestran como 0 en lugar de vacíos.
+            "meses_realizado_cerrados" => $plan['estado'] === 'APROBADO'
+                ? mesesRealizadoCerrados($conexion, $anio, (int) $plan['id']) : [],
             // Campos de cierre de cada seguimiento: se ven al terminar el semestre y si el área ya subió su avance;
             // Planeación escribe sus Observaciones mientras el PTA esté aceptado y sin finalizar
             // Seguimiento en el que Planeación habilitó a mano los campos de cierre (0 = ninguno, 1 o 2)
             "cierre_habilitado" => cierreHabilitadoPorPlaneacion($conexion, (int) $plan['id']),
             // ¿Hay observaciones de Planeación escritas que todavía no se envían al área?
-            "observaciones_pendientes" => observacionesPendientes($conexion, (int) $plan['id']),
+            // ¿Hay observaciones escritas sin enviar? Por seguimiento: {1: bool, 2: bool}
+            "observaciones_pendientes" => [
+                1 => observacionesPendientes($conexion, (int) $plan['id'], 1),
+                2 => observacionesPendientes($conexion, (int) $plan['id'], 2),
+            ],
             "cierre" => [
                 1 => estadoCierre($conexion, $anio, $plan, 1),
                 2 => estadoCierre($conexion, $anio, $plan, 2),
@@ -397,11 +405,26 @@ function estadoCierre($conexion, $anio, $plan, $periodo)
 {
     $visible = cierreVisible($conexion, $anio, $periodo, (int) $plan['id']);
     $subido = seguimientoSubido($conexion, (int) $plan['id'], $periodo) !== null;
+    // Planeación solo envía sus observaciones UNA vez por seguimiento: después ya no se modifican
+    $enviadas = fechaObservaciones($conexion, (int) $plan['id'], $periodo);
     return [
         "visible" => $visible,
         "subido" => $subido,
-        "editable" => $visible && $subido && $plan['estado'] === 'APROBADO' && !ptaFinalizado($conexion, $anio),
+        "observaciones_enviadas" => $enviadas,   // fecha en que Planeación las envió (o null)
+        "editable" => $visible && $subido && $enviadas === null
+            && $plan['estado'] === 'APROBADO' && !ptaFinalizado($conexion, $anio),
     ];
+}
+
+// Fecha en que Planeación envió sus observaciones de ese seguimiento (null si todavía no las envía)
+function fechaObservaciones($conexion, $planId, $periodo)
+{
+    $consulta = mysqli_prepare($conexion, "SELECT fecha_observaciones FROM seguimientos WHERE plan_id = ? AND periodo = ?");
+    mysqli_stmt_bind_param($consulta, "ii", $planId, $periodo);
+    mysqli_stmt_execute($consulta);
+    $fila = mysqli_fetch_row(mysqli_stmt_get_result($consulta));
+    mysqli_stmt_close($consulta);
+    return $fila[0] ?? null;
 }
 
 // Agrega a cada acción los campos de cierre de los 2 seguimientos (solo de los que el área ya subió)
@@ -465,7 +488,11 @@ function guardarObservacionPlaneacion($conexion, $datos, $anio)
     if (!$plan) {
         responderJson(["error" => "Esta área no tiene PTA de este año."], 404);
     }
-    if (!estadoCierre($conexion, $anio, $plan, $periodo)['editable']) {
+    $estado = estadoCierre($conexion, $anio, $plan, $periodo);
+    if ($estado['observaciones_enviadas']) {
+        responderJson(["error" => "Las observaciones de este seguimiento ya se enviaron y no se pueden modificar."], 409);
+    }
+    if (!$estado['editable']) {
         responderJson(["error" => "Todavía no se pueden escribir observaciones en este seguimiento."], 409);
     }
 
@@ -531,23 +558,29 @@ function cambiarCierreHabilitado($conexion, $unidadId, $periodo, $anio)
 }
 
 // ¿Hay observaciones de Planeación (borrador) distintas a las que ya se enviaron al área?
-function observacionesPendientes($conexion, $planId)
+// Con $periodo, solo de ese seguimiento; sin él, de los dos.
+function observacionesPendientes($conexion, $planId, $periodo = 0)
 {
     $consulta = mysqli_prepare(
         $conexion,
         "SELECT COUNT(*) FROM seguimientos_acciones sa JOIN seguimientos s ON s.id = sa.seguimiento_id
-         WHERE s.plan_id = ? AND NOT (sa.observaciones_planeacion <=> sa.observaciones_enviadas)"
+         WHERE s.plan_id = ? AND (? = 0 OR s.periodo = ?)
+           AND NOT (sa.observaciones_planeacion <=> sa.observaciones_enviadas)"
     );
-    mysqli_stmt_bind_param($consulta, "i", $planId);
+    mysqli_stmt_bind_param($consulta, "iii", $planId, $periodo, $periodo);
     mysqli_stmt_execute($consulta);
     $total = (int) mysqli_fetch_row(mysqli_stmt_get_result($consulta))[0];
     mysqli_stmt_close($consulta);
     return $total > 0;
 }
 
-// Planeación envía al área sus observaciones: el borrador pasa a ser lo que ve el área
-function enviarObservaciones($conexion, $unidadId, $anio)
+// Planeación envía al área sus observaciones de UN seguimiento: el borrador pasa a ser lo que ve el área.
+// Solo se puede una vez: después quedan fijas y ya no se pueden modificar.
+function enviarObservaciones($conexion, $unidadId, $periodo, $anio)
 {
+    if ($periodo !== 1 && $periodo !== 2) {
+        responderJson(["error" => "Seguimiento no válido."], 422);
+    }
     if (ptaFinalizado($conexion, $anio)) {
         responderJson(["error" => "El PTA $anio ya fue finalizado."], 409);
     }
@@ -560,22 +593,35 @@ function enviarObservaciones($conexion, $unidadId, $anio)
         responderJson(["error" => "Esta área no tiene PTA de este año."], 404);
     }
     $planId = (int) $plan['id'];
-    if (!observacionesPendientes($conexion, $planId)) {
-        responderJson(["error" => "No hay observaciones nuevas que enviar."], 409);
+    if (fechaObservaciones($conexion, $planId, $periodo)) {
+        responderJson(["error" => "Las observaciones de este seguimiento ya se enviaron y no se pueden modificar."], 409);
+    }
+    if (!observacionesPendientes($conexion, $planId, $periodo)) {
+        responderJson(["error" => "Escribe al menos una observación antes de enviarlas."], 409);
     }
 
+    // Copia el borrador a lo que ve el área y marca el seguimiento como "observaciones enviadas" (queda fijo)
     $consulta = mysqli_prepare(
         $conexion,
         "UPDATE seguimientos_acciones sa JOIN seguimientos s ON s.id = sa.seguimiento_id
          SET sa.observaciones_enviadas = sa.observaciones_planeacion
-         WHERE s.plan_id = ?"
+         WHERE s.plan_id = ? AND s.periodo = ?"
     );
-    mysqli_stmt_bind_param($consulta, "i", $planId);
+    mysqli_stmt_bind_param($consulta, "ii", $planId, $periodo);
+    mysqli_stmt_execute($consulta);
+    mysqli_stmt_close($consulta);
+    $consulta = mysqli_prepare(
+        $conexion,
+        "UPDATE seguimientos SET fecha_observaciones = NOW(), fecha_modificacion = fecha_modificacion
+         WHERE plan_id = ? AND periodo = ?"
+    );
+    mysqli_stmt_bind_param($consulta, "ii", $planId, $periodo);
     mysqli_stmt_execute($consulta);
     mysqli_stmt_close($consulta);
 
-    registrarBitacora($conexion, "planes_trabajo", $planId, "OBSERVAR", "Envió sus observaciones de los seguimientos al área");
-    return "Observaciones enviadas. El área ya las puede ver en sus seguimientos.";
+    $nombre = $periodo === 1 ? 'Primer seguimiento' : 'Segundo seguimiento';
+    registrarBitacora($conexion, "planes_trabajo", $planId, "OBSERVAR", "Envió sus observaciones del $nombre al área");
+    return "Observaciones enviadas. El área ya las puede ver en su $nombre.";
 }
 
 // Seguimientos (1, 2) cuyas Evidencias, Causas y Acuerdos ya subió el área y quedaron bloqueados

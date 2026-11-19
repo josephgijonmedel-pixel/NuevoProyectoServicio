@@ -17,7 +17,6 @@
 body {
   background-color: #f8f9fa;
   margin: 0;
-  padding: 20px;
   color: #333;
 }
 
@@ -25,7 +24,7 @@ body {
   max-width: 100%;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 0;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   overflow: hidden;
 }
@@ -41,6 +40,10 @@ body {
   background-color: #1b2a63;
   color: #ffffff;
   padding: 20px;
+  /* Espacio reservado a cada lado para los logos (crece y se encoge con la pantalla),
+     así el texto nunca pasa por debajo de ellos y se parte en renglones si no cabe */
+  padding-left: calc(16.3vw + 35px);   /* ancho del logo izquierdo + 35px */
+  padding-right: calc(26.2vw + 35px);  /* ancho del logo derecho + 35px */
   text-align: center;
   border-bottom: 3px solid var(--azul-oscuro);
 }
@@ -53,18 +56,20 @@ body {
   width: auto;
 }
 
-.logo-izquierdo { left: 20px; }
-.logo-derecho { right: 20px; height: 120px; }
+/* El alto se ajusta al ancho de la pantalla (mínimo, según la pantalla, máximo) */
+.logo-izquierdo { left: 20px; height: clamp(50px, 7vw, 90px); }
+.logo-derecho { right: 20px; height: clamp(60px, 9vw, 120px); }
 
 .encabezado h1 {
   margin: 0 0 5px 0;
-  font-size: 1.5rem;
+  font-size: clamp(1rem, 2.2vw, 1.5rem); /* se reduce en pantallas angostas */
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
 .encabezado h2 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: clamp(0.85rem, 1.6vw, 1.2rem); /* se reduce en pantallas angostas */
   font-weight: 600;
 }
 
@@ -187,6 +192,17 @@ body.menu-abierto .boton-menu {
 
 .menu-enlace svg {
   flex-shrink: 0;
+}
+
+/* Íconos del menú hechos con los SVG de img/icon: el archivo se usa como "molde" (máscara)
+   y se pinta con el color del texto del enlace (currentColor), así se ve blanco sobre el menú azul */
+.icono-menu {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  background-color: currentColor;
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
 }
 
 .menu-enlace:hover {
@@ -314,7 +330,7 @@ table.tabla-plan th.th-calendario {
 
 /* ANCHO DE COLUMNAS */
 .col-proyecto { width: 230px; min-width: 230px; }
-.col-linea { width: 260px; min-width: 260px; }
+.col-linea { width: 300px; min-width: 300px; }
 .col-accion-est { width: 270px; min-width: 270px; }
 .col-recursos { width: 150px; }
 .col-unidad { width: 120px; }
@@ -396,9 +412,10 @@ input[type=number] {
 .pct-bajo  { background-color: #ff0019e9 !important; color: #000000; font-weight: bold; }
 
 /* BOTONES Y ACCIONES */
+/* Barra del botón "Subir avance": abajo de la tabla, alineado a la derecha */
 .barra-botones {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-top: 15px;
 }
@@ -537,8 +554,8 @@ input[type=number] {
 }
 
 .caja-aviso.aviso-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background-color: #f8d7da;
+  color: #721c24;
   border-color: #bee5eb;
 }
 
@@ -585,3 +602,57 @@ textarea.campo-cierre {
 textarea.campo-cierre[readonly] { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
 .texto-planeacion { text-align: left; font-size: 0.82rem; white-space: pre-line; color: #333; }
 .texto-planeacion:empty::before { content: "Sin observaciones"; color: #999; font-style: italic; }
+
+/* Banner en celular (hasta 760px): los logos se van arriba y el texto queda abajo, para que no se enciman */
+@media (max-width: 760px) {
+  .encabezado {
+    min-height: 0;
+    padding: 92px 16px 18px;
+  }
+
+  .logo {
+    top: 12px;
+    transform: none;
+  }
+
+  .logo-izquierdo { left: 18px; height: 56px; }
+  .logo-derecho { right: 18px; height: 58px; }
+
+  .encabezado h1 {
+    font-size: clamp(1rem, 4vw, 1.35rem);
+    overflow-wrap: anywhere;
+  }
+
+  .encabezado h2 {
+    font-size: clamp(0.9rem, 3.4vw, 1.1rem);
+    line-height: 1.3;
+  }
+}
+
+/* Banner en celulares pequeños (hasta 520px): todavía más compacto */
+@media (max-width: 520px) {
+  .encabezado {
+    padding: 82px 12px 16px;
+  }
+
+  .logo-izquierdo,
+  .logo-derecho {
+    height: 48px;
+  }
+
+  .encabezado h1 { font-size: 1rem; }
+  .encabezado h2 { font-size: 0.88rem; }
+}
+
+/* Enlaces dentro de las Observaciones de Planeación: azules, subrayados y abren en otra pestaña.
+   overflow-wrap para que una dirección larga no estire la columna */
+.enlace-evidencia {
+  color: #0d6efd;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.enlace-evidencia:hover {
+  color: #0a58ca;
+}

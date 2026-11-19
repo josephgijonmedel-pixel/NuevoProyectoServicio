@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#1a1a1a" stroke-width="2">
+  <!-- Áreas / Secciones -->
+  <rect x="3" y="3" width="7" height="7" rx="1" />
+  <rect x="14" y="3" width="7" height="7" rx="1" />
+  <rect x="3" y="14" width="7" height="7" rx="1" />
+  
+  <!-- Ojo de visualización en la esquina inferior derecha -->
+  <path d="M13 18.5c1.1-2 2.8-2.8 4.5-2.8s3.4.8 4.5 2.8c-1.1 2-2.8 2.8-4.5 2.8s-3.4-.8-4.5-2.8z" fill="#ffffff" />
+  <circle cx="17.5" cy="18.5" r="1.2" />
+</svg>

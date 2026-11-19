@@ -313,7 +313,7 @@ function mostrarEstadoPlan(plan) {
 
   // Rechazado: se puede corregir y volver a enviar
   if (plan && plan.estado === 'CON OBSERVACIONES') {
-    mostrarMensaje('PTA rechazado. Corrígelo y vuelve a guardarlo para enviarlo a revisión.\n' +
+    mostrarMensaje('PTA rechazado.\n' +
       'Motivo: ' + (plan.observaciones || 'sin motivo indicado'), 'error');
   }
 
@@ -499,6 +499,16 @@ function cambiarProyecto(id) {
   const selectLinea = document.querySelector(`select[name="lineaAccion_${id}"]`);
   selectLinea.innerHTML = opcionesLineas(proyectoId, null);
   selectLinea.classList.remove('campo-error');
+  mostrarLineaCompleta(id);
+}
+
+// Escribe debajo del select el texto completo de la línea de acción elegida (el select lo corta)
+function mostrarLineaCompleta(id) {
+  const select = document.querySelector(`select[name="lineaAccion_${id}"]`);
+  const div = document.getElementById(`lineaCompleta_${id}`);
+  if(!select || !div)return;
+  div.textContent = select.value ? select.options[select.selectedIndex].text : '';
+
 }
 
 // Crea una acción en la tabla: una fila de Programado y una de Realizado.
@@ -535,9 +545,11 @@ function agregarFilaAccion(data = null) {
       </select>
     </td>
     <td rowspan="2">
-      <select class="campo-tabla" name="lineaAccion_${id}">
+      <select class="campo-tabla" name="lineaAccion_${id}" onchange="mostrarLineaCompleta(${id})">
         ${opcionesLineas(data ? data.proyecto_id : null, data ? data.linea_id : null)}
       </select>
+      <!-- Texto completo de la linea de accion elegida -->
+      <div class="texto-linea-completa" id="lineaCompleta_${id}"> </div>
     </td>
     <td rowspan="2">
       <textarea class="campo-tabla" name="accionEstrategica_${id}" maxlength="2000">${escaparHtml(data ? data.descripcion : '')}</textarea>
@@ -662,6 +674,8 @@ function agregarFilaAccion(data = null) {
   tbody.appendChild(trR);
 
   calcularTotales(id);
+  //Mostrar completa la linea de accion
+  mostrarLineaCompleta(id);
 }
 
 // Suma los meses y calcula los porcentajes cada vez que se escribe un número

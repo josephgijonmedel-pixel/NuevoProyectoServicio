@@ -252,7 +252,9 @@ function mostrarEstadoSeguimiento(seguimiento) {
       input.readOnly = true;
       input.classList.add('campo-bloqueado');
     });
-    btnGuardar.style.display = 'none';
+    // El botón se queda en su lugar (abajo a la derecha de la tabla), en gris y sin poder usarse
+    btnGuardar.disabled = true;
+    btnGuardar.title = 'No hay avances por subir en este momento';
 
     // Bloqueado: PTA en revisión, rechazado o ya cerrado. El servidor manda el motivo.
     mostrarMensaje(seguimiento.motivo_bloqueo || 'Todavía no puedes capturar tus avances.', 'info');
@@ -261,10 +263,12 @@ function mostrarEstadoSeguimiento(seguimiento) {
 
   // Solo se escriben los meses que manda el servidor: el mes en curso (o todos, si Planeación
   // los habilitó), menos los que el área ya subió. Si no queda ninguno, no hay nada que capturar.
-  const hayMesesAbiertos = bloquearMesesCerrados(seguimiento.meses_abiertos, seguimiento.primer_mes, seguimiento.aviso_meses);
+  const hayMesesAbiertos = bloquearMesesCerrados(seguimiento.meses_abiertos, seguimiento.primer_mes, seguimiento.aviso_meses, seguimiento.meses_cerrados);
   // Sin meses abiertos todavía se puede capturar si ya están los campos de cierre
   if (!hayMesesAbiertos && !seguimiento.cierre_editable) {
-    btnGuardar.style.display = 'none';
+    // El botón se queda en su lugar (abajo a la derecha de la tabla), en gris y sin poder usarse
+    btnGuardar.disabled = true;
+    btnGuardar.title = 'No hay avances por subir en este momento';
     // Si ya subió sus evidencias, ese es el aviso que importa
     if (seguimiento.aviso_cierre) mostrarMensaje(seguimiento.aviso_cierre, 'aviso');
     return;
@@ -291,13 +295,15 @@ function mostrarCamposCierre(seguimiento) {
 // Bloquea los meses de "Realizado" que no se pueden escribir (ya pasaron, no llegan o ya se subieron).
 // mesesAbiertos = meses que sí se pueden escribir (ej. [11]); primerMes = 1 (enero) o 7 (julio);
 // aviso = texto que se muestra si no queda ningún mes abierto. Devuelve true si hay alguno abierto.
-function bloquearMesesCerrados(mesesAbiertos, primerMes, aviso) {
+function bloquearMesesCerrados(mesesAbiertos, primerMes, aviso, mesesCerrados = []) {
   document.querySelectorAll('#cuerpoSeguimiento tr.fila-realizado').forEach(fila => {
     fila.querySelectorAll('input[class*="seg-r-"]').forEach((input, indice) => {
       if (mesesAbiertos.includes(primerMes + indice)) return; // este mes se puede escribir
       input.readOnly = true;
       input.classList.add('campo-bloqueado');
       input.title = 'Este mes no se puede modificar';
+      // Mes que ya terminó sin nada enviado: se toma como 0
+      if (input.value === '' && mesesCerrados.includes(primerMes + indice)) input.value = 0;
     });
   });
 
@@ -376,6 +382,21 @@ function escaparHtml(texto) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Texto seguro para la página en el que los enlaces (http://, https:// o www.) se pueden abrir con un clic.
+// Se abren en otra pestaña para no perder la página en la que se está.
+const PATRON_ENLACE = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+function textoConEnlaces(texto) {
+  return String(texto ?? '').split(PATRON_ENLACE).map((parte, i) => {
+    if (i % 2 === 0) return escaparHtml(parte);            // texto normal
+    const limpio = parte.replace(/[.,;:)\]]+$/, '');        // sin el punto o paréntesis final de la oración
+    const resto = parte.slice(limpio.length);
+    const destino = /^https?:\/\//i.test(limpio) ? limpio : 'https://' + limpio;
+    return `<a href="${escaparHtml(destino)}" target="_blank" rel="noopener noreferrer" class="enlace-evidencia">${escaparHtml(limpio)}</a>${escaparHtml(resto)}`;
+  }).join('');
+}
+
+
+
 // acciones viene del servidor: [{id, proyecto, linea, descripcion, con_recursos, unidad_medida, p[6], r[6]}]
 function pintarTabla(acciones) {
   const tbody = document.getElementById('cuerpoSeguimiento');
@@ -416,7 +437,7 @@ function pintarTabla(acciones) {
       <td rowspan="2" class="col-cierre" hidden><textarea class="campo-cierre" data-campo="evidencias" maxlength="2000">${escaparHtml(item.cierre?.evidencias)}</textarea></td>
       <td rowspan="2" class="col-cierre" hidden><textarea class="campo-cierre" data-campo="causas" maxlength="2000">${escaparHtml(item.cierre?.causas)}</textarea></td>
       <td rowspan="2" class="col-cierre" hidden><textarea class="campo-cierre" data-campo="acuerdos" maxlength="2000">${escaparHtml(item.cierre?.acuerdos)}</textarea></td>
-      <td rowspan="2" class="col-cierre" hidden><div class="texto-planeacion">${escaparHtml(item.cierre?.observaciones_planeacion)}</div></td>
+      <td rowspan="2" class="col-cierre" hidden><div class="texto-planeacion">${textoConEnlaces(item.cierre?.observaciones_planeacion)}</div></td>
     `;
 
     const trR = document.createElement('tr');

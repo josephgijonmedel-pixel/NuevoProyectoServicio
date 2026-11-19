@@ -148,6 +148,23 @@ function mesesSubidos($conexion, $planId)
     return $meses;
 }
 
+// Meses del PTA cuyo Realizado ya cuenta aunque el área no haya enviado nada (se toman como 0):
+// los meses que ya terminaron (todo el año si el PTA es de un año pasado) y los que el área ya subió.
+function mesesRealizadoCerrados($conexion, $anio, $planId)
+{
+    $anioHoy = (int) date('Y');
+    if ($anio < $anioHoy) {
+        $terminados = range(1, 12);
+    } elseif ($anio === $anioHoy && (int) date('n') > 1) {
+        $terminados = range(1, (int) date('n') - 1);
+    } else {
+        $terminados = [];
+    }
+    $meses = array_values(array_unique(array_merge($terminados, mesesSubidos($conexion, $planId))));
+    sort($meses);
+    return $meses;
+}
+
 // ¿Planeación ya finalizó el PTA de ese año? Un PTA finalizado ya no se puede modificar:
 // ni la Programación, ni los seguimientos, ni la revisión.
 function ptaFinalizado($conexion, $anio)
