@@ -587,59 +587,56 @@ input[type=number] {
   border-color: #c3e6cb;
 }
 
-/* Tarjetas de resumen arriba de la lista */
+/* Tarjetas de resumen arriba de la lista: diseño simple (blancas, borde gris delgado, sin franjas de color) */
 .resumen-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 20px;
 }
 
 .resumen-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   border: 1px solid var(--color-borde);
-  border-left: 5px solid var(--azul-oscuro);
   border-radius: 6px;
-  padding: 12px 15px;
+  padding: 10px 14px;
   background: #ffffff;
 }
 
 /* Tarjetas clicables (son <button>): filtran la tabla de áreas */
 button.resumen-card {
   font: inherit;
+  color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: box-shadow 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
+/* Al pasar el mouse: fondo gris muy claro */
 button.resumen-card:hover {
-  background-color: #f4f7fb;
+  background-color: #f8f9fa;
 }
 
-/* Tarjeta seleccionada: fondo azul claro y contorno */
+/* Tarjeta seleccionada: solo el borde en azul oscuro */
 button.resumen-card[aria-pressed="true"] {
-  background-color: #eaf1fb;
-  box-shadow: 0 0 0 2px var(--azul-oscuro);
+  border-color: var(--azul-oscuro);
 }
 
+/* Número de la tarjeta */
 .resumen-card .resumen-numero {
-  display: block;
-  font-size: 1.8rem;
-  font-weight: bold;
+  font-size: 1.5rem;
+  font-weight: 600;
   color: var(--azul-oscuro);
   line-height: 1.1;
 }
 
+/* Texto de la tarjeta (debajo del número) */
 .resumen-card .resumen-texto {
   font-size: 0.85rem;
-  color: #555;
+  color: #666;
 }
-
-.resumen-card.tarjeta-pendiente { border-left-color: #fd7e14; }
-.resumen-card.tarjeta-enviado { border-left-color: #0d6efd; }
-.resumen-card.tarjeta-final { border-left-color: #198754; }
-.resumen-card.tarjeta-cantidad { border-left-color: #6c757d; } /* Cantidad de áreas */
-.resumen-card.tarjeta-avances { border-left-color: #198754; }  /* Avances enviados */
-.resumen-card.tarjeta-sin-pta { border-left-color: #dc3545; }  /* Áreas sin PTA */
 
 /* Barra de búsqueda y filtros */
 .barra-filtros {
@@ -848,6 +845,7 @@ table.tabla-areas tbody tr:hover {
 }
 
 /* Campo para cambiar el año del PTA */
+/* Botones de la barra del año ("Finalizar PTA" / "Nuevo PTA") */
 .periodo-cambiar {
   display: flex;
   align-items: center;
@@ -1104,10 +1102,65 @@ textarea.campo-observacion.campo-error { border-color: #dc3545; background-color
   color: #0a58ca;
 }
 
-/* Aviso debajo de la columna de Observaciones cuando Planeación ya las envió (ya no se pueden modificar) */
-.observaciones-enviadas {
-  color: #555;
+/* Botones de evidencias por semestre (todas las áreas): mismos colores que los encabezados
+   "Primer Semestre" y "Segundo Semestre" de la tabla de Programación */
+.boton-evidencias-1 { background-color: #9cc2e5; color: #000000; }
+.boton-evidencias-1:hover { background-color: #84b1db; }
+.boton-evidencias-2 { background-color: #8faadc; color: #000000; }
+.boton-evidencias-2:hover { background-color: #7895cf; }
+
+/* Botón "Opciones de área" (debajo de "Finalizar PTA"): discreto, con borde, como el "…" de los datos */
+.boton-opciones-area {
+  padding: 6px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: 17px;
+  background-color: #ffffff;
+  color: var(--azul-oscuro);
   font-size: 0.85rem;
-  font-style: italic;
-  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
 }
+
+.boton-opciones-area:hover,
+.boton-opciones-area[aria-expanded="true"] {
+  background-color: var(--azul-oscuro);
+  color: #ffffff;
+}
+
+.boton-opciones-area[hidden] { display: none; }
+
+/* La flechita gira cuando las opciones están abiertas */
+.flecha-opciones { display: inline-block; transition: transform 0.2s ease; }
+.boton-opciones-area[aria-expanded="true"] .flecha-opciones { transform: rotate(180deg); }
+
+/* Contenedor entre el resumen y la búsqueda: "Opciones de área" a la izquierda y sus botones al lado */
+.contenedor-opciones-area {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 15px;
+  background-color: #ffffff;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+}
+
+.contenedor-opciones-area[hidden] { display: none; }
+
+/* Botones que aparecen al abrir "Opciones de área" */
+.opciones-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.opciones-area[hidden] { display: none; }
+
+/* Botón rojo de la ventana de confirmación para acciones delicadas (ocultar, enviar una sola vez, borrar) */
+.boton-peligro {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.boton-peligro:hover { background-color: #bb2d3b; }

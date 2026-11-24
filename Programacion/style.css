@@ -898,3 +898,65 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
 
 /* Las ventanas ya no llevan icono: si el espacio del icono está vacío, no ocupa lugar */
 .ventana-icono:empty { display: none; }
+
+/* ------------------------------------------------------------------
+   Notas de ayuda de los encabezados (las mismas del formato de Excel del PTA)
+   ------------------------------------------------------------------ */
+
+/* El encabezado sirve de referencia para colocar el ícono en su esquina */
+table.tabla-plan thead th {
+  position: relative;
+}
+
+/* Espacio a la derecha para que el texto del encabezado no quede debajo del ícono */
+table.tabla-plan thead th:has(.tooltip-campo) {
+  padding-right: 24px;
+}
+
+/* Ícono de ayuda (img/icon/tooltip.svg) en la esquina superior derecha del encabezado.
+   El SVG se usa como "molde" (máscara) y se pinta con background-color: blanco sobre el encabezado azul */
+.tooltip-campo {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background-color: #ffffff;
+  -webkit-mask: url(../img/icon/tooltip.svg) center / contain no-repeat;
+  mask: url(../img/icon/tooltip.svg) center / contain no-repeat;
+  cursor: help;
+}
+
+/* Al pasar el mouse (o al llegar con Tab) el ícono se pinta de amarillo */
+.tooltip-campo:hover,
+.tooltip-campo:focus {
+  background-color: var(--amarillo);
+  outline: none;
+}
+
+/* Globo con el texto de ayuda (lo coloca el JavaScript junto al ícono) */
+.globo-tooltip {
+  position: fixed;
+  z-index: 2000;
+  max-width: 280px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background-color: #333333;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: normal;
+  line-height: 1.35;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.globo-tooltip[hidden] { display: none; }
+
+/* Botón rojo de la ventana de confirmación para acciones delicadas (ocultar, enviar una sola vez, borrar) */
+.boton-peligro {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.boton-peligro:hover { background-color: #bb2d3b; }

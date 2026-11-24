@@ -87,6 +87,12 @@ async function cargarSeguimiento() {
     if (encabezado) encabezado.innerText = `PRIMER SEMESTRE (${resultado.anio})`;
     mostrarAnioEncabezado(resultado.anio);
 
+    // PTA rechazado: la tabla se queda vacía y solo se explica por qué
+    if (resultado.seguimiento.estado_programacion === 'CON OBSERVACIONES') {
+      mostrarMensaje(resultado.seguimiento.motivo_bloqueo, 'info');
+      return;
+    }
+
     if (!resultado.hayPlan || resultado.acciones.length === 0) {
       mostrarAvisoSinProgramacion();
       return;

@@ -776,13 +776,18 @@ function clasePorcentaje(pct) {
 
 // Borra una acción completa de la tabla (su fila de arriba, la de abajo y el espacio).
 // El borrado en la base de datos ocurre al presionar "Guardar Programación".
-function eliminarFila(id) {
+async function eliminarFila(id) {
   const filaP = document.getElementById(`fila-${id}-p`);
   const filaR = document.getElementById(`fila-${id}-r`);
 
   // Si la acción ya tiene avances capturados en los seguimientos, pedir confirmación
   const totalRealizado = parseInt(document.getElementById(`total-r-${id}`)?.innerText, 10) || 0;
-  if (totalRealizado > 0 && !confirm('Esta acción ya tiene avances capturados. Al guardar se borrarán también. ¿Quitarla?')) {
+  if (totalRealizado > 0 && !await confirmar({
+    titulo: 'Quitar acción',
+    texto: 'Esta acción ya tiene avances capturados. Al guardar se borrarán también.\n\n¿Quitarla?',
+    botonConfirmar: 'Quitar',
+    peligro: true
+  })) {
     return;
   }
 
@@ -861,4 +866,107 @@ document.addEventListener('DOMContentLoaded', async () => {
 function mostrarAnioEncabezado(anio) {
   const span = document.getElementById('anioEncabezado');
   if (span) span.textContent = anio;
+}
+
+// ---------------------------------------------------------------------
+// Notas de ayuda de los encabezados (íconos "i", las mismas del formato de Excel del PTA).
+// Se usa un solo globo flotante pegado al <body> para que la tabla (que tiene scroll) no lo corte.
+// ---------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  const iconos = document.querySelectorAll('.tooltip-campo');
+  if (!iconos.length) return;
+
+  const globo = document.createElement('div');
+  globo.className = 'globo-tooltip';
+  globo.setAttribute('role', 'tooltip');
+  globo.hidden = true;
+  document.body.appendChild(globo);
+
+  const mostrar = (icono) => {
+    globo.textContent = icono.dataset.tooltip;
+    globo.hidden = false;
+    // Debajo del ícono, alineado a su derecha; si no cabe, se acomoda dentro de la pantalla
+    const r = icono.getBoundingClientRect();
+    const ancho = globo.offsetWidth;
+    const alto = globo.offsetHeight;
+    let izquierda = Math.min(r.right - ancho, window.innerWidth - ancho - 8);
+    izquierda = Math.max(8, izquierda);
+    let arriba = r.bottom + 6;
+    if (arriba + alto > window.innerHeight - 8) arriba = r.top - alto - 6;
+    globo.style.left = izquierda + 'px';
+    globo.style.top = arriba + 'px';
+  };
+  const ocultar = () => { globo.hidden = true; };
+
+  iconos.forEach(icono => {
+    icono.addEventListener('mouseenter', () => mostrar(icono));
+    icono.addEventListener('mouseleave', ocultar);
+    icono.addEventListener('focus', () => mostrar(icono));
+    icono.addEventListener('blur', ocultar);
+  });
+  // Al desplazar la página o la tabla, el globo se esconde para que no quede flotando en otro lugar
+  window.addEventListener('scroll', ocultar, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') ocultar(); });
+});
+
+// ---------------------------------------------------------------------
+// Ventana de confirmación del proyecto (en lugar del confirm() del navegador, que dice "localhost dice…").
+// Uso:  if (await confirmar({ titulo, texto, botonConfirmar, peligro })) { ... }
+//   titulo         → encabezado de la ventana
+//   texto          → mensaje (los \n hacen salto de línea)
+//   botonConfirmar → texto del botón de confirmar (por defecto "Aceptar")
+//   peligro        → true: el botón de confirmar va en rojo (acciones delicadas)
+// Regresa una promesa: true si se confirma; false con Cancelar, la ✕, Esc o un clic afuera.
+// La ventana se crea sola la primera vez y usa los mismos estilos que las demás ventanas de la página.
+// ---------------------------------------------------------------------
+function confirmar({ titulo = 'Confirmar', texto = '', botonConfirmar = 'Aceptar', peligro = false } = {}) {
+  let ventana = document.getElementById('ventanaConfirmarGeneral');
+  if (!ventana) {
+    ventana = document.createElement('div');
+    ventana.className = 'ventana-fondo';
+    ventana.id = 'ventanaConfirmarGeneral';
+    ventana.innerHTML = `
+      <div class="ventana-contenido ventana-confirmar-contenido" role="dialog" aria-modal="true" aria-labelledby="tituloConfirmarGeneral">
+        <div class="ventana-encabezado ventana-confirmar-encabezado">
+          <h3 id="tituloConfirmarGeneral"></h3>
+          <button type="button" class="boton-cerrar-ventana" data-respuesta="no" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="ventana-cuerpo ventana-confirmar-cuerpo">
+          <p class="ventana-texto" id="textoConfirmarGeneral"></p>
+        </div>
+        <div class="ventana-pie ventana-confirmar-pie">
+          <button type="button" class="boton boton-cancelar" data-respuesta="no">Cancelar</button>
+          <button type="button" class="boton boton-confirmar" id="btnConfirmarGeneral" data-respuesta="si"></button>
+        </div>
+      </div>`;
+    document.body.appendChild(ventana);
+  }
+
+  document.getElementById('tituloConfirmarGeneral').textContent = titulo;
+  document.getElementById('textoConfirmarGeneral').innerText = texto;
+  const botonSi = document.getElementById('btnConfirmarGeneral');
+  botonSi.textContent = botonConfirmar;
+  botonSi.className = 'boton ' + (peligro ? 'boton-peligro' : 'boton-confirmar');
+  ventana.style.display = 'flex';
+  botonSi.focus();
+
+  return new Promise(resolver => {
+    const terminar = (respuesta) => {
+      ventana.style.display = 'none';
+      ventana.removeEventListener('click', alHacerClic);
+      document.removeEventListener('keydown', alPresionarTecla, true);
+      resolver(respuesta);
+    };
+    // Botones con data-respuesta, o clic en el fondo oscuro (afuera de la ventana) = cancelar
+    const alHacerClic = (e) => {
+      if (e.target === ventana) return terminar(false);
+      const boton = e.target.closest('[data-respuesta]');
+      if (boton) terminar(boton.dataset.respuesta === 'si');
+    };
+    const alPresionarTecla = (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); terminar(false); }
+    };
+    ventana.addEventListener('click', alHacerClic);
+    document.addEventListener('keydown', alPresionarTecla, true);
+  });
 }

@@ -68,7 +68,8 @@ try {
 // ---------------------------------------------------------------------
 
 // Todas las áreas activas (incluida Planeación) para la lista de Ver áreas.
-//   tiene_pta  → ya guardó su Programación/PTA del año indicado
+//   tiene_pta  → Planeación ya ACEPTÓ su PTA del año indicado (mientras no lo acepte, cuenta como "sin PTA")
+//   con_plan   → ya guardó su Programación/PTA (aunque esté en borrador, en revisión o rechazado)
 //   avance_mes → ya subió (botón "Subir avance") el avance del mes en curso
 // Las tarjetas del resumen filtran la tabla con estos datos.
 function listaAreas($conexion, $anio)
@@ -79,7 +80,8 @@ function listaAreas($conexion, $anio)
         $conexion,
         "SELECT ur.id, ur.nombre, t.nombre AS tipo, ur.responsable_nombre AS responsable,
                 p.estado AS estado_plan, p.estado_final,
-                p.id IS NOT NULL AS tiene_pta,
+                p.estado = 'APROBADO' AS tiene_pta,
+                p.id IS NOT NULL AS con_plan,
                 EXISTS (SELECT 1 FROM avances_subidos s WHERE s.plan_id = p.id AND s.mes = ?) AS avance_mes
          FROM unidades_responsables ur
          LEFT JOIN tipo_unidad t ON t.id = ur.tipo_unidad_id
@@ -95,6 +97,7 @@ function listaAreas($conexion, $anio)
     foreach ($areas as &$area) {
         $area['id'] = (int) $area['id'];
         $area['tiene_pta'] = (bool) $area['tiene_pta'];
+        $area['con_plan'] = (bool) $area['con_plan'];
         $area['avance_mes'] = (bool) $area['avance_mes'];
     }
     return $areas;

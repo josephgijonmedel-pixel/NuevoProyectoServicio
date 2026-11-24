@@ -82,7 +82,8 @@ function pintarLista(areas) {
       <td class="celda-texto">${escaparHtml(area.responsable || '—')}</td>
       <td class="oculto">${etiquetaEstado(area.estado_plan, 'SIN PLAN')}</td>
       <td class="oculto">${etiquetaFinal(area.estado_plan, area.estado_final)}</td>
-      <td>${area.tiene_pta ? etiquetaRevision(area.estado_plan) : '<span class="estado estado-sin-plan">Sin PTA</span>'}</td>
+      <!-- Si ya guardó algo se ve su estado (En revisión, Rechazado...); si no, "Sin PTA" -->
+      <td>${area.con_plan ? etiquetaRevision(area.estado_plan) : '<span class="estado estado-sin-plan">Sin PTA</span>'}</td>
       <td><a href="../Areas/detalleArea.html?id=${area.id}" class="boton-ver">Ver</a></td>
     `;
     tbody.appendChild(fila);
@@ -92,14 +93,15 @@ function pintarLista(areas) {
 // Tarjetas de arriba: cuántas áreas hay en cada estado.
 // "areas" trae todas las áreas activas; las de Programación/PTA solo cuentan las que tienen PTA.
 function pintarResumen(areas) {
-  const conPta = areas.filter(a => a.tiene_pta);
+  const conPta = areas.filter(a => a.tiene_pta);     // PTA aceptado por Planeación
+  const conPlan = areas.filter(a => a.con_plan);    // guardaron algo (para las tarjetas ocultas de Programación)
   document.getElementById('totalUnidades').textContent = areas.length;
   document.getElementById('totalAvances').textContent = areas.filter(a => a.avance_mes).length;
   document.getElementById('totalAreas').textContent = conPta.length;
   document.getElementById('totalSinPta').textContent = areas.length - conPta.length;
-  document.getElementById('totalSinEnviar').textContent = conPta.filter(a => a.estado_plan !== 'ENVIADO').length;
-  document.getElementById('totalProgramacion').textContent = conPta.filter(a => a.estado_plan === 'ENVIADO').length;
-  document.getElementById('totalFinal').textContent = conPta.filter(a => a.estado_final === 'ENVIADO').length;
+  document.getElementById('totalSinEnviar').textContent = conPlan.filter(a => a.estado_plan !== 'ENVIADO').length;
+  document.getElementById('totalProgramacion').textContent = conPlan.filter(a => a.estado_plan === 'ENVIADO').length;
+  document.getElementById('totalFinal').textContent = conPlan.filter(a => a.estado_final === 'ENVIADO').length;
 }
 
 // Tarjeta seleccionada del resumen: 'todas', 'avance', 'pta' o 'sinpta' (al abrir la página, "Áreas con PTA")
@@ -179,6 +181,7 @@ const API_PERIODO = '../php/periodo.php';
 let anioActual = null;
 let aniosExistentes = [];   // años que ya tienen PTA: no se pueden volver a crear
 let todosLosMeses = false;  // ¿Planeación habilitó todos los meses de los seguimientos?
+let evidenciasTodas = 0;    // semestre (1 o 2) con las evidencias mostradas a todas las áreas; 0 = ninguno
 
 // Dónde quedan los datos de las áreas al finalizar. Por ahora se quedan en la base de datos;
 // cuando exista la sección para consultarlos (historial / página del administrador), cambiar este texto.
@@ -218,6 +221,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btnNuevoPTA').addEventListener('click', abrirVentanaNuevoPTA);
   document.getElementById('btnTodosLosMeses').addEventListener('click', cambiarTodosLosMeses);
+
+  // "Opciones de área": abre / cierra los botones que afectan a todas las áreas (empieza cerrado)
+  document.getElementById('btnOpcionesArea').addEventListener('click', () => {
+    mostrarOpcionesArea(document.getElementById('opcionesArea').hidden);
+  });
+
+  // "Mostrar evidencias 1er / 2do semestre" (todas las áreas). Si ese semestre ya se muestra, el botón lo oculta.
+  document.querySelectorAll('[data-evidencias-todas]').forEach(boton => {
+    boton.addEventListener('click', async () => {
+      const periodo = Number(boton.dataset.evidenciasTodas);
+      const nombre = periodo === 1 ? '1er' : '2do';
+      if (evidenciasTodas === periodo) {
+        if (await confirmar({
+          titulo: `Ocultar evidencias del ${nombre} semestre`,
+          texto: `¿Ocultar las evidencias del ${nombre} semestre a todas las áreas?\n\nYa no las verán hasta que las vuelvas a mostrar.`,
+          botonConfirmar: 'Ocultar',
+          peligro: true
+        })) {
+          cambiarEvidenciasTodas(0);
+        }
+        return;
+      }
+      const aviso = evidenciasTodas ? `\n\nLas del ${periodo === 1 ? '2do' : '1er'} semestre se ocultarán (solo un semestre a la vez).` : '';
+      if (await confirmar({
+        titulo: `Mostrar evidencias del ${nombre} semestre`,
+        texto: `¿Mostrar las evidencias del ${nombre} semestre a todas las áreas con PTA aceptado?${aviso}`,
+        botonConfirmar: 'Mostrar'
+      })) {
+        cambiarEvidenciasTodas(periodo);
+      }
+    });
+  });
   document.getElementById('btnCancelarNuevoPTA').addEventListener('click', cerrarNuevo);
   document.getElementById('btnCerrarNuevoPTA').addEventListener('click', cerrarNuevo);
   ventanaNuevo.addEventListener('click', (e) => { if (e.target === ventanaNuevo) cerrarNuevo(); });
@@ -255,6 +290,32 @@ async function cambiarTodosLosMeses() {
     mostrarMensaje(error.message, 'error');
   } finally {
     boton.disabled = false;
+  }
+}
+
+// Abre (true) o cierra (false) el bloque de "Opciones de área"
+function mostrarOpcionesArea(abrir) {
+  document.getElementById('opcionesArea').hidden = !abrir;
+  const boton = document.getElementById('btnOpcionesArea');
+  boton.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+}
+
+// Muestra las evidencias del semestre elegido a todas las áreas con PTA aceptado (o las oculta con 0)
+async function cambiarEvidenciasTodas(periodo) {
+  const botones = document.querySelectorAll('[data-evidencias-todas]');
+  botones.forEach(b => { b.disabled = true; });
+  try {
+    const datos = await leerRespuesta(await fetch(API_PERIODO + '?accion=evidencias', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ periodo })
+    }));
+    pintarPeriodo(datos);
+    mostrarMensaje(datos.mensaje, 'exito');
+  } catch (error) {
+    mostrarMensaje(error.message, 'error');
+  } finally {
+    botones.forEach(b => { b.disabled = false; });
   }
 }
 
@@ -334,6 +395,21 @@ function pintarPeriodo(datos) {
     : '';
   document.getElementById('periodoActivo').textContent = datos.anio;
   mostrarAnioEncabezado(datos.anio);
+
+  // Botones de evidencias por semestre (todas las áreas): el del semestre que ya se muestra sirve para ocultarlo
+  evidenciasTodas = Number(datos.evidencias_todas) || 0;
+  document.querySelectorAll('[data-evidencias-todas]').forEach(boton => {
+    const periodo = Number(boton.dataset.evidenciasTodas);
+    const nombre = periodo === 1 ? '1er' : '2do';
+    boton.textContent = (evidenciasTodas === periodo ? 'Ocultar' : 'Mostrar') + ` evidencias ${nombre} semestre`;
+    boton.title = evidenciasTodas === periodo
+      ? `Todas las áreas ven las evidencias del ${nombre} semestre`
+      : `Mostrar Evidencias, Causas y Acuerdos del ${nombre} semestre a todas las áreas`;
+  });
+
+  // Con el PTA finalizado ya no hay opciones que mostrar: se esconde "Opciones de área"
+  document.getElementById('contenedorOpcionesArea').hidden = !!datos.finalizado;
+  if (datos.finalizado) mostrarOpcionesArea(false);
 
   // Ya finalizado: se avisa y en lugar de "Finalizar PTA" aparece "Nuevo PTA" (mismo lugar)
   const btnFinalizar = document.getElementById('btnFinalizarPTA');
@@ -481,7 +557,11 @@ function pintarRevision(plan, unidadId, finalizado) {
 // Planeación deja que el área vuelva a modificar el avance que ya subió
 async function permitirModificarAvance() {
   const boton = document.getElementById('btnPermitirAvance');
-  if (!confirm(`${boton.textContent}?\n\nEl área podrá corregirlo y tendrá que volver a subirlo.`)) return;
+  if (!await confirmar({
+    titulo: boton.textContent,
+    texto: `¿${boton.textContent}?\n\nEl área podrá corregirlo y tendrá que volver a subirlo.`,
+    botonConfirmar: 'Permitir'
+  })) return;
   boton.disabled = true;
   try {
     const resultado = await leerRespuesta(await fetch(API_AREAS + '?accion=permitir_avance', {
@@ -513,9 +593,12 @@ function clicBotonCierre() {
     document.getElementById('ventanaCierre').style.display = 'flex';
     return;
   }
-  if (confirm('¿Ocultar las evidencias?\n\nEl área ya no las verá hasta que las vuelvas a mostrar.')) {
-    cambiarCierreHabilitado(0);
-  }
+  confirmar({
+    titulo: 'Ocultar evidencias',
+    texto: '¿Ocultar las evidencias?\n\nEl área ya no las verá hasta que las vuelvas a mostrar.',
+    botonConfirmar: 'Ocultar',
+    peligro: true
+  }).then(si => { if (si) cambiarCierreHabilitado(0); });
 }
 
 function cerrarVentanaCierre() {
@@ -556,7 +639,7 @@ function abrirVentanaRevision(decision) {
   motivo.hidden = !rechazar;
   motivo.value = '';
   motivo.classList.remove('campo-error');
-  document.getElementById('btnConfirmarRevision').textContent = rechazar ? 'Rechazar PTA' : 'Aceptar PTA';
+  document.getElementById('btnConfirmarRevision').textContent = rechazar ? 'Confirmar' : 'Aceptar PTA';
   document.getElementById('btnConfirmarRevision').className = 'boton ' + (rechazar ? 'boton-rechazar' : 'boton-confirmar');
 
   document.getElementById('ventanaRevision').style.display = 'flex';
@@ -813,13 +896,6 @@ function pintarTablaSeguimiento(acciones, plan, periodo) {
       <td colspan="${6 + 6 + 2 + 3}"></td>
       <td><button type="button" class="boton boton-meses" id="btnEnviarObservaciones">Enviar observaciones</button></td>
     </tr></tfoot>`;
-  } else if (plan?.cierre?.[periodo]?.observaciones_enviadas && acciones.length > 0) {
-    // Ya se enviaron: quedan fijas, solo se avisa cuándo
-    const fecha = String(plan.cierre[periodo].observaciones_enviadas).slice(0, 10);
-    html += `<tfoot class="pie-observaciones"><tr>
-      <td colspan="${6 + 6 + 2 + 3}"></td>
-      <td class="observaciones-enviadas">Observaciones enviadas el ${escaparHtml(fecha)}</td>
-    </tr></tfoot>`;
   }
   tabla.innerHTML = html;
 
@@ -1056,7 +1132,12 @@ async function enviarObservaciones() {
   const boton = document.getElementById('btnEnviarObservaciones');
   boton.disabled = true;
   await guardandoObservacion;
-  if (!confirm('¿Enviar tus observaciones al área?\n\nEl área las verá en su seguimiento. Solo se envían una vez: después ya no se podrán modificar.')) {
+  if (!await confirmar({
+    titulo: 'Enviar observaciones',
+    texto: '¿Enviar tus observaciones al área?\n\nEl área las verá en su seguimiento. Solo se envían una vez: después ya no se podrán modificar.',
+    botonConfirmar: 'Enviar',
+    peligro: true
+  })) {
     boton.disabled = false;
     return;
   }
@@ -1083,4 +1164,66 @@ function mostrarOpcionesRevision(abrir) {
   opciones.hidden = !abrir;
   boton.setAttribute('aria-expanded', String(abrir));
   boton.title = abrir ? 'Ocultar opciones' : 'Mostrar más opciones';
+}
+
+// ---------------------------------------------------------------------
+// Ventana de confirmación del proyecto (en lugar del confirm() del navegador, que dice "localhost dice…").
+// Uso:  if (await confirmar({ titulo, texto, botonConfirmar, peligro })) { ... }
+//   titulo         → encabezado de la ventana
+//   texto          → mensaje (los \n hacen salto de línea)
+//   botonConfirmar → texto del botón de confirmar (por defecto "Aceptar")
+//   peligro        → true: el botón de confirmar va en rojo (acciones delicadas)
+// Regresa una promesa: true si se confirma; false con Cancelar, la ✕, Esc o un clic afuera.
+// La ventana se crea sola la primera vez y usa los mismos estilos que las demás ventanas de la página.
+// ---------------------------------------------------------------------
+function confirmar({ titulo = 'Confirmar', texto = '', botonConfirmar = 'Aceptar', peligro = false } = {}) {
+  let ventana = document.getElementById('ventanaConfirmarGeneral');
+  if (!ventana) {
+    ventana = document.createElement('div');
+    ventana.className = 'ventana-fondo';
+    ventana.id = 'ventanaConfirmarGeneral';
+    ventana.innerHTML = `
+      <div class="ventana-contenido ventana-confirmar-contenido" role="dialog" aria-modal="true" aria-labelledby="tituloConfirmarGeneral">
+        <div class="ventana-encabezado ventana-confirmar-encabezado">
+          <h3 id="tituloConfirmarGeneral"></h3>
+          <button type="button" class="boton-cerrar-ventana" data-respuesta="no" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="ventana-cuerpo ventana-confirmar-cuerpo">
+          <p class="ventana-texto" id="textoConfirmarGeneral"></p>
+        </div>
+        <div class="ventana-pie ventana-confirmar-pie">
+          <button type="button" class="boton boton-cancelar" data-respuesta="no">Cancelar</button>
+          <button type="button" class="boton boton-confirmar" id="btnConfirmarGeneral" data-respuesta="si"></button>
+        </div>
+      </div>`;
+    document.body.appendChild(ventana);
+  }
+
+  document.getElementById('tituloConfirmarGeneral').textContent = titulo;
+  document.getElementById('textoConfirmarGeneral').innerText = texto;
+  const botonSi = document.getElementById('btnConfirmarGeneral');
+  botonSi.textContent = botonConfirmar;
+  botonSi.className = 'boton ' + (peligro ? 'boton-peligro' : 'boton-confirmar');
+  ventana.style.display = 'flex';
+  botonSi.focus();
+
+  return new Promise(resolver => {
+    const terminar = (respuesta) => {
+      ventana.style.display = 'none';
+      ventana.removeEventListener('click', alHacerClic);
+      document.removeEventListener('keydown', alPresionarTecla, true);
+      resolver(respuesta);
+    };
+    // Botones con data-respuesta, o clic en el fondo oscuro (afuera de la ventana) = cancelar
+    const alHacerClic = (e) => {
+      if (e.target === ventana) return terminar(false);
+      const boton = e.target.closest('[data-respuesta]');
+      if (boton) terminar(boton.dataset.respuesta === 'si');
+    };
+    const alPresionarTecla = (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); terminar(false); }
+    };
+    ventana.addEventListener('click', alHacerClic);
+    document.addEventListener('keydown', alPresionarTecla, true);
+  });
 }

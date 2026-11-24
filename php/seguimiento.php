@@ -138,7 +138,8 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
             "cierre_bloqueado" => $cierreBloqueado,
             "aviso_cierre" => $cierreVisible && $cierreBloqueado ? AVISO_CIERRE_BLOQUEADO : null,
         ],
-        "acciones" => $plan ? obtenerAcciones($conexion, (int) $plan['id'], $primerMes, $seguimiento ? (int) $seguimiento['id'] : null) : [],
+        // Con el PTA rechazado no se manda nada: la tabla del seguimiento se ve vacía hasta que Planeación lo acepte
+        "acciones" => $plan && $plan['estado'] !== 'CON OBSERVACIONES' ? obtenerAcciones($conexion, (int) $plan['id'], $primerMes, $seguimiento ? (int) $seguimiento['id'] : null) : [],
     ];
 }
 

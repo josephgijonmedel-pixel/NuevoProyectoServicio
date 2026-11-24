@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ver Áreas - Supervisión de Planes de Trabajo</title>
-  <link rel="stylesheet" href="../Areas/style.css?v=20261119n">
+  <link rel="stylesheet" href="../Areas/style.css?v=20261124i">
 </head>
 <body>
 
@@ -98,8 +98,6 @@
       <!-- "Finalizar PTA" cierra el PTA del año: después ya nadie lo puede modificar.
            Ya finalizado, en su lugar aparece "Nuevo PTA" para abrir el PTA de otro año. -->
       <div class="periodo-cambiar">
-        <!-- Temporal (mientras se termina el proyecto): deja capturar todos los meses en los seguimientos -->
-        <button type="button" class="boton boton-meses" id="btnTodosLosMeses">Habilitar todos los meses</button>
         <button type="button" class="boton boton-guardar" id="btnFinalizarPTA">Finalizar PTA</button>
         <button type="button" class="boton boton-guardar" id="btnNuevoPTA" hidden>Nuevo PTA</button>
       </div>
@@ -139,6 +137,20 @@
       <div class="resumen-card tarjeta-final oculto">
         <span class="resumen-numero" id="totalFinal">–</span>
         <span class="resumen-texto">PTA final enviado</span>
+      </div>
+    </div>
+
+    <!-- Contenedor de "Opciones de área" (entre el resumen y la búsqueda): botones que afectan a todas las áreas -->
+    <div class="contenedor-opciones-area" id="contenedorOpcionesArea">
+      <button type="button" class="boton-opciones-area" id="btnOpcionesArea"
+              aria-expanded="false" aria-controls="opcionesArea">Opciones de área <span class="flecha-opciones">▾</span></button>
+      <div class="opciones-area" id="opcionesArea" hidden>
+        <!-- Temporal (mientras se termina el proyecto): deja capturar todos los meses en los seguimientos -->
+        <button type="button" class="boton boton-meses" id="btnTodosLosMeses">Habilitar todos los meses</button>
+        <!-- Muestran Evidencias, Causas y Acuerdos de ESE semestre a TODAS las áreas con PTA aceptado
+             (un semestre a la vez). Colores de los encabezados de cada semestre en la tabla de Programación -->
+        <button type="button" class="boton boton-evidencias-1" data-evidencias-todas="1">Mostrar evidencias 1er semestre</button>
+        <button type="button" class="boton boton-evidencias-2" data-evidencias-todas="2">Mostrar evidencias 2do semestre</button>
       </div>
     </div>
 
@@ -223,6 +235,6 @@
   </div>
 </div>
 
-<script src="../Areas/app.js?v=20261119n"></script>
+<script src="../Areas/app.js?v=20261124i"></script>
 </body>
 </html>

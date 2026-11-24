@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Programación y Seguimiento - Plan de Trabajo Anual </title>
-  <link rel="stylesheet" href="../Programacion/style.css?v=20261119g">
+  <link rel="stylesheet" href="../Programacion/style.css?v=20261124i">
 </head>
 <body>
 
@@ -102,6 +102,7 @@
     <!-- La tabla grande: aquí se captura cada acción con sus meses del año -->
     <div class="tabla-desplazable">
       <table class="tabla-plan" id="tablaProgramacion">
+        <!-- Los íconos "i" de los encabezados son las notas de ayuda del formato de Excel del PTA -->
         <thead>
           <!-- Primera fila de encabezados: los nombres de los bloques grandes de columnas -->
           <tr>
@@ -109,17 +110,17 @@
             <th rowspan="2" class="th-texto col-linea">Líneas de Acción</th>
             <th rowspan="2" class="th-texto col-accion-est">Acciones Estratégicas</th>
             <th rowspan="2" class="th-texto col-recursos">Recursos</th>
-            <th rowspan="2" class="th-texto col-unidad">Unidad de Medida</th>
-            <th rowspan="2" class="th-texto col-var">Variables</th>
-            <th colspan="6" class="th-calendario">Primer Semestre (Ene - Jun)</th>
+            <th rowspan="2" class="th-texto col-unidad">Unidad de Medida<span class="tooltip-campo" tabindex="0" role="button" aria-label="Ayuda: Dependiendo de la descripción de la acción estratégica, se establecerá la unidad de medida. Por ejemplo, cursos, talleres, reuniones, congresos, etc. En esta columna se desplegará una lista de conceptos para determinar la Unidad de Medida. Elegir la correcta." data-tooltip="Dependiendo de la descripción de la acción estratégica, se establecerá la unidad de medida. Por ejemplo, cursos, talleres, reuniones, congresos, etc. En esta columna se desplegará una lista de conceptos para determinar la Unidad de Medida. Elegir la correcta."></span></th>
+            <th rowspan="2" class="th-texto col-var">Variables<span class="tooltip-campo" tabindex="0" role="button" aria-label="Ayuda: Cada actividad estratégica tendrá dos variables, las “P” programadas y las “R” realizadas; solo hacer uso de la “P”." data-tooltip="Cada actividad estratégica tendrá dos variables, las “P” programadas y las “R” realizadas; solo hacer uso de la “P”."></span></th>
+            <th colspan="6" class="th-calendario">Primer Semestre (Ene - Jun)<span class="tooltip-campo" tabindex="0" role="button" aria-label="Ayuda: La cantidad se pondrá con cifras, no con textos o x. Los datos solo se pondrán en la variable “P” actividades programadas." data-tooltip="La cantidad se pondrá con cifras, no con textos o x. Los datos solo se pondrán en la variable “P” actividades programadas."></span></th>
             <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
-            <th colspan="6" class="th-calendario th-semestre2">Segundo Semestre (Jul - Dic)</th>
+            <th colspan="6" class="th-calendario th-semestre2">Segundo Semestre (Jul - Dic)<span class="tooltip-campo" tabindex="0" role="button" aria-label="Ayuda: La cantidad se pondrá con cifras, no con textos o x. Los datos solo se pondrán en la variable “P” actividades programadas." data-tooltip="La cantidad se pondrá con cifras, no con textos o x. Los datos solo se pondrán en la variable “P” actividades programadas."></span></th>
             <th colspan="2" class="th-calendario th-seguimiento">Seguimiento</th>
             <th colspan="2" class="th-calendario th-totales">Total Anual</th>
             <!-- Columnas de texto libre (como en el Excel del PTA); ocupan las dos filas del encabezado -->
-            <th rowspan="2" class="th-texto col-complementaria">Beneficiados</th>
-            <th rowspan="2" class="th-texto col-complementaria">Responsable(s)</th>
-            <th rowspan="2" class="th-texto col-complementaria">Participantes</th>
+            <th rowspan="2" class="th-texto col-complementaria">Beneficiados<span class="tooltip-campo" tabindex="0" role="button" aria-label="Ayuda: Anote el número y tipo de beneficiarios que tendrá cada actividad realizada. Por ejemplo, si su actividad estratégica está dirigida a beneficiar a 100 estudiantes, deberá anotar: 100 estudiantes." data-tooltip="Anote el número y tipo de beneficiarios que tendrá cada actividad realizada. Por ejemplo, si su actividad estratégica está dirigida a beneficiar a 100 estudiantes, deberá anotar: 100 estudiantes."></span></th>
+            <th rowspan="2" class="th-texto col-complementaria">Responsable(s)<span class="tooltip-campo" tabindex="0" role="button" aria-label="Ayuda: Anote el nombre del responsable de ejecutar la acción estratégica." data-tooltip="Anote el nombre del responsable de ejecutar la acción estratégica."></span></th>
+            <th rowspan="2" class="th-texto col-complementaria">Participantes<span class="tooltip-campo" tabindex="0" role="button" aria-label="Ayuda: Anote el nombre de los participantes en la ejecución de cada acción estratégica." data-tooltip="Anote el nombre de los participantes en la ejecución de cada acción estratégica."></span></th>
             <th rowspan="2" class="th-texto col-complementaria col-observaciones">Observaciones Generales</th>
             <th rowspan="2" class="th-texto col-accion">Acción</th>
           </tr>
@@ -206,6 +207,6 @@
   </div>
 </div>
 
-<script src="../Programacion/app.js?v=20261119g"></script>
+<script src="../Programacion/app.js?v=20261124i"></script>
 </body>
 </html>

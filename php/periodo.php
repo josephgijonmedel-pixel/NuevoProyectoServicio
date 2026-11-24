@@ -3,6 +3,8 @@
 //   GET  periodo.php               → {anio, anios: [años que ya existen], periodos: [{anio, activo, fecha_apertura}]}
 //   POST periodo.php?accion=meses     → Planeación habilita (o vuelve a bloquear) todos los meses de los
 //                                    seguimientos. Recibe JSON {todos: true|false}. Es temporal, para pruebas.
+//   POST periodo.php?accion=evidencias → Planeación muestra Evidencias, Causas y Acuerdos de UN semestre a TODAS las áreas
+//                                    con PTA aceptado (o los oculta con periodo 0). Recibe JSON {periodo: 0|1|2}
 //   POST periodo.php?accion=finalizar → Planeación finaliza (cierra) el PTA del año activo. Ya nadie lo puede modificar.
 //   POST periodo.php?accion=crear  → Planeación crea un PTA de un año NUEVO y lo deja activo. Recibe JSON {anio: 2030}
 //                                    Solo se puede después de finalizar el PTA actual (botón "Nuevo PTA").
@@ -38,6 +40,15 @@ try {
         $respuesta["mensaje"] = $todos
             ? "Todos los meses de los seguimientos están habilitados."
             : "Los seguimientos vuelven a capturar solo el mes en curso.";
+        responderJson($respuesta);
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['accion'] ?? '') === 'evidencias') {
+        requerirPlaneacion("Solo la Coordinación de Planeación puede mostrar las evidencias.");
+        $datos = json_decode(file_get_contents("php://input"), true);
+        $mensaje = evidenciasTodasLasAreas($conexion, (int) ($datos['periodo'] ?? -1));
+        $respuesta = datosPeriodo($conexion);
+        $respuesta["mensaje"] = $mensaje;
         responderJson($respuesta);
     }
 
@@ -105,6 +116,8 @@ function datosPeriodo($conexion)
         "finalizado" => $actual && (int) $actual['finalizado'] === 1,
         "fecha_finalizacion" => $actual['fecha_finalizacion'] ?? null,
         "todos_los_meses" => todosLosMesesHabilitados($conexion, $anio),
+        // Semestre (1 o 2) cuyas evidencias se muestran a TODAS las áreas con PTA aceptado; 0 si no es así
+        "evidencias_todas" => evidenciasDeTodas($conexion, $anio),
         "anios" => $anios,
         "periodos" => $periodos,
     ];
@@ -198,4 +211,58 @@ function finalizarPeriodo($conexion)
     registrarBitacora($conexion, "periodos", $periodoId, "EDITAR", "Finalizó el PTA $anio");
     mysqli_commit($conexion);
     return $anio;
+}
+
+// ¿Todas las áreas con PTA aceptado tienen mostradas las evidencias del mismo semestre?
+// Regresa ese semestre (1 o 2), o 0 si no hay áreas aceptadas, si ninguna las tiene o si cada área tiene uno distinto.
+function evidenciasDeTodas($conexion, $anio)
+{
+    $consulta = mysqli_prepare(
+        $conexion,
+        "SELECT MIN(cierre_habilitado), MAX(cierre_habilitado) FROM planes_trabajo WHERE anio = ? AND estado = 'APROBADO'"
+    );
+    mysqli_stmt_bind_param($consulta, "i", $anio);
+    mysqli_stmt_execute($consulta);
+    [$minimo, $maximo] = mysqli_fetch_row(mysqli_stmt_get_result($consulta));
+    mysqli_stmt_close($consulta);
+    return $minimo !== null && $minimo === $maximo ? (int) $minimo : 0;
+}
+
+// Botón "Mostrar evidencias" de Ver áreas: muestra los campos de cierre (Evidencias, Causas y Acuerdos)
+// del semestre elegido a TODAS las áreas con PTA aceptado; con $periodo = 0 los oculta a todas.
+// Es lo mismo que el botón del detalle de cada área, pero para todas a la vez (un semestre a la vez).
+function evidenciasTodasLasAreas($conexion, $periodo)
+{
+    if (!in_array($periodo, [0, 1, 2], true)) {
+        responderJson(["error" => "Semestre no válido."], 422);
+    }
+    $anio = anioActivo($conexion);
+    if (ptaFinalizado($conexion, $anio)) {
+        responderJson(["error" => "El PTA $anio ya fue finalizado."], 409);
+    }
+    $consulta = mysqli_prepare(
+        $conexion,
+        "UPDATE planes_trabajo SET cierre_habilitado = ? WHERE anio = ? AND estado = 'APROBADO'"
+    );
+    mysqli_stmt_bind_param($consulta, "ii", $periodo, $anio);
+    mysqli_stmt_execute($consulta);
+    mysqli_stmt_close($consulta);
+
+    $consulta = mysqli_prepare($conexion, "SELECT COUNT(*) FROM planes_trabajo WHERE anio = ? AND estado = 'APROBADO'");
+    mysqli_stmt_bind_param($consulta, "i", $anio);
+    mysqli_stmt_execute($consulta);
+    $areas = (int) mysqli_fetch_row(mysqli_stmt_get_result($consulta))[0];
+    mysqli_stmt_close($consulta);
+    if ($areas === 0) {
+        responderJson(["error" => "Todavía no hay áreas con PTA aceptado."], 409);
+    }
+
+    $nombre = [1 => 'Primer seguimiento', 2 => 'Segundo seguimiento'][$periodo] ?? '';
+    registrarBitacora($conexion, "planes_trabajo", null, "EDITAR",
+        $periodo ? "Mostró Evidencias, Causas y Acuerdos del $nombre a todas las áreas ($anio)"
+                 : "Ocultó Evidencias, Causas y Acuerdos a todas las áreas ($anio)");
+    return $periodo
+        ? ($areas === 1 ? "Todas las áreas ya pueden" : "Todas las áreas ya pueden")
+            . " llenar Evidencias, Causas y Acuerdos en su $nombre."
+        : "Se ocultaron las evidencias a todas las áreas.";
 }
