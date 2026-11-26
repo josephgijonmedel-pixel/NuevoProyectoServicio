@@ -750,7 +750,56 @@ function calcularTotales(id) {
   const inputPctRAnual = document.getElementById(`pct-r-anual-${id}`);
   aplicarPorcentaje(inputPctPAnual, pctPAnual, 'celda-total');
   colorearPorcentajeRealizado(inputPctRAnual, pctRAnual);
+
+  // Cada cambio en una acción también cambia el total de toda el área
+  calcularTotalesArea();
 }
+
+// Fila "TOTAL DE LA UNIDAD RESPONSABLE" (tfoot):
+//   Abs           → suma de los Abs de TODAS las acciones
+//   % Realizado   → suma de los % de Realizado de cada acción ÷ número de acciones (promedio)
+//   % Programado  → 100% si hay algo programado
+function calcularTotalesArea() {
+  let p1 = 0, r1 = 0, p2 = 0, r2 = 0;
+
+  document.querySelectorAll('#cuerpoProgramacion tr.fila-programado').forEach(trP => {
+    const id = trP.dataset.fila;
+    p1 += Number(document.getElementById(`subtotal-p-sem-${id}`)?.value) || 0;
+    r1 += Number(document.getElementById(`subtotal-r-sem-${id}`)?.value) || 0;
+    p2 += Number(document.getElementById(`subtotal-p-sem2-${id}`)?.value) || 0;
+    r2 += Number(document.getElementById(`subtotal-r-sem2-${id}`)?.value) || 0;
+  });
+
+  const pt = p1 + p2, rt = r1 + r2;
+  const pct = (r, p) => p > 0 ? (r * 100 / p).toFixed(1) : 0;
+
+  document.getElementById('area-abs-p1').value = p1;
+  document.getElementById('area-abs-r1').value = r1;
+  document.getElementById('area-abs-p2').value = p2;
+  document.getElementById('area-abs-r2').value = r2;
+  document.getElementById('area-abs-pt').value = pt;
+  document.getElementById('area-abs-rt').value = rt;
+
+  aplicarPorcentaje(document.getElementById('area-pct-p1'), pct(p1, p1), 'celda-subtotal');
+  aplicarPorcentaje(document.getElementById('area-pct-p2'), pct(p2, p2), 'celda-subtotal');
+  aplicarPorcentaje(document.getElementById('area-pct-pt'), pct(pt, pt), 'celda-total');
+  // % de Realizado: promedio de los % de cada acción. Solo cuentan las acciones con datos
+  // (las filas vacías de sobra no bajan el promedio)
+  const filas = filasConDatos();
+  const promedioPct = (prefijo) => {
+    if (filas.length === 0) return 0;
+    const suma = filas.reduce((total, trP) =>
+      total + (parseFloat(document.getElementById(`${prefijo}-${trP.dataset.fila}`)?.value) || 0), 0);   // parseFloat ignora el "%"
+    return (suma / filas.length).toFixed(1);
+  };
+  colorearPorcentajeRealizado(document.getElementById('area-pct-r1'), promedioPct('pct-r-sem'));
+  colorearPorcentajeRealizado(document.getElementById('area-pct-r2'), promedioPct('pct-r-sem2'));
+  colorearPorcentajeRealizado(document.getElementById('area-pct-rt'), promedioPct('pct-r-anual'));
+}
+
+// Si llenan una fila vacía (eligen un proyecto, escriben la acción...), esa fila ya cuenta
+// en el promedio: se recalcula el total del área
+document.getElementById('cuerpoProgramacion')?.addEventListener('change', calcularTotalesArea);
 
 // Pone el porcentaje ya calculado en su casilla y le pone color
 // (verde, amarillo o rojo) según qué tan bien va esa acción
@@ -816,6 +865,9 @@ async function eliminarFila(id) {
 
   if (filaP) filaP.remove();
   if (filaR) filaR.remove();
+
+  // Descontar del total del área la acción que se quitó
+  calcularTotalesArea();
 }
 
 // Abre y cierra el menú lateral de navegación (botón de tres líneas)

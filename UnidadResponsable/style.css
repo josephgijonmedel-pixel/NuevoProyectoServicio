@@ -40,7 +40,7 @@ body {
   /* Espacio reservado a cada lado para los logos (crece y se encoge con la pantalla),
      así el texto nunca pasa por debajo de ellos y se parte en renglones si no cabe */
   padding-left: calc(16.3vw + 35px);   /* ancho del logo izquierdo + 35px */
-  padding-right: calc(26.2vw + 35px);  /* ancho del logo derecho + 35px */
+  padding-right: calc(24.3vw + 35px);  /* ancho del logo derecho + 35px */
   text-align: center;
   border-bottom: 3px solid #d6a700;
 }

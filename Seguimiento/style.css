@@ -45,7 +45,7 @@ body {
   /* Espacio reservado a cada lado para los logos (crece y se encoge con la pantalla),
      así el texto nunca pasa por debajo de ellos y se parte en renglones si no cabe */
   padding-left: calc(16.3vw + 35px);   /* ancho del logo izquierdo + 35px */
-  padding-right: calc(26.2vw + 35px);  /* ancho del logo derecho + 35px */
+  padding-right: calc(24.3vw + 35px);  /* ancho del logo derecho + 35px */
   text-align: center;
   border-bottom: 3px solid var(--azul-oscuro);
 }
@@ -317,7 +317,7 @@ table.tabla-plan th.th-calendario {
 
 /* ANCHO DE COLUMNAS */
 .col-proyecto { width: 230px; min-width: 230px; }
-.col-linea { width: 300px; min-width: 300px; }
+.col-linea { width: 400px; min-width: 400px; }
 .col-accion-est { width: 420px; min-width: 420px; }
 .col-recursos { width: 150px; }
 .col-unidad { width: 120px; }
@@ -572,7 +572,7 @@ input[type=number] {
 
 /* Campos de cierre del seguimiento (Evidencias, Causas, Acuerdos y Observaciones de Planeación):
    solo aparecen al terminar el semestre */
-.col-cierre { width: 230px; min-width: 230px; vertical-align: top; }
+.col-cierre { width: 320px; min-width: 320px; vertical-align: top; }
 .col-cierre[hidden] { display: none; }
 textarea.campo-cierre {
   width: 100%;

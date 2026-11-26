@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Programación y Seguimiento - Plan de Trabajo Anual </title>
-  <link rel="stylesheet" href="../Programacion/style.css?v=20261125i">
+  <link rel="stylesheet" href="../Programacion/style.css?v=20261126j">
 </head>
 <body>
 
@@ -13,8 +13,8 @@
 
   <!-- Banner de arriba: los dos logos y titulo -->
   <div class="encabezado">
-    <img src="../img/cgzs.png" alt="CGZS" class="logo logo-izquierdo">
-    <img src="../img/Elfuturo.png" alt="El Futuro es Hoy" class="logo logo-derecho">
+    <img src="../img/cgzs.png?v=20261126j" alt="CGZS" class="logo logo-izquierdo">
+    <img src="../img/Elfuturo.png?v=20261126j" alt="El Futuro es Hoy" class="logo logo-derecho">
     <h1>Coordinación General de la Zona Sur</h1>
     <h2>PLAN DE TRABAJO ANUAL <span id="anioEncabezado"></span></h2>
   </div>
@@ -160,6 +160,33 @@
         <tbody id="cuerpoProgramacion">
           <!-- Filas agregadas por JavaScript -->
         </tbody>
+        <tfoot>
+            <tr class ="fila-total-area">
+                <td colspan="6" rowspan="2" class="celda-titulo-total">TOTAL DE LA UNIDAD RESPONSABLE</td>
+                <td style="text-align:center;"><span class="etiqueta-programado">Programado</span></td>
+                <td colspan="6"></td>
+                <td class="celda-subtotal"><input class="campo-mes campo-bloqueado" id="area-abs-p1" value="0" readonly></td>
+                <td class="celda-subtotal"><input class="campo-mes campo-bloqueado" id="area-pct-p1" value="0%" readonly></td>
+                <td colspan="6"></td>
+                <td class="celda-subtotal"><input class="campo-mes campo-bloqueado" id="area-abs-p2" value="0" readonly></td>
+                <td class="celda-subtotal"><input class="campo-mes campo-bloqueado" id="area-pct-p2" value="0%" readonly></td>
+                <td class="celda-total"><input class="campo-mes campo-bloqueado" id="area-abs-pt" value="0" readonly></td>
+                <td class="celda-total"><input class="campo-mes campo-bloqueado" id="area-pct-pt" value="0%" readonly></td>
+                <!-- Beneficiados, Responsable, Participantes, Observaciones y Acción -->
+                <td colspan="5" rowspan="2"></td>
+          </tr>
+          <tr class ="fila-total-area">
+                <td style="text-align:center;"><span class="etiqueta-realizado">Realizado</span></td>
+                <td colspan="6"></td>
+                <td class="celda-realizado"><input class="campo-mes campo-bloqueado" id="area-abs-r1" value="0" readonly></td>
+                <td class="celda-realizado"><input class="campo-mes campo-bloqueado" id="area-pct-r1" value="0%" readonly></td>
+                <td colspan="6"></td>
+                <td class="celda-realizado"><input class="campo-mes campo-bloqueado" id="area-abs-r2" value="0" readonly></td>
+                <td class="celda-realizado"><input class="campo-mes campo-bloqueado" id="area-pct-r2" value="0%" readonly></td>
+                <td class="celda-realizado"><input class="campo-mes campo-bloqueado" id="area-abs-rt" value="0" readonly></td>
+                <td class="celda-realizado"><input class="campo-mes campo-bloqueado" id="area-pct-rt" value="0%" readonly></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
 
@@ -205,6 +232,6 @@
   </div>
 </div>
 
-<script src="../Programacion/app.js?v=20261125i"></script>
+<script src="../Programacion/app.js?v=20261126j"></script>
 </body>
 </html>

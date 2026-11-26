@@ -51,7 +51,7 @@ body {
   /* Espacio reservado a cada lado para los logos (crece y se encoge con la pantalla),
      así el texto nunca pasa por debajo de ellos y se parte en renglones si no cabe */
   padding-left: calc(16.3vw + 35px);   /* ancho del logo izquierdo + 35px */
-  padding-right: calc(26.2vw + 35px);  /* ancho del logo derecho + 35px */
+  padding-right: calc(24.3vw + 35px);  /* ancho del logo derecho + 35px */
   text-align: center;
   border-bottom: 3px solid var(--azul-oscuro);
 }
@@ -363,7 +363,7 @@ table.tabla-plan th.th-calendario {
 
 /* Qué tan ancha es cada columna de la tabla */
 .col-proyecto { width: 230px; }
-.col-linea { width: 350px; }
+.col-linea { width: 400px; min-width: 400px; }
 .col-accion-est { width: 420px; min-width: 420px; }
 .col-recursos { width: 160px; }
 .col-unidad { width: 140px; }
@@ -513,6 +513,10 @@ select.campo-tabla {
 .texto-linea-completa:empty{
   display: none;
 }
+
+/* Fila de totales de toda el área */
+tfoot .fila-total-area td { border-top: 1px solid #1b365d; font-weight: bold; }
+.celda-titulo-total { background: #1b365d; color: #fff; text-align: center; font-weight: bold; }
 
 /* Colores del semáforo: verde si va bien, amarillo si va a medias, rojo si va mal */
 .pct-bueno { background-color: #d4edda !important; color: #155724; font-weight: bold; }
