@@ -20,7 +20,6 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-
 /* Fondo gris claro de toda la página, sin márgenes del navegador y con un espacio alrededor */
 body {
   background-color: #f8f9fa;
@@ -273,8 +272,6 @@ body.menu-abierto .boton-menu {
   flex-direction: column;
 }
 
-
-
 /* Texto de la etiqueta de cada campo (por ejemplo "Unidad Responsable") */
 .grupo-campo label {
   font-weight: 600;
@@ -298,27 +295,6 @@ body.menu-abierto .boton-menu {
   border: 1px solid #ced4da !important;
 }
 
-/* Botón amarillo para ir a "Mi unidad" */
-.boton-ir-unidad {
-  background-color: var(--amarillo);
-  color: #333;
-  border: 1px solid #d6a700;
-  padding: 9px 16px;
-  font-weight: bold;
-  border-radius: 4px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-/* El botón amarillo se oscurece un poco al pasar el mouse */
-.boton-ir-unidad:hover {
-  background-color: #f7ca38;
-}
-
 /* La tabla grande de Programación: esta parte hace que se pueda deslizar hacia los lados */
 .tabla-desplazable {
   width: 100%;
@@ -339,7 +315,7 @@ table.tabla-plan {
 /* Todas las celdas de la tabla: borde gris, texto centrado y letra pequeña */
 table.tabla-plan th, table.tabla-plan td {
   border: 1px solid var(--color-borde);
-  padding: 6px;
+  padding: 10px;
   vertical-align: middle;
   font-size: 0.83rem;
   text-align: center;
@@ -388,15 +364,15 @@ table.tabla-plan th.th-calendario {
 /* Qué tan ancha es cada columna de la tabla */
 .col-proyecto { width: 230px; }
 .col-linea { width: 350px; }
-.col-accion-est { width: 350px; }
+.col-accion-est { width: 420px; min-width: 420px; }
 .col-recursos { width: 160px; }
 .col-unidad { width: 140px; }
 .col-var { width: 40px; }
 .col-accion { width: 50px; }
 
 /* Beneficiados, Responsable(s), Participantes y Observaciones Generales */
-.col-complementaria { width: 200px; min-width: 200px; }
-.col-observaciones { width: 260px; min-width: 260px; }
+.col-complementaria { width: 300px; min-width: 300px; }
+.col-observaciones { width: 300px; min-width: 300px; }
 
 /* Celdas de Beneficiados, Responsable(s), Participantes y Observaciones: fondo blanco y texto pegado arriba */
 .celda-complementaria {
@@ -892,7 +868,6 @@ input.campo-bloqueado.pct-bajo    { background-color: #ff0019e9 !important; colo
   border-color: #c3e6cb;
 }
 
-
 /* "Guardar" siempre a la derecha, aunque "Agregar Nueva Acción" esté oculto */
 #btnGuardarProgramacion { margin-left: auto; }
 
@@ -960,3 +935,49 @@ table.tabla-plan thead th:has(.tooltip-campo) {
 }
 
 .boton-peligro:hover { background-color: #bb2d3b; }
+
+/* Pestañas de "Mi plan de trabajo": Programación completa, Primer y Segundo seguimiento.
+   Mismo diseño que las pestañas del detalle del área; aquí cada pestaña lleva a su página */
+.pestanas-plan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--color-borde);
+}
+
+.pestanas-plan[hidden] { display: none; }
+
+.pestanas-plan .pestana {
+  padding: 9px 16px;
+  border: 1px solid var(--color-borde);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background-color: #f1f3f5;
+  color: #495057;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pestanas-plan .pestana:hover { background-color: #e2e6ea; }
+
+.pestanas-plan .pestana.pestana-activa {
+  background-color: var(--azul-boton);
+  color: #ffffff;
+  border-color: var(--azul-boton);
+}
+
+/* Columna "No.": número de cada acción. Un contador de CSS numera las filas "Programado" (1, 2, 3...),
+   así el número se acomoda solo al agregar o quitar acciones */
+tbody { counter-reset: numero-accion; }
+tr.fila-programado { counter-increment: numero-accion; }
+
+.col-numero {
+  width: 40px;
+  min-width: 40px;
+  text-align: center;
+  font-weight: bold;
+}
+
+td.col-numero::before { content: counter(numero-accion); }

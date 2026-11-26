@@ -420,9 +420,9 @@ function pintarTabla(acciones) {
     trP.dataset.accionId = item.id;
 
     trP.innerHTML = `
-      <td rowspan="2" class="col-proyecto celda-texto">${escaparHtml(item.proyecto)}</td>
-      <!-- La línea de acción es un texto largo: va en una caja con desplazamiento para que la fila no se estire -->
-      <td rowspan="2" class="col-linea celda-texto"><div class="texto-desplazable">${escaparHtml(item.linea)}</div></td>
+      <!-- No.: número de la acción. Lo pone el CSS (contador), así se renumera solo al agregar o quitar filas -->
+      <td rowspan="2" class="col-numero"></td>
+      <!-- Proyecto Estratégico y Línea de Acción no se muestran en los seguimientos (están en la Programación) -->
       <td rowspan="2" class="col-accion-est celda-texto">${escaparHtml(item.descripcion)}</td>
       <td rowspan="2" class="col-recursos celda-texto">${txtRecursos}</td>
       <td rowspan="2" class="col-unidad celda-texto">${escaparHtml(item.unidad_medida)}</td>
@@ -469,7 +469,7 @@ function pintarTabla(acciones) {
     if (index > 0) {
       const trEspaciador = document.createElement('tr');
       trEspaciador.className = 'fila-separador';
-      trEspaciador.innerHTML = `<td colspan="18"></td>`;
+      trEspaciador.innerHTML = `<td colspan="17"></td>`;
       tbody.appendChild(trEspaciador);
     }
 
@@ -591,3 +591,9 @@ function mostrarAnioEncabezado(anio) {
   const span = document.getElementById('anioEncabezado');
   if (span) span.textContent = anio;
 }
+
+// Pestañas de "Mi plan de trabajo": la pestaña de la pantalla en la que ya estás no recarga la página
+document.addEventListener('DOMContentLoaded', () => {
+  const activa = document.querySelector('#pestanasPlan .pestana-activa');
+  if (activa) activa.addEventListener('click', (e) => e.preventDefault());
+});

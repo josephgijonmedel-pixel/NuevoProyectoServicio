@@ -268,21 +268,6 @@ body.menu-abierto .boton-menu {
   border: 1px solid #ced4da !important;
 }
 
-.boton-ir-unidad {
-  background-color: var(--amarillo);
-  color: #333;
-  border: 1px solid #d6a700;
-  padding: 9px 16px;
-  font-weight: bold;
-  border-radius: 4px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
 /* TABLA DE SEGUIMIENTO */
 .tabla-desplazable {
   width: 100%;
@@ -331,7 +316,7 @@ table.tabla-plan th.th-calendario {
 /* ANCHO DE COLUMNAS */
 .col-proyecto { width: 230px; min-width: 230px; }
 .col-linea { width: 300px; min-width: 300px; }
-.col-accion-est { width: 270px; min-width: 270px; }
+.col-accion-est { width: 420px; min-width: 420px; }
 .col-recursos { width: 150px; }
 .col-unidad { width: 120px; }
 .col-var { width: 45px; }
@@ -429,7 +414,6 @@ input[type=number] {
   text-decoration: none;
 }
 
-.boton-secundario { background-color: #6c757d; color: white; }
 .boton-guardar { background-color: var(--azul-boton); color: white; }
 
 /* MODAL VENTANA FLOTANTE */
@@ -580,7 +564,6 @@ input[type=number] {
   border-color: #c3e6cb;
 }
 
-
 /* Las ventanas ya no llevan icono: si el espacio del icono está vacío, no ocupa lugar */
 .ventana-icono:empty { display: none; }
 
@@ -656,3 +639,56 @@ textarea.campo-cierre[readonly] { background-color: #e9ecef; color: #495057; cur
 .enlace-evidencia:hover {
   color: #0a58ca;
 }
+
+/* Pestañas de "Mi plan de trabajo": Programación completa, Primer y Segundo seguimiento.
+   Mismo diseño que las pestañas del detalle del área; aquí cada pestaña lleva a su página */
+.pestanas-plan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--color-borde);
+}
+
+.pestanas-plan[hidden] { display: none; }
+
+.pestanas-plan .pestana {
+  padding: 9px 16px;
+  border: 1px solid var(--color-borde);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background-color: #f1f3f5;
+  color: #495057;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pestanas-plan .pestana:hover { background-color: #e2e6ea; }
+
+.pestanas-plan .pestana.pestana-activa {
+  background-color: var(--azul-boton);
+  color: #ffffff;
+  border-color: var(--azul-boton);
+}
+
+/* En los seguimientos, "Mi plan de trabajo" se ve activo pero sí se puede pulsar para regresar a la programación */
+.menu-enlace.menu-enlace-activo-padre {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-left-color: var(--amarillo);
+  color: #ffffff;
+}
+
+/* Columna "No.": número de cada acción. Un contador de CSS numera las filas "Programado" (1, 2, 3...),
+   así el número se acomoda solo al agregar o quitar acciones */
+tbody { counter-reset: numero-accion; }
+tr.fila-programado { counter-increment: numero-accion; }
+
+.col-numero {
+  width: 40px;
+  min-width: 40px;
+  text-align: center;
+  font-weight: bold;
+}
+
+td.col-numero::before { content: counter(numero-accion); }

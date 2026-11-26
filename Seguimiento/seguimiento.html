@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Primer Seguimiento Ene-Jun</title>
-  <link rel="stylesheet" href="../Seguimiento/style.css?v=20261119p">
+  <link rel="stylesheet" href="../Seguimiento/style.css?v=20261125i">
 </head>
 <body>
 
@@ -32,21 +32,10 @@
     <div class="menu-nombre-unidad" id="menuNombreUnidad"></div>
     <ul class="menu-lista">
       <li>
-        <a href="../Programacion/programacion.html" class="menu-enlace">
+        <!-- Activo también aquí: los seguimientos son pestañas de "Mi plan de trabajo" -->
+        <a href="../Programacion/programacion.html" class="menu-enlace menu-enlace-activo-padre">
           <span class="icono-menu" style="--icono: url(../img/icon/home.svg)" aria-hidden="true"></span>
           <span>Mi plan de trabajo</span>
-        </a>
-      </li>
-      <li>
-        <a href="../Seguimiento/seguimiento.html" class="menu-enlace menu-enlace-activo">
-          <span class="icono-menu" style="--icono: url(../img/icon/Uno_Romano.svg)" aria-hidden="true"></span>
-          <span>Primer seguimiento</span>
-        </a>
-      </li>
-      <li>
-        <a href="../SegundoSeguimiento/segundoSeguimiento.html" class="menu-enlace">
-          <span class="icono-menu" style="--icono: url(../img/icon/Dos_Romano.svg)" aria-hidden="true"></span>
-          <span>Segundo seguimiento</span>
         </a>
       </li>
       <!-- Solo para la cuenta de Planeación: se muestra desde JavaScript -->
@@ -91,6 +80,14 @@
       <span>Seguimiento del Primer Semestre</span>
     </div>
 
+    <!-- Pestañas de "Mi plan de trabajo" (como en el detalle del área): la programación y los dos seguimientos.
+         Se ven siempre, en todas las áreas; mientras el PTA no esté aceptado, los seguimientos explican por qué no se pueden capturar. -->
+    <nav class="pestanas-plan" id="pestanasPlan">
+      <a href="../Programacion/programacion.html" class="pestana">Programación completa</a>
+      <a href="../Seguimiento/seguimiento.html" class="pestana pestana-activa" aria-current="page">Primer seguimiento (Ene - Jun)</a>
+      <a href="../SegundoSeguimiento/segundoSeguimiento.html" class="pestana">Segundo seguimiento (Jul - Dic)</a>
+    </nav>
+
     <!-- Avisos: errores al guardar, falta de programación o estado del seguimiento -->
     <div id="cajaAvisos" class="caja-aviso" style="display: none;"></div>
 
@@ -99,8 +96,9 @@
       <table class="tabla-plan">
         <thead>
           <tr>
-            <th rowspan="2" class="th-texto col-proyecto">Proyecto Estratégico</th>
-            <th rowspan="2" class="th-texto col-linea">Línea de Acción</th>
+            <!-- Número de cada acción (fila) -->
+            <th rowspan="2" class="th-texto col-numero">No.</th>
+            <!-- Proyecto Estratégico y Línea de Acción no se muestran en los seguimientos (están en la Programación) -->
             <th rowspan="2" class="th-texto col-accion-est">Acción Estratégica</th>
             <th rowspan="2" class="th-texto col-recursos">Recursos Requeridos</th>
             <th rowspan="2" class="th-texto col-unidad">Unidad de Medida</th>
@@ -159,6 +157,6 @@
   </div>
 </div>
 
-<script src="../Seguimiento/app.js?v=20261119p"></script>
+<script src="../Seguimiento/app.js?v=20261125i"></script>
 </body>
 </html>

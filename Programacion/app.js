@@ -12,9 +12,8 @@ let contadorFilas = 0;
 // Cada nombre es igual a su columna en la tabla acciones_estrategicas.
 const CAMPOS_COMPLEMENTARIOS = ['beneficiados', 'responsables', 'participantes', 'observaciones_generales'];
 
-// Máximo de proyectos estratégicos (filas) que puede tener el PTA de un área.
-// El servidor revisa el mismo límite en php/programacion.php.
-const MAX_PROYECTOS = 4;
+// Filas vacías con las que empieza la tabla al crear el PTA
+const FILAS_INICIALES = 12;
 
 // Esto se ejecuta apenas se abre la página
 document.addEventListener('DOMContentLoaded', () => {
@@ -31,15 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
   btnGuardarProg.disabled = true;
   cargarProgramacion();
 
-  // Agregar otra fila solo si todavía no llega al máximo de proyectos estratégicos
-  btnAgregar.addEventListener('click', () => {
-    const filas = document.querySelectorAll('#cuerpoProgramacion .fila-programado').length;
-    if (filas >= MAX_PROYECTOS) {
-      mostrarMensaje(`Solo puedes tener un máximo de ${MAX_PROYECTOS} proyectos estratégicos en tu PTA.`, 'error');
-      return;
-    }
-    agregarFilaAccion();
-  });
+  // Agregar otra fila: sin límite de proyectos estratégicos (mínimo 1, se revisa al guardar)
+  btnAgregar.addEventListener('click', () => agregarFilaAccion());
 
   btnGuardarProg.addEventListener('click', (e) => {
     e.preventDefault();
@@ -106,7 +98,9 @@ async function cargarProgramacion() {
     mostrarNombreUnidad(resultado.unidad.nombre);
     mostrarAnioEncabezado(resultado.anio);
 
-    const acciones = resultado.acciones.length > 0 ? resultado.acciones : [null];
+    // Al crear el PTA (todavía sin acciones guardadas) se empieza con FILAS_INICIALES filas vacías.
+    // Las filas que se queden vacías no se guardan ni se revisan (ver filasConDatos).
+    const acciones = resultado.acciones.length > 0 ? resultado.acciones : Array(FILAS_INICIALES).fill(null);
     acciones.forEach(accion => agregarFilaAccion(accion));
 
     mostrarEstadoPlan(resultado.plan);
@@ -251,7 +245,7 @@ async function leerRespuesta(respuesta) {
 
 // Junta lo que se escribió en la tabla: cada acción con sus 12 meses de programado
 function recolectarAcciones() {
-  return filasDeAcciones().map((trP) => {
+  return filasConDatos().map((trP) => {
     const id = trP.dataset.fila;
     return {
       id: trP.dataset.accionId || null,
@@ -375,7 +369,8 @@ function ocultarMensaje() {
 
 // Revisa que cada acción tenga línea de acción, descripción y unidad de medida
 function validarFilas() {
-  const filas = filasDeAcciones();
+  const todas = filasDeAcciones();
+  const filas = filasConDatos();   // las filas que siguen vacías no se revisan
   const faltantes = [];
 
   document.querySelectorAll('#cuerpoProgramacion .campo-error').forEach(el => el.classList.remove('campo-error'));
@@ -385,7 +380,8 @@ function validarFilas() {
     return false;
   }
 
-  filas.forEach((trP, i) => {
+  filas.forEach((trP) => {
+    const i = todas.indexOf(trP);   // número de la fila en la tabla (para el mensaje "Acción N")
     const requeridos = [
       ['select[name^="lineaAccion_"]', 'línea de acción'],
       ['textarea[name^="accionEstrategica_"]', 'acción estratégica'],
@@ -417,7 +413,7 @@ function validarFilas() {
 // Marca en rojo los campos que el servidor rechazó (errores = [{fila, campo, mensaje}])
 function marcarErroresDelServidor(errores) {
   if (!errores) return;
-  const filas = filasDeAcciones();
+  const filas = filasConDatos();   // el servidor numera solo las filas que se enviaron
   const selectores = {
     linea_id: 'select[name^="lineaAccion_"]',
     descripcion: 'textarea[name^="accionEstrategica_"]',
@@ -438,6 +434,22 @@ function marcarErroresDelServidor(errores) {
 
 function filasDeAcciones() {
   return Array.from(document.querySelectorAll('#cuerpoProgramacion tr.fila-programado'));
+}
+
+// Filas en las que el área ya escribió o eligió algo (o que ya estaban guardadas).
+// Las que siguen completamente vacías se ignoran al guardar: así sobran filas sin estorbar.
+function filasConDatos() {
+  return filasDeAcciones().filter(trP => {
+    if (trP.dataset.accionId) return true;   // acción ya guardada: siempre cuenta
+    const id = trP.dataset.fila;
+    const textos = trP.querySelectorAll('textarea');
+    const selects = ['proyecto_', 'lineaAccion_', 'unidadMedida_']
+      .map(nombre => trP.querySelector(`select[name="${nombre}${id}"]`));
+    const meses = document.querySelectorAll(`.input-p-${id}`);
+    return [...textos].some(t => t.value.trim() !== '')
+      || selects.some(sel => sel && sel.value !== '')
+      || [...meses].some(m => m.value.trim() !== '' && Number(m.value) !== 0);
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -539,6 +551,8 @@ function agregarFilaAccion(data = null) {
   if (data && data.id) trP.dataset.accionId = data.id;
 
   trP.innerHTML = `
+    <!-- No.: número de la acción. Lo pone el CSS (contador), así se renumera solo al agregar o quitar filas -->
+    <td rowspan="2" class="col-numero"></td>
     <td rowspan="2">
       <select class="campo-tabla" name="proyecto_${id}" onchange="cambiarProyecto(${id})">
         ${crearOpciones(catalogos.proyectos, p => `${p.clave}. ${p.nombre}`, data ? data.proyecto_id : null, 'Seleccione un proyecto')}
@@ -666,7 +680,7 @@ function agregarFilaAccion(data = null) {
   if (!esPrimeraAccion) {
     const trEspaciador = document.createElement('tr');
     trEspaciador.className = 'fila-separador';
-    trEspaciador.innerHTML = `<td colspan="29"></td>`;
+    trEspaciador.innerHTML = `<td colspan="30"></td>`;
     tbody.appendChild(trEspaciador);
   }
 
@@ -970,3 +984,9 @@ function confirmar({ titulo = 'Confirmar', texto = '', botonConfirmar = 'Aceptar
     document.addEventListener('keydown', alPresionarTecla, true);
   });
 }
+
+// Pestañas de "Mi plan de trabajo": la pestaña de la pantalla en la que ya estás no recarga la página
+document.addEventListener('DOMContentLoaded', () => {
+  const activa = document.querySelector('#pestanasPlan .pestana-activa');
+  if (activa) activa.addEventListener('click', (e) => e.preventDefault());
+});

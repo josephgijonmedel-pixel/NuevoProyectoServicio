@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!buscar) return; // no estamos en areas.html
 
   // Los filtros son opcionales: se conecta solo el que exista en la página
-  const controles = [buscar, document.getElementById('filtroTipo'), document.getElementById('filtroEstado')];
+  const controles = [buscar, document.getElementById('filtroEstado')];
   controles.filter(Boolean).forEach(control => {
     control.addEventListener('input', filtrarAreas);
     control.addEventListener('change', filtrarAreas);
@@ -141,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Columnas de la tabla: 0 área, 1 tipo, 2 responsable, 3 estado del plan
 function filtrarAreas() {
   const texto = normalizar(document.getElementById('buscarArea').value);
-  const tipo = document.getElementById('filtroTipo')?.value || '';
   const estado = document.getElementById('filtroEstado')?.value || '';
   const filas = Array.from(document.querySelectorAll('#cuerpoAreas tr'));
 
@@ -156,11 +155,10 @@ function filtrarAreas() {
     const coincideTexto = !texto
       || normalizar(celdas[0].innerText).includes(texto)
       || normalizar(celdas[2].innerText).includes(texto);
-    const coincideTipo = !tipo || celdas[1].innerText.trim() === tipo;
     const coincideEstado = !estado || celdas[3].innerText.trim() === estado;
 
     if (coincideTarjeta) deLaTarjeta++;
-    const mostrar = coincideTarjeta && coincideTexto && coincideTipo && coincideEstado;
+    const mostrar = coincideTarjeta && coincideTexto && coincideEstado;
     fila.style.display = mostrar ? '' : 'none';
     if (mostrar) visibles++;
   });

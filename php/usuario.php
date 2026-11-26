@@ -17,8 +17,6 @@ if ($unidadId !== null) {
 }
 
 responderJson([
-    "nombre" => $_SESSION['nombre_completo'] ?? '',
     "unidad" => $unidad,
-    "tipo_usuario" => $_SESSION['tipo_usuario'] ?? 'UR',
     "esPlaneacion" => esPlaneacion(),
 ]);

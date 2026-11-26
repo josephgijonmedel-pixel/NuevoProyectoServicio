@@ -227,22 +227,6 @@ body.menu-abierto .boton-menu {
   text-transform: uppercase;
 }
 
-/* CONTENEDOR UNIDAD RESPONSABLE */
-.caja-unidad {
-  display: flex;
-  gap: 15px;
-  align-items: flex-end;
-  background-color: #f4f6f9;
-  padding: 15px;
-  border-radius: 6px;
-  border: 1px solid var(--color-borde);
-  margin-bottom: 25px;
-}
-
-.caja-unidad .grupo-campo {
-  flex: 1;
-}
-
 .grupo-campo {
   display: flex;
   flex-direction: column;
@@ -258,28 +242,6 @@ body.menu-abierto .boton-menu {
   padding: 8px 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
-}
-
-.campo-bloqueado {
-  background-color: #e9ecef !important;
-  color: #495057 !important;
-  cursor: not-allowed;
-  border: 1px solid #ced4da !important;
-}
-
-.boton-ir-unidad {
-  background-color: var(--amarillo);
-  color: #333;
-  border: 1px solid #d6a700;
-  padding: 9px 16px;
-  font-weight: bold;
-  border-radius: 4px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
 }
 
 /* TABLA DE SEGUIMIENTO */
@@ -330,7 +292,7 @@ table.tabla-plan th.th-calendario {
 /* ANCHO DE COLUMNAS */
 .col-proyecto { width: 230px; min-width: 230px; }
 .col-linea { width: 300px; min-width: 300px; }
-.col-accion-est { width: 270px; min-width: 270px; }
+.col-accion-est { width: 420px; min-width: 420px; }
 .col-recursos { width: 150px; }
 .col-unidad { width: 120px; }
 .col-var { width: 45px; }
@@ -376,15 +338,6 @@ table.tabla-plan th.th-calendario {
 }
 
 /* INPUTS NUMÉRICOS Y ELIMINACIÓN DE FLECHAS / SPINNERS */
-.campo-mes {
-  width: 50px;
-  text-align: center;
-  padding: 5px 2px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  font-weight: bold;
-  font-size: 0.85rem;
-}
 
 /* Ocultar botones de incremento/decremento (Chrome, Safari, Edge, Opera) */
 input[type=number]::-webkit-inner-spin-button, 
@@ -416,12 +369,6 @@ input[type=number] {
 .pct-bajo  { background-color: #ff0019e9 !important; color: #000000; font-weight: bold; }
 
 /* BOTONES Y ACCIONES */
-.barra-botones {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-top: 15px;
-}
 
 .boton {
   padding: 10px 20px;
@@ -432,7 +379,6 @@ input[type=number] {
   text-decoration: none;
 }
 
-.boton-secundario { background-color: #6c757d; color: white; }
 .boton-guardar { background-color: var(--azul-boton); color: white; }
 
 /* MODAL VENTANA FLOTANTE */
@@ -564,12 +510,6 @@ input[type=number] {
 
 .caja-aviso a {
   color: inherit;
-}
-
-/* Fila que el servidor rechazó */
-.campo-mes.campo-error {
-  border: 2px solid #dc3545;
-  background-color: #fff5f5;
 }
 
 .boton:disabled {
@@ -806,7 +746,6 @@ table.tabla-areas tbody tr:hover {
   color: #ffffff;
 }
 
-
 /* Elementos ocultos por ahora (estados de Programación y PTA final en la lista de áreas).
    Para volver a mostrarlos, quita la clase "oculto" en areas.html y en app.js. */
 .oculto { display: none !important; }
@@ -852,31 +791,6 @@ table.tabla-areas tbody tr:hover {
   flex-wrap: wrap;
   gap: 8px;
 }
-
-.periodo-campo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.periodo-campo[hidden] { display: none; }
-
-.periodo-cambiar label {
-  font-size: 0.85rem;
-  font-weight: bold;
-  color: #495057;
-}
-
-.periodo-cambiar input {
-  width: 110px;
-  padding: 9px 10px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-.periodo-cambiar input.campo-error { border-color: #dc3545; background-color: #fff5f5; }
 
 #btnFinalizarPTA:disabled { opacity: 0.6; cursor: not-allowed; }
 

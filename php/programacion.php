@@ -200,10 +200,7 @@ function validarAcciones($conexion, $acciones)
     if (!is_array($acciones) || count($acciones) === 0) {
         responderJson(["error" => "Agrega al menos una acción estratégica."], 422);
     }
-    // Máximo 4 proyectos estratégicos (filas) por PTA; la página revisa el mismo límite
-    if (count($acciones) > 4) {
-        responderJson(["error" => "Solo puedes tener un máximo de 4 proyectos estratégicos en tu PTA."], 422);
-    }
+    // Sin máximo de proyectos estratégicos (filas): el área agrega los que necesite (mínimo 1, revisado arriba)
 
     $idsDe = fn($sql) => array_map('intval', array_column(mysqli_fetch_all(mysqli_query($conexion, $sql)), 0));
     $lineasValidas = array_flip($idsDe("SELECT id FROM lineas_accion"));

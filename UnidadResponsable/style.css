@@ -425,10 +425,6 @@ body.menu-abierto .boton-menu {
   gap: 10px;
 }
 
-.ventana-pie-centrado {
-  justify-content: center !important;
-}
-
 .boton-cancelar {
   background-color: #6c757d;
   color: #ffffff;

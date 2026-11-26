@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Programación y Seguimiento - Plan de Trabajo Anual </title>
-  <link rel="stylesheet" href="../Programacion/style.css?v=20261124i">
+  <link rel="stylesheet" href="../Programacion/style.css?v=20261125i">
 </head>
 <body>
 
@@ -37,18 +37,6 @@
         <a href="../Programacion/programacion.html" class="menu-enlace menu-enlace-activo">
           <span class="icono-menu" style="--icono: url(../img/icon/home.svg)" aria-hidden="true"></span>
           <span>Mi plan de trabajo</span>
-        </a>
-      </li>
-      <li>
-        <a href="../Seguimiento/seguimiento.html" class="menu-enlace">
-          <span class="icono-menu" style="--icono: url(../img/icon/Uno_Romano.svg)" aria-hidden="true"></span>
-          <span>Primer seguimiento</span>
-        </a>
-      </li>
-      <li>
-        <a href="../SegundoSeguimiento/segundoSeguimiento.html" class="menu-enlace">
-          <span class="icono-menu" style="--icono: url(../img/icon/Dos_Romano.svg)" aria-hidden="true"></span>
-          <span>Segundo seguimiento</span>
         </a>
       </li>
       <!-- Solo para la cuenta de Planeación: se muestra desde JavaScript -->
@@ -96,6 +84,14 @@
       <span>Alineación y Programación de Acciones Estratégicas</span>
     </div>
 
+    <!-- Pestañas de "Mi plan de trabajo" (como en el detalle del área): la programación y los dos seguimientos.
+         Se ven siempre, en todas las áreas; mientras el PTA no esté aceptado, los seguimientos explican por qué no se pueden capturar. -->
+    <nav class="pestanas-plan" id="pestanasPlan">
+      <a href="../Programacion/programacion.html" class="pestana pestana-activa" aria-current="page">Plan De Trabajo</a>
+      <a href="../Seguimiento/seguimiento.html" class="pestana">Primer seguimiento (Ene - Jun)</a>
+      <a href="../SegundoSeguimiento/segundoSeguimiento.html" class="pestana">Segundo seguimiento (Jul - Dic)</a>
+    </nav>
+
     <!-- Avisos: errores al guardar, o el estado del plan si ya no se puede editar -->
     <div id="cajaAvisos" class="caja-aviso" style="display: none;"></div>
 
@@ -106,6 +102,8 @@
         <thead>
           <!-- Primera fila de encabezados: los nombres de los bloques grandes de columnas -->
           <tr>
+            <!-- Número de cada acción (fila) -->
+            <th rowspan="2" class="th-texto col-numero">No.</th>
             <th class="th-texto">Alineación con Proyectos Institucionales</th>
             <th rowspan="2" class="th-texto col-linea">Líneas de Acción</th>
             <th rowspan="2" class="th-texto col-accion-est">Acciones Estratégicas</th>
@@ -207,6 +205,6 @@
   </div>
 </div>
 
-<script src="../Programacion/app.js?v=20261124i"></script>
+<script src="../Programacion/app.js?v=20261125i"></script>
 </body>
 </html>

@@ -120,8 +120,6 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
         "seguimiento" => [
             "editable" => $plan ? seguimientoEditable($plan, $finalizado) : false,
             "motivo_bloqueo" => $plan && !seguimientoEditable($plan, $finalizado) ? motivoBloqueo($plan, $finalizado, $anio) : null,
-            "guardado" => (bool) $seguimiento,
-            "fecha_subido" => $seguimiento['fecha_envio'] ?? null,   // última vez que subió su avance
             "primer_mes" => $primerMes,   // 1 = enero (Primer seguimiento), 7 = julio (Segundo)
             // Meses de este semestre que se pueden escribir, y por qué no hay ninguno (si es el caso)
             "meses_abiertos" => $plan ? mesesAbiertos($conexion, $anio, (int) $plan['id'], $primerMes) : [],
@@ -130,12 +128,10 @@ function armarRespuesta($conexion, $unidadId, $anio, $periodo, $primerMes)
             "aviso_meses" => $plan && !mesesAbiertos($conexion, $anio, (int) $plan['id'], $primerMes)
                 ? avisoMeses($conexion, $anio, (int) $plan['id'], $primerMes) : null,
             "estado_programacion" => $plan['estado'] ?? null,
-            "estado_final" => $plan['estado_final'] ?? null,
             // Evidencias, Causas, Acuerdos y Observaciones de Planeación (al terminar el semestre)
             "cierre_visible" => $cierreVisible,
             "cierre_editable" => $editable && $cierreVisible && !$cierreBloqueado,
             // Ya los subió: quedan bloqueados hasta que Planeación los habilite
-            "cierre_bloqueado" => $cierreBloqueado,
             "aviso_cierre" => $cierreVisible && $cierreBloqueado ? AVISO_CIERRE_BLOQUEADO : null,
         ],
         // Con el PTA rechazado no se manda nada: la tabla del seguimiento se ve vacía hasta que Planeación lo acepte

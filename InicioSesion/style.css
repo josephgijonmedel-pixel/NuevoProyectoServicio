@@ -151,11 +151,6 @@ body {
   color: var(--azul-boton);
 }
 
-.campo-error {
-  border-color: #dc3545 !important;
-  background-color: #fff8f8 !important;
-}
-
 .enlace-olvide-contrasena {
   align-self: flex-end;
   margin-top: 8px;

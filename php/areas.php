@@ -126,13 +126,8 @@ function detalleArea($conexion, $unidadId, $anio)
 
     $consulta = mysqli_prepare(
         $conexion,
-        "SELECT p.id, p.estado, p.responsable_nombre, p.responsable_cargo, p.estado_final,
-                p.observaciones_planeacion, p.fecha_envio, p.fecha_revision,
-                (s1.id IS NOT NULL) AS seg1_guardado, (s2.id IS NOT NULL) AS seg2_guardado,
-                s1.fecha_envio AS avance1_subido, s2.fecha_envio AS avance2_subido
+        "SELECT p.id, p.estado, p.observaciones_planeacion, p.fecha_envio, p.fecha_revision
          FROM planes_trabajo p
-         LEFT JOIN seguimientos s1 ON s1.plan_id = p.id AND s1.periodo = 1
-         LEFT JOIN seguimientos s2 ON s2.plan_id = p.id AND s2.periodo = 2
          WHERE p.unidad_responsable_id = ? AND p.anio = ?"
     );
     mysqli_stmt_bind_param($consulta, "ii", $unidadId, $anio);
@@ -147,16 +142,9 @@ function detalleArea($conexion, $unidadId, $anio)
         "unidad" => $unidad,
         "plan" => $plan ? [
             "estado" => $plan['estado'],
-            "elaborado_por" => $plan['responsable_nombre'],
-            "cargo" => $plan['responsable_cargo'],
-            "estado_final" => $plan['estado_final'],
             "observaciones" => $plan['observaciones_planeacion'],
             "fecha_envio" => $plan['fecha_envio'],
             "fecha_revision" => $plan['fecha_revision'],
-            "seg1_guardado" => (bool) $plan['seg1_guardado'],
-            "seg2_guardado" => (bool) $plan['seg2_guardado'],
-            "avance1_subido" => $plan['avance1_subido'],   // fecha en que el área subió su avance (o null)
-            "avance2_subido" => $plan['avance2_subido'],
             // Meses subidos que Planeación puede volver a habilitar (los abiertos por la regla)
             "meses_para_habilitar" => $plan['estado'] === 'APROBADO' && !ptaFinalizado($conexion, $anio)
                 ? mesesParaHabilitar($conexion, $anio, (int) $plan['id']) : [],

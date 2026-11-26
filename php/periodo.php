@@ -1,6 +1,6 @@
 <?php
 // Año del PTA (periodo activo).
-//   GET  periodo.php               → {anio, anios: [años que ya existen], periodos: [{anio, activo, fecha_apertura}]}
+//   GET  periodo.php               → {anio, finalizado, todos_los_meses, evidencias_todas, anios: [años que ya existen]}
 //   POST periodo.php?accion=meses     → Planeación habilita (o vuelve a bloquear) todos los meses de los
 //                                    seguimientos. Recibe JSON {todos: true|false}. Es temporal, para pruebas.
 //   POST periodo.php?accion=evidencias → Planeación muestra Evidencias, Causas y Acuerdos de UN semestre a TODAS las áreas
@@ -96,15 +96,6 @@ function datosPeriodo($conexion)
     $actual = mysqli_fetch_assoc(mysqli_stmt_get_result($consulta));
     mysqli_stmt_close($consulta);
 
-    $periodos = mysqli_fetch_all(
-        mysqli_query($conexion, "SELECT anio, activo, fecha_apertura FROM periodos ORDER BY anio DESC"),
-        MYSQLI_ASSOC
-    );
-    foreach ($periodos as &$periodo) {
-        $periodo['anio'] = (int) $periodo['anio'];
-        $periodo['activo'] = (bool) $periodo['activo'];
-    }
-
     // Años que ya existen (como periodo o con algún plan guardado): no se pueden volver a crear
     $anios = array_map('intval', array_column(mysqli_fetch_all(mysqli_query(
         $conexion,
@@ -119,7 +110,6 @@ function datosPeriodo($conexion)
         // Semestre (1 o 2) cuyas evidencias se muestran a TODAS las áreas con PTA aceptado; 0 si no es así
         "evidencias_todas" => evidenciasDeTodas($conexion, $anio),
         "anios" => $anios,
-        "periodos" => $periodos,
     ];
 }
 
